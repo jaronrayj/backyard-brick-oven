@@ -2,7 +2,7 @@ import React from "react";
 import jaronPicture from "../../assets/getting-ready.jpg";
 import "./Placeholder.css";
 
-function Placeholder() {
+const Placeholder = () => {
   return (
     <div className="biggerBox">
       <div className="box">
@@ -13,6 +13,6 @@ function Placeholder() {
       </div>
     </div>
   );
-}
+};
 
 export default Placeholder;

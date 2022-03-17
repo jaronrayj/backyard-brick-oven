@@ -26,9 +26,11 @@
   background-color: black;
   cursor: pointer;
 }
-.login__google {
-  background-color: #4285f4;
-}
+
 .login div {
   margin-top: 7px;
+}
+.googleLogo {
+  width: 20px;
+  margin-right: 8px;
 }

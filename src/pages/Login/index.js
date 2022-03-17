@@ -6,8 +6,10 @@ import {
   signInWithGoogle,
 } from "../../utils/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
+// import googleLogo from "../../assets/black-google-logo.png";
 import "./Login.css";
-function Login() {
+import Button from "react-bootstrap/Button";
+const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [user, loading, error] = useAuthState(auth);
@@ -37,16 +39,14 @@ function Login() {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
         />
-        <button
-          className="login__btn"
+        <Button
+          variant="dark"
           onClick={() => logInWithEmailAndPassword(email, password)}
         >
           Login
-        </button>
-        <button className="login__btn login__google" onClick={signInWithGoogle}>
-          Login with Google
-          {/* TODO add google symbol */}
-        </button>
+        </Button>
+        <h4>or</h4>
+        <Button onClick={signInWithGoogle}>Login with Google</Button>
         <div>
           <Link to="/reset_password">Forgot Password</Link>
         </div>
@@ -56,5 +56,5 @@ function Login() {
       </div>
     </div>
   );
-}
+};
 export default Login;

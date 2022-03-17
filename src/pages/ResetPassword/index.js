@@ -4,7 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { auth, sendPasswordReset } from "../../utils/firebase";
 import "./ResetPassword.css";
-function ResetPassword() {
+import Button from "react-bootstrap/Button";
+
+const ResetPassword = () => {
   const [email, setEmail] = useState("");
   const [user, loading, error] = useAuthState(auth);
   const navigate = useNavigate();
@@ -24,18 +26,19 @@ function ResetPassword() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="E-mail Address"
         />
-        <button
-          className="reset__btn"
+        <Button
+          className="fullWidth"
+          variant="dark"
           type="submit"
           onClick={() => sendPasswordReset(email)}
         >
           Send password reset email
-        </button>
+        </Button>
         <div>
           Don't have an account? <Link to="/register">Register</Link> now.
         </div>
       </div>
     </div>
   );
-}
+};
 export default ResetPassword;
