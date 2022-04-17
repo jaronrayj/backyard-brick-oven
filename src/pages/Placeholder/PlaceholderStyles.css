@@ -2,11 +2,7 @@
   border: 1px black solid;
   background-color: #282c34;
   padding: 75px 25px 75px 25px;
-  width: 800px;
   margin: auto;
-}
-.img {
-  height: 400px;
 }
 h2 {
   color: orange;
@@ -19,7 +15,6 @@ h1 {
 .biggerBox {
   margin-top: 20px;
   padding: 30px;
-  width: 850px;
   margin: auto;
   background-color: white;
 }

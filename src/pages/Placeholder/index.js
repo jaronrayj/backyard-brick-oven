@@ -1,15 +1,15 @@
 import React from "react";
 import jaronPicture from "../../assets/getting-ready.jpg";
-import "./Placeholder.css";
+import "./PlaceholderStyles.css";
 
 const Placeholder = () => {
   return (
-    <div className="biggerBox">
-      <div className="box">
-        <img className="img" src={jaronPicture} alt="building" />
-        <h2>Welcome</h2>
+    <div className="biggerBox max-w-xl">
+      <div className="box flex flex-col max-w-lg">
+        <img className="w-full" src={jaronPicture} alt="building" />
+        <h2>Welcome!</h2>
         <h1>Future site of Jaron's Backyard Brick Oven</h1>
-        <p>Give us some time while we do some building!</p>
+        <p>Give us some time while we do some building...</p>
       </div>
     </div>
   );
