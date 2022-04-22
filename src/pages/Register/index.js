@@ -6,7 +6,7 @@ import {
   auth,
   registerWithEmailAndPassword,
   signInWithGoogle,
-} from "../../utils/firebase";
+} from "../../utils/firebase_auth";
 import "./RegisterStyles.css";
 
 const Register = () => {
@@ -16,7 +16,7 @@ const Register = () => {
   const [user, loading, error] = useAuthState(auth);
   const navigate = useNavigate();
   const register = () => {
-    if (!name) alert("Please enter name");
+    if (!email) alert("Please enter email");
     // TODO better error messaging if user account already exists
     registerWithEmailAndPassword(name, email, password);
   };
@@ -29,7 +29,7 @@ const Register = () => {
       <div className="register__container">
         <div className="m-auto justify-center flex">
           <div className="w-full max-w-xs">
-            <form className="bg-white -md rounded-md px-8 pt-6 pb-8 mb-4">
+            <div className="bg-white -md rounded-md px-8 pt-6 pb-8 mb-4">
               <button
                 className="px-4 py-2 text-gray-600 hover:bg-blue-200 bg-blue-300 rounded-md justify-center w-full mb-4 font-bold"
                 onClick={signInWithGoogle}
@@ -72,7 +72,7 @@ const Register = () => {
               >
                 Register
               </button>
-            </form>
+            </div>
             <div>
               Already have an account?{" "}
               <Link className="text-blue-600 hover:text-blue-500" to="/login">

@@ -18,10 +18,11 @@ import {
   addDoc,
   getDocs,
 } from "firebase/firestore";
+import { defaultUser } from "../const/constants";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyB0Db6k61cOIzvwuQ_LHdJhL_XdUTkg0Ww",
   authDomain: "backyard-brickoven.firebaseapp.com",
   projectId: "backyard-brickoven",
@@ -30,8 +31,6 @@ const firebaseConfig = {
   appId: "1:617331177853:web:b1a726a44ad1a3654ff414",
   measurementId: "G-RB0DB3R1SY",
 };
-
-// Initialize Firebase
 
 // const analytics = getAnalytics(firebaseApp);
 const app = initializeApp(firebaseConfig);
@@ -46,12 +45,12 @@ const signInWithGoogle = async () => {
     const q = query(collection(db, "users"), where("uid", "==", user.uid));
     const docs = await getDocs(q);
     if (docs.docs.length === 0) {
-      await addDoc(collection(db, "users"), {
-        uid: user.uid,
-        name: user.displayName,
-        authProvider: "google",
-        email: user.email,
-      });
+      const newUser = defaultUser;
+      newUser.email = user.email;
+      newUser.name = user.displayName;
+      newUser.uid = user.uid;
+      newUser.authProvider = "google";
+      await addDoc(collection(db, "users"), newUser);
     }
   } catch (err) {
     console.error(err);
@@ -63,6 +62,7 @@ const logInWithEmailAndPassword = async (email, password) => {
     await signInWithEmailAndPassword(auth, email, password);
   } catch (err) {
     console.error(err);
+    // todo make all of these NOT alerts
     alert(err.message);
   }
 };
@@ -71,12 +71,11 @@ const registerWithEmailAndPassword = async (name, email, password) => {
   try {
     const res = await createUserWithEmailAndPassword(auth, email, password);
     const user = res.user;
-    await addDoc(collection(db, "users"), {
-      uid: user.uid,
-      name,
-      authProvider: "local",
-      email,
-    });
+    const newUser = defaultUser;
+    newUser.email = email;
+    newUser.name = name;
+    newUser.uid = user.uid;
+    await addDoc(collection(db, "users"), newUser);
   } catch (err) {
     console.error(err);
     alert(err.message);
@@ -106,14 +105,3 @@ export {
   sendPasswordReset,
   logout,
 };
-
-// db example
-
-// const ordersCol = collection(db, "orders");
-
-// async function getCities(db) {
-//   const citiesCol = collection(db, 'cities');
-//   const citySnapshot = await getDocs(citiesCol);
-//   const cityList = citySnapshot.docs.map(doc => doc.data());
-//   return cityList;
-// }

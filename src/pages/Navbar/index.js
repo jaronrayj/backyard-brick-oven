@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import "./Navbar.css";
-import { auth, db, logout } from "../../utils/firebase";
-import { query, collection, getDocs, where } from "firebase/firestore";
+import { auth, db, logout } from "../../utils/firebase_auth";
 import { Fragment } from "react";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
 import { BellIcon, MenuIcon, XIcon } from "@heroicons/react/outline";
+import { collection, query, where, addDoc, getDocs } from "firebase/firestore";
 
 const navigation = [
   { name: "Home", href: "/", current: true },
-  { name: "Order", href: "#", current: false },
+  { name: "Order", href: "/order", current: false },
   // { name: "About Me", href: "#", current: false },
 ];
 
@@ -20,23 +20,32 @@ const classNames = (...classes) => {
 const Navbar = () => {
   const [user, loading, error] = useAuthState(auth);
   const [name, setName] = useState("");
-  const fetchUserName = async () => {
+  const [loaded, setLoaded] = useState(false);
+  const [dbUser, setDbUser] = useState();
+
+  const fetchUser = async () => {
     try {
       const q = query(collection(db, "users"), where("uid", "==", user?.uid));
       const doc = await getDocs(q);
       const data = doc.docs[0].data();
-      setName(data.name);
+      setDbUser(data);
     } catch (err) {
       console.error(err);
-      alert("An error occured while fetching user data");
     }
   };
   useEffect(() => {
     if (loading) return;
-    if (!user) return "login";
-    fetchUserName();
+    user && setName(user.displayName);
+    !dbUser && fetchUser();
+    if (dbUser && navigation.length < 3 && !loaded) {
+      dbUser.role === "admin" &&
+        navigation.push({ name: "Admin", href: "/admin", current: false });
+      setLoaded(true);
+    }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, loading]);
+  }, [user, loading, dbUser, navigation, loaded]);
+
   return (
     <Disclosure as="nav" className="bg-gray-800">
       {({ open }) => (

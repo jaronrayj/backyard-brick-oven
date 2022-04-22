@@ -4,7 +4,7 @@ import {
   auth,
   logInWithEmailAndPassword,
   signInWithGoogle,
-} from "../../utils/firebase";
+} from "../../utils/firebase_auth";
 import { useAuthState } from "react-firebase-hooks/auth";
 // import googleLogo from "../../assets/black-google-logo.png";
 import "./LoginStyles.css";
