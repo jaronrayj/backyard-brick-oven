@@ -38,7 +38,7 @@ export const fetchPizza = async (pizza) => {
     if (docs.docs.length === 0) {
       return;
     } else {
-      return docs.docs;
+      return docs.docs[0].data();
     }
   } catch (err) {
     console.log(err);
@@ -49,7 +49,13 @@ export const fetchAllPizzas = async () => {
   try {
     const q = query(collection(db, "pizzas"));
     const docs = await getDocs(q);
-    return docs.docs;
+    const pizzaArr = [];
+    docs.docs.forEach((pizza) => {
+      const newObj = pizza.data();
+      newObj.id = pizza.id;
+      pizzaArr.push(newObj);
+    });
+    return pizzaArr;
   } catch (err) {
     console.log(err);
   }

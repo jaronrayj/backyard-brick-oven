@@ -1,5 +1,6 @@
 export const defaultPizza = {
-  name: "Pizza",
+  id: "fsfds1231221das",
+  name: "Select a pizza",
   toppings: [],
   price: 7,
   sliced: true,
