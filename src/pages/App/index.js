@@ -1,28 +1,31 @@
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import "./App.css";
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
-import Login from "../Login";
-import Placeholder from "../Placeholder";
-import Register from "../Register";
-import ResetPassword from "../ResetPassword";
-import Navbar from "../Navbar";
-import Order from "../Order";
-import Admin from "../Admin";
+import Login from '../Login';
+import Placeholder from '../Placeholder';
+import Register from '../Register';
+import ResetPassword from '../ResetPassword';
+import Navbar from '../Navbar';
+import Order from '../Order';
+import Admin from '../Admin';
+
+export const isSiteReadyForOrders = false;
 
 const App = () => {
   return (
-    <div className="App">
+    <div>
       <Navbar />
-      <Router>
-        <Routes>
-          <Route exact path="/" element={<Placeholder />} />
-          <Route exact path="/login" element={<Login />} />
-          <Route exact path="/order" element={<Order />} />
-          <Route exact path="/register" element={<Register />} />
-          <Route exact path="/reset_password" element={<ResetPassword />} />
-          <Route exact path="/admin" element={<Admin />} />
-        </Routes>
-      </Router>
+      <div className="text-center justify-center">
+        <Router>
+          <Routes>
+            <Route exact path="/" element={<Placeholder />} />
+            <Route exact path="/login" element={<Login />} />
+            <Route exact path="/order" element={<Order />} />
+            <Route exact path="/register" element={<Register />} />
+            <Route exact path="/reset_password" element={<ResetPassword />} />
+            <Route exact path="/admin" element={<Admin />} />
+          </Routes>
+        </Router>
+      </div>
     </div>
   );
 };
