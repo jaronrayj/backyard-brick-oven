@@ -20,12 +20,12 @@ const Placeholder = () => {
               <p>
                 Hey, my name is Jaron, and I{' '}
                 <span className="italic">really</span> enjoy making pizza! I
-                have an amazing Gozney Dome that rolls about 850° and cooks a
+                have an amazing Gozney Dome that rolls around 850°F and cooks a
                 pizza in about 90 seconds.
               </p>
               <p className="mt-8">
                 I'll be setup every <span className="font-bold">Friday</span>{' '}
-                (rain or shine) from{' '}
+                (rain or shine) in my backyard from{' '}
                 <span className="font-bold">5:30pm-7pm</span> with my delicious
                 homemade sauce and dough. Each pizza is $5, feel free to Venmo
                 or bring cash.
