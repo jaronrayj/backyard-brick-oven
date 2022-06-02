@@ -21,7 +21,7 @@ const Placeholder = () => {
                 Hey, my name is Jaron, and I{' '}
                 <span className="italic">really</span> enjoy making pizza! I
                 have an amazing Gozney Dome that rolls about 850° and cooks a
-                pizza in about 1.5 minutes.
+                pizza in about 90 seconds.
               </p>
               <p className="mt-8">
                 I'll be setup every <span className="font-bold">Friday</span>{' '}
