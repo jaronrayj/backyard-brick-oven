@@ -1,8 +1,14 @@
 import React from 'react';
 import jaronPicture from '../../assets/getting-ready.jpg';
-import Map from '../Map';
+import Map from '../../components/Map';
 
 const Placeholder = () => {
+  const location = {
+    address: '156 East 550 North Bountiful, UT 84010',
+    lat: 40.89523,
+    lng: -111.87739,
+  };
+
   return (
     <>
       <div className="bg-white mt-8 w-2/3 m-auto">
@@ -14,7 +20,7 @@ const Placeholder = () => {
           <div>menu and ordering TBA</div>
         </div>
       </div>
-      {/* <Map /> */}
+      <Map location={location} zoomLevel={19} />
     </>
   );
 };

@@ -73,7 +73,7 @@ const Navbar = () => {
                       src={logo}
                       alt="Backyard Brick Oven"
                     />
-                    <div class="m-auto">
+                    <div className="m-auto">
                       <span className="text-3xl font-mono h-14">
                         Backyard Brick Oven
                       </span>
