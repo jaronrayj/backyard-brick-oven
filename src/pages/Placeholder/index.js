@@ -1,5 +1,5 @@
 import React from 'react';
-import jaronPicture from '../../assets/getting-ready.jpg';
+import jaronPicture from '../../assets/jare-pizza-action.jpeg';
 import venmoLogo from '../../assets/venmo.png';
 import Map from '../../components/Map';
 
