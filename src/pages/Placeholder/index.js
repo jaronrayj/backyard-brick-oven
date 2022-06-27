@@ -74,7 +74,7 @@ const Placeholder = () => {
           ></script>
           <div
             class="pa-gallery-player-widget"
-            style="width:100%; height:480px; display:none;"
+            style={{ width: '100%', height: '480px', display: 'none' }}
             data-link="https://photos.app.goo.gl/VhX7haevqzFb8KiB6"
             data-title="Backyard Brick Oven Pizzas"
             data-description="21 new items added to shared album"
