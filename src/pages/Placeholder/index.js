@@ -266,7 +266,7 @@ const Placeholder = () => {
         <br />
         <p>
           We are open to catering! Hit us up on our social media for any
-          enquiries.
+          inquiries.
         </p>
         <br />
       </div>
