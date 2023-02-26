@@ -29,11 +29,11 @@ const Placeholder = () => {
               </p>
               <p className="mt-8">
                 We'll be setup every <span className="font-bold">Friday</span>{' '}
-                (rain or shine) in my backyard from{' '}
-                <span className="font-bold">5:30pm-7pm</span> with my homemade
-                sauce, dough and toppings, come pick whatever you want on your
+                (rain or shine) in our backyard from{' '}
+                <span className="font-bold">5:30pm-7pm</span> with our homemade
+                sauces, dough and toppings, come pick whatever you want on your
                 pizza and we'll make it for you on the spot. Each pizza is $7,
-                feel free to Venmo or bring cash.
+                we accept Venmo or cash.
               </p>
               <div className="flex justify-center mt-4">
                 <div className="mt-auto mb-auto">
@@ -43,7 +43,7 @@ const Placeholder = () => {
                     rel="noreferrer"
                   >
                     <div className="pointer-events-auto text-xl decoration-red-600 underline font-bold">
-                      Click here for directions to my backyard!
+                      Click here for directions to our backyard!
                     </div>
                   </a>
                 </div>
@@ -71,7 +71,6 @@ const Placeholder = () => {
                   <img className="w-14" src={venmoLogo} alt="Jaron Venmo" />
                 </a>
               </div>
-              {/* <div>We also cater! Reach out on Instagram or Facebook and we can talk details.</div> */}
             </div>
           </div>
         </div>
