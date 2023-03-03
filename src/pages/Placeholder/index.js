@@ -64,7 +64,7 @@ const Placeholder = () => {
                   <img className="w-14" src={facebookLogo} alt="Jaron Venmo" />
                 </a>
                 <a
-                  href="https://account.venmo.com/u/backyard-brick-oven"
+                  href="https://account.venmo.com/u/Jaron-Johnson-4"
                   target="_blank"
                   rel="noreferrer"
                 >
