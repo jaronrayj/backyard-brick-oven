@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
 import Login from '../Login';
-import Placeholder from '../Placeholder';
+import MainPage from '../MainPage';
 import Register from '../Register';
 import ResetPassword from '../ResetPassword';
 import Navbar from '../Navbar';
@@ -17,7 +17,7 @@ const App = () => {
       <div className="text-center justify-center">
         <Router>
           <Routes>
-            <Route exact path="/" element={<Placeholder />} />
+            <Route exact path="/" element={<MainPage />} />
             <Route exact path="/login" element={<Login />} />
             <Route exact path="/order" element={<Order />} />
             <Route exact path="/register" element={<Register />} />
