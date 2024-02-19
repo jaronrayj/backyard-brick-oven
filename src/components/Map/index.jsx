@@ -7,6 +7,12 @@ import { Icon } from '@iconify/react';
 import locationIcon from '@iconify/icons-mdi/map-marker';
 const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 
+const location = {
+  address: '156 East 550 North Bountiful, UT 84010',
+  lat: 40.89523,
+  lng: -111.87739,
+};
+
 const LocationPin = ({ text }) => (
   <div className="pin">
     <Icon icon={locationIcon} className="pin-icon" />
@@ -20,7 +26,7 @@ const LocationPin = ({ text }) => (
   </div>
 );
 
-const Map = ({ location, zoomLevel }) => (
+const Map = ({ zoomLevel }) => (
   <div className="map">
     <h2 className="map-h2">Find Us in the Backyard!</h2>
 

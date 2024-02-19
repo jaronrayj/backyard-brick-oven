@@ -7,7 +7,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { defaultPizza } from "../const/constants";
-import { db } from "./firebase_auth";
+import { db } from "./firebase";
 
 export const getOrderHistory = async (user) => {
   try {

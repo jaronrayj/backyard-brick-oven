@@ -1,5 +1,6 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
+import { initializeApp} from "firebase/app";
+import { getDatabase, ref, onValue } from "firebase/database";
 // import { getAnalytics } from "firebase/analytics";
 import {
   getAuth,
@@ -30,12 +31,14 @@ export const firebaseConfig = {
   messagingSenderId: "617331177853",
   appId: "1:617331177853:web:b1a726a44ad1a3654ff414",
   measurementId: "G-RB0DB3R1SY",
+  databaseURL: "https://backyard-brickoven-default-rtdb.firebaseio.com/",
 };
 
 // const analytics = getAnalytics(firebaseApp);
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const rtdb = getDatabase(app);
 
 const googleProvider = new GoogleAuthProvider();
 const signInWithGoogle = async () => {
@@ -99,6 +102,7 @@ const logout = () => {
 export {
   auth,
   db,
+  rtdb,
   signInWithGoogle,
   logInWithEmailAndPassword,
   registerWithEmailAndPassword,

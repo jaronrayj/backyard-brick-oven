@@ -6,7 +6,7 @@ import {
   auth,
   registerWithEmailAndPassword,
   signInWithGoogle,
-} from "../../utils/firebase_auth";
+} from "../../utils/firebase";
 import "./RegisterStyles.css";
 
 const Register = () => {

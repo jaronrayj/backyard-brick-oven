@@ -1,16 +1,19 @@
-import React from 'react';
-import jaronPicture from '../../assets/jare-pizza-action.jpeg';
-import venmoLogo from '../../assets/venmo.png';
-import facebookLogo from '../../assets/facebook.png';
-import instagramLogo from '../../assets/instagram.png';
-import Map from '../../components/Map';
+import React from 'react'
+import jaronPicture from '../../assets/jare-pizza-action.jpeg'
+import venmoLogo from '../../assets/venmo.png'
+import facebookLogo from '../../assets/facebook.png'
+import instagramLogo from '../../assets/instagram.png'
+// import Map from '../../components/Map'
+// import { rtdb } from ''
+// import { ref, onValue } from 'firebase/database'
+import { fetchActivePizzas } from '../../utils/rtdb_queries'
 
 const MainPage = () => {
-  const location = {
-    address: '156 East 550 North Bountiful, UT 84010',
-    lat: 40.89523,
-    lng: -111.87739,
-  };
+  fetchActivePizzas()
+    .then((activePizzas) => {
+      console.log('🚀 ~ MainPage ~ activePizzas:', activePizzas)
+    })
+    .catch((err) => console.log('error:', err))
 
   return (
     <>
@@ -31,7 +34,7 @@ const MainPage = () => {
                 Come enjoy <span className="font-bold">Pizza Friday</span> in
                 our backyard from <span className="font-bold">5pm-7pm</span>!
                 Choose from our selection of homemade sauces and toppings that
-                tickle your fancy and we'll make it for you on the spot for $7
+                tickle your fancy and we'll make it for you on the spot for $8
                 each.
               </p>
               <p className="mt-8">
@@ -222,7 +225,7 @@ const MainPage = () => {
           ></object>
         </div>
 
-        {/* <Map location={location} zoomLevel={19} /> */}
+        {/* <Map zoomLevel={19} /> */}
         <br />
         <p className="mx-3">
           We are open to catering! Hit us up on our social media or email us at{' '}
@@ -237,7 +240,10 @@ const MainPage = () => {
         <br />
       </div>
     </>
-  );
-};
+  )
+}
+console.log('🚀 ~ MainPage ~ fetchActivePizzas():', fetchActivePizzas())
+console.log('🚀 ~ MainPage ~ fetchActivePizzas():', fetchActivePizzas())
+console.log('🚀 ~ MainPage ~ fetchActivePizzas():', fetchActivePizzas())
 
-export default MainPage;
+export default MainPage

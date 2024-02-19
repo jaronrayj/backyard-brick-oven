@@ -1,7 +1,7 @@
 import React, { useEffect, useState, Fragment } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useNavigate } from "react-router-dom";
-import { auth, db } from "../../utils/firebase_auth";
+import { auth, db } from "../../utils/firebase";
 import { collection, query, where, addDoc, getDocs } from "firebase/firestore";
 import { Listbox, Transition } from "@headlessui/react";
 import { CheckIcon, SelectorIcon } from "@heroicons/react/solid";

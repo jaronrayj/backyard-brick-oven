@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { auth } from "../../utils/firebase_auth";
+import { auth } from "../../utils/firebase";
 
 const Order = () => {
   const [user, loading, error] = useAuthState(auth);
