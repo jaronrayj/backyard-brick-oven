@@ -1,14 +1,14 @@
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 
-import Login from '../Login';
-import MainPage from '../MainPage';
-import Register from '../Register';
-import ResetPassword from '../ResetPassword';
-import Navbar from '../Navbar';
-import Order from '../Order';
-import Admin from '../Admin';
+import Login from '../Login'
+import MainPage from '../MainPage'
+import Register from '../Register'
+import ResetPassword from '../ResetPassword'
+import Navbar from '../Navbar'
+import Order from '../Order'
+import Admin from '../Admin'
 
-export const isSiteReadyForOrders = false;
+export const isSiteReadyForOrders = false
 
 const App = () => {
   return (
@@ -27,7 +27,7 @@ const App = () => {
         </Router>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default App;
+export default App

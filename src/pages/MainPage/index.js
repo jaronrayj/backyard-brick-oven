@@ -11,11 +11,13 @@ import {
 import Carousel from '../../components/Carousel'
 import PizzaDisplay from '../../components/PizzaDisplay'
 import Modal from '../../components/Modal'
+import { objectFilter } from '../../utils'
 
 const MainPage = () => {
   const [activePizzas, setActivePizzas] = useState({})
   const [activeToppings, setActiveToppings] = useState({})
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [specialPizzas, setSpecialPizzas] = useState({})
 
   const openModal = () => setIsModalOpen(true)
   const closeModal = () => setIsModalOpen(false)
@@ -33,6 +35,10 @@ const MainPage = () => {
     fetchingActiveDb(fetchActivePizzas, setActivePizzas)
     fetchingActiveDb(fetchActiveToppings, setActiveToppings)
   }, [fetchingActiveDb])
+  useEffect(() => {
+    const specials = objectFilter(activePizzas, (pizza) => pizza.special)
+    setSpecialPizzas(specials)
+  }, [activePizzas])
 
   return (
     <>
@@ -97,7 +103,7 @@ const MainPage = () => {
               {activeToppings && (
                 <>
                   <button
-                    className="cursor-pointer font-bold"
+                    className="pointer-events-auto font-bold mt-2"
                     onClick={openModal}
                   >
                     Current Toppings
@@ -106,7 +112,9 @@ const MainPage = () => {
                     <h2 className="font-bold">Current Toppings</h2>
                     <ul>
                       {Object.entries(activeToppings).map(([key, value]) => (
-                        <li key={key}>{value.topping}</li>
+                        <li className="capitalize mt-3" key={key}>
+                          {value.topping}
+                        </li>
                       ))}
                     </ul>
                   </Modal>
@@ -114,32 +122,40 @@ const MainPage = () => {
               )}
             </div>
           </div>
-          {activePizzas &&
-            Object.entries(activePizzas).map(
-              ([key, value]) =>
-                value.special && (
-                  <>
-                    <div className="font-bold text-xl mb-6 mt-6">
-                      {' '}
-                      Weekly Special
-                    </div>
-                    <PizzaDisplay key={key} pizza={value} />
-                  </>
-                )
-            )}
+          {specialPizzas && (
+            <>
+              <h2 className="font-bold text-xl mb-6 mt-6">Weekly Special</h2>
+              {Object.entries(activePizzas).map(
+                ([key, value]) =>
+                  value.special && (
+                    <PizzaDisplay
+                      key={key}
+                      pizza={value}
+                      modalOpen={isModalOpen}
+                    />
+                  )
+              )}
+            </>
+          )}
           <div className="font-bold text-xl mb-6 mt-6">Current Pizzas</div>
           <div className="grid grid-cols-2 gap-4">
             {activePizzas &&
               Object.entries(activePizzas).map(
                 ([key, value]) =>
-                  !value.special && <PizzaDisplay key={key} pizza={value} />
+                  !value.special && (
+                    <PizzaDisplay
+                      key={key}
+                      pizza={value}
+                      modalOpen={isModalOpen}
+                    />
+                  )
               )}
           </div>
         </div>
-        <script
+        {/* <script
           src="https://cdn.jsdelivr.net/npm/publicalbum@latest/embed-ui.min.js"
           async
-        ></script>
+        ></script> */}
         {/* <Carousel /> */}
         {/* <p className="mx-3">
           We are open to catering! Hit us up on our social media or email us at{' '}

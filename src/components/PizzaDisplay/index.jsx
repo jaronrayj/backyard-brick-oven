@@ -2,12 +2,12 @@ import React from 'react'
 import Zoom from 'react-medium-image-zoom'
 import 'react-medium-image-zoom/dist/styles.css'
 
-const PizzaDisplay = ({ pizza }) => {
+const PizzaDisplay = ({ pizza, modalOpen }) => {
   const toppings = pizza.toppings.split(',')
 
   return (
-    <div className="mb-6" key={pizza.name}>
-      {pizza.img ? (
+    <div className="mb-2" key={pizza.name}>
+      {pizza.img && !modalOpen ? (
         <Zoom>
           <img
             className="h-64 flex object-cover rounded-md shadow-md mx-auto"
