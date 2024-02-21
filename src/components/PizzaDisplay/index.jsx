@@ -1,4 +1,6 @@
 import React from 'react'
+import Zoom from 'react-medium-image-zoom'
+import 'react-medium-image-zoom/dist/styles.css'
 
 const PizzaDisplay = ({ pizza }) => {
   const toppings = pizza.toppings.split(',')
@@ -6,34 +8,29 @@ const PizzaDisplay = ({ pizza }) => {
   return (
     <div className="mb-6" key={pizza.name}>
       {pizza.img ? (
-        <img
-          className="h-64 flex object-cover rounded-md shadow-md mx-auto"
-          src={pizza.img}
-          alt={pizza.name}
-        />
+        <Zoom>
+          <img
+            className="h-64 flex object-cover rounded-md shadow-md mx-auto"
+            src={pizza.img}
+            alt={pizza.name}
+          />
+        </Zoom>
       ) : (
         <div className="h-64 w-auto flex items-center text-center bg-gray-200">
           <span className="text-center w-full">Picture Coming Soon!</span>
         </div>
       )}
-      <div className="rounded-md bg-gray-300">
+      <div className="rounded-md bg-slate-200 mt-1 max-w-sm m-auto p-1">
         <h1 className="capitalize font-bold">{pizza.name}</h1>
 
         <p className="text-sm">
           {toppings.map((topping, index) => {
-            if (index === toppings.length - 1) {
-              return (
-                <span className="capitalize" key={index}>
-                  {topping.trim()}
-                </span>
-              )
-            } else {
-              return (
-                <span className="capitalize" key={index}>
-                  {topping.trim()},{' '}
-                </span>
-              )
-            }
+            return (
+              <span className="capitalize" key={index}>
+                {topping.trim()}
+                {index === toppings.length - 1 ? '' : ', '}
+              </span>
+            )
           })}
         </p>
       </div>

@@ -1,65 +1,58 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import pizzaFam from '../../assets/pizza_fam.JPG'
+import pizzaFam from '../../assets/pizza_fam_short.JPG'
 import venmoLogo from '../../assets/venmo.png'
 import facebookLogo from '../../assets/facebook.png'
 import instagramLogo from '../../assets/instagram.png'
 // import Map from '../../components/Map'
-import { fetchActivePizzas } from '../../utils/rtdb_queries'
+import {
+  fetchActivePizzas,
+  fetchActiveToppings,
+} from '../../utils/rtdb_queries'
 import Carousel from '../../components/Carousel'
 import PizzaDisplay from '../../components/PizzaDisplay'
+import Modal from '../../components/Modal'
 
 const MainPage = () => {
   const [activePizzas, setActivePizzas] = useState({})
+  const [activeToppings, setActiveToppings] = useState({})
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const activeToppings = [
-    'Marinara',
-    'Creamy pesto',
-    'Mozzarella',
-    'Balsamic Roasted Tomatoes',
-    'Caramelized Onions',
-    'Sriracha Chicken',
-    'Bacon',
-    'Italian Sausage',
-    'Pepperoni',
-    'Fresh Pineapple',
-    'Bell Peppers',
-    'Jalapenos',
-  ]
+  const openModal = () => setIsModalOpen(true)
+  const closeModal = () => setIsModalOpen(false)
 
-  const fetchingActivePizzas = useCallback(async () => {
-    fetchActivePizzas()
-      .then((dbActivePizzas) => {
-        setActivePizzas(dbActivePizzas)
+  const fetchingActiveDb = useCallback(async (fetchDb, stateToSet) => {
+    fetchDb()
+      .then((db) => {
+        stateToSet(db)
       })
       .catch((err) => console.log('error fetching from firebase:', err))
   }, [])
 
   useEffect(() => {
     console.log('fetching data from firebase...')
-    fetchingActivePizzas()
-  }, [fetchingActivePizzas])
+    fetchingActiveDb(fetchActivePizzas, setActivePizzas)
+    fetchingActiveDb(fetchActiveToppings, setActiveToppings)
+  }, [fetchingActiveDb])
 
   return (
     <>
-      <div className="bg-white mt-8 md:w-2/3 m-auto">
-        <div className="p-8">
+      <div className="bg-white lg:w-3/4 m-auto">
+        <div className="p-4">
           <div className="md:flex">
-            <div className="md:w-1/2 align-middle">
-              <img src={pizzaFam} alt="cooking pizza" />
+            <div className="md:w-1/2 self-center">
+              <img src={pizzaFam} alt="pizza fam" />
             </div>
             <div className="md:w-1/2 md:ml-4 bg-slate-200 rounded-md p-8 text-lg m-auto">
-              {/* todo update this paragraph */}
-              <p className="mt-8">
-                Come enjoy <span className="font-bold">Pizza Friday</span> in
-                our backyard from <span className="font-bold">5pm-7pm</span>!
-                Choose from our selection of homemade sauces and toppings that
-                tickle your fancy and we'll make it for you on the spot for $8
-                each.
+              <p className="mt-2">
+                Come enjoy <span className="font-bold">Pizza Friday</span> with
+                us in our backyard! We are open from{' '}
+                <span className="font-bold">5pm-7pm</span>. Pick from some of
+                our favorites below or mix and match to your liking. Each pizza
+                costs <span className="font-bold">$8</span>.
               </p>
-              <p className="mt-8">
-                We have two propane powered Gozney Domes© that maintain around
-                850°F and can cook a pie in about 70 seconds. Each pizza is
-                about 9-10 inches. We accept Venmo or cash.
+              <p className="mt-4">
+                Each thin crust pie is cooked on the spot in about 70 seconds
+                and measures about 9-10 inches. We accept Venmo or cash.
               </p>
 
               <div className="flex justify-center mt-4">
@@ -99,14 +92,41 @@ const MainPage = () => {
                 </a>
               </div>
               <div className="flex justify-center mt-4">
-                <div className="mt-auto mb-auto">
-                  We take a few Fridays off, follow our social media to stay in
-                  touch!
-                </div>
+                Follow us on social media for updates!
               </div>
-              <br />
+              {activeToppings && (
+                <>
+                  <button
+                    className="cursor-pointer font-bold"
+                    onClick={openModal}
+                  >
+                    Current Toppings
+                  </button>
+                  <Modal isOpen={isModalOpen} onClose={closeModal}>
+                    <h2 className="font-bold">Current Toppings</h2>
+                    <ul>
+                      {Object.entries(activeToppings).map(([key, value]) => (
+                        <li key={key}>{value.topping}</li>
+                      ))}
+                    </ul>
+                  </Modal>
+                </>
+              )}
             </div>
           </div>
+          {activePizzas &&
+            Object.entries(activePizzas).map(
+              ([key, value]) =>
+                value.special && (
+                  <>
+                    <div className="font-bold text-xl mb-6 mt-6">
+                      {' '}
+                      Weekly Special
+                    </div>
+                    <PizzaDisplay key={key} pizza={value} />
+                  </>
+                )
+            )}
           <div className="font-bold text-xl mb-6 mt-6"> Current Pizzas</div>
           <div className="grid grid-cols-2 gap-4">
             {activePizzas &&
@@ -121,8 +141,6 @@ const MainPage = () => {
           async
         ></script>
         {/* <Carousel /> */}
-        {/* <Map zoomLevel={19} /> */}
-        <br />
         {/* <p className="mx-3">
           We are open to catering! Hit us up on our social media or email us at{' '}
           <a
@@ -132,8 +150,7 @@ const MainPage = () => {
             jj.backyardbrickoven@gmail.com
           </a>{' '}
           for any inquiries.
-        </p>
-        <br /> */}
+        </p> */}
       </div>
     </>
   )
