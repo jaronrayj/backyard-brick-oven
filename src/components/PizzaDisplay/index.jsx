@@ -16,7 +16,7 @@ const PizzaDisplay = ({ pizza }) => {
           />
         </Zoom>
       ) : (
-        <div className="h-64 w-auto flex items-center text-center bg-gray-200">
+        <div className="h-64 w-auto max-w-sm flex items-center m-auto bg-gray-200">
           <span className="text-center w-full">Picture Coming Soon!</span>
         </div>
       )}

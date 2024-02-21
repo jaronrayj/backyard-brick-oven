@@ -49,7 +49,7 @@ const Navbar = () => {
   }, [user, loading, dbUser, navigation, loaded])
 
   return (
-    <Disclosure as="nav" className="bg-yellow-600">
+    <Disclosure as="nav" className="bg-yellow-500">
       {({ open }) => (
         <>
           <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
