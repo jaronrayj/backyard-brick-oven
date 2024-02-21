@@ -1,26 +1,27 @@
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   auth,
   logInWithEmailAndPassword,
   signInWithGoogle,
-} from "../../utils/firebase";
-import { useAuthState } from "react-firebase-hooks/auth";
+} from '../../utils/firebase'
+import { useAuthState } from 'react-firebase-hooks/auth'
 // import googleLogo from "../../assets/black-google-logo.png";
-import "./LoginStyles.css";
+import './LoginStyles.css'
+
 const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [user, loading, error] = useAuthState(auth);
-  const navigate = useNavigate();
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [user, loading, error] = useAuthState(auth)
+  const navigate = useNavigate()
   // how we're tracking if they are logged in with a user account
   useEffect(() => {
     if (loading) {
       // maybe trigger a loading screen
-      return;
+      return
     }
-    if (user) navigate("/");
-  }, [user, loading, navigate]);
+    if (user) navigate('/')
+  }, [user, loading, navigate])
   return (
     <div className="login">
       <div className="login__container">
@@ -63,14 +64,15 @@ const Login = () => {
                 Forgot Password?
               </Link>
             </div>
-            Don't have an account?{" "}
+            Don't have an account?{' '}
             <Link className="text-blue-600 hover:text-blue-500" to="/register">
               Register here
-            </Link>{" "}
+            </Link>{' '}
           </div>
         </div>
       </div>
     </div>
-  );
-};
-export default Login;
+  )
+}
+
+export default Login

@@ -1,52 +1,52 @@
-import React, { useEffect, useState } from 'react';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth, db, logout } from '../../utils/firebase';
-import { Fragment } from 'react';
-import { Disclosure, Menu, Transition } from '@headlessui/react';
-import { BellIcon, MenuIcon, XIcon } from '@heroicons/react/outline';
-import { collection, query, where, addDoc, getDocs } from 'firebase/firestore';
-import { isSiteReadyForOrders } from '../App/index';
-import logo from '../../assets/BrickovenLogo.png';
+import React, { useEffect, useState } from 'react'
+import { useAuthState } from 'react-firebase-hooks/auth'
+import { auth, db, logout } from '../../utils/firebase'
+import { Fragment } from 'react'
+import { Disclosure, Menu, Transition } from '@headlessui/react'
+import { BellIcon, MenuIcon, XIcon } from '@heroicons/react/outline'
+import { collection, query, where, addDoc, getDocs } from 'firebase/firestore'
+import { isSiteReadyForOrders } from '../App/index'
+import logo from '../../assets/BrickovenLogo.png'
 // const isSiteReadyForOrders = true;
 
 const navigation = [
   { name: 'Home', href: '/', current: true },
   { name: 'Order', href: '/order', current: false },
   // { name: "About Me", href: "#", current: false },
-];
+]
 
 const classNames = (...classes) => {
-  return classes.filter(Boolean).join(' ');
-};
+  return classes.filter(Boolean).join(' ')
+}
 
 const Navbar = () => {
-  const [user, loading, error] = useAuthState(auth);
-  const [name, setName] = useState('');
-  const [loaded, setLoaded] = useState(false);
-  const [dbUser, setDbUser] = useState();
+  const [user, loading, error] = useAuthState(auth)
+  const [name, setName] = useState('')
+  const [loaded, setLoaded] = useState(false)
+  const [dbUser, setDbUser] = useState()
 
   const fetchUser = async () => {
     try {
-      const q = query(collection(db, 'users'), where('uid', '==', user?.uid));
-      const doc = await getDocs(q);
-      const data = doc.docs[0].data();
-      setDbUser(data);
+      const q = query(collection(db, 'users'), where('uid', '==', user?.uid))
+      const doc = await getDocs(q)
+      const data = doc.docs[0].data()
+      setDbUser(data)
     } catch (err) {
-      console.error(err);
+      console.error(err)
     }
-  };
+  }
   useEffect(() => {
-    if (loading) return;
-    user && setName(user.displayName);
-    !dbUser && fetchUser();
+    if (loading) return
+    user && setName(user.displayName)
+    !dbUser && fetchUser()
     if (dbUser && navigation.length < 3 && !loaded) {
       dbUser.role === 'admin' &&
-        navigation.push({ name: 'Admin', href: '/admin', current: false });
-      setLoaded(true);
+        navigation.push({ name: 'Admin', href: '/admin', current: false })
+      setLoaded(true)
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, loading, dbUser, navigation, loaded]);
+  }, [user, loading, dbUser, navigation, loaded])
 
   return (
     <Disclosure as="nav" className="bg-yellow-600">
@@ -197,7 +197,7 @@ const Navbar = () => {
         </>
       )}
     </Disclosure>
-  );
-};
+  )
+}
 
-export default Navbar;
+export default Navbar
