@@ -103,7 +103,7 @@ const MainPage = () => {
               {activeToppings && (
                 <>
                   <button
-                    className="pointer-events-auto font-bold mt-2"
+                    className="pointer-events-auto font-bold mt-2 bg-slate-400 p-2 rounded-md"
                     onClick={openModal}
                   >
                     Current Toppings
@@ -122,7 +122,7 @@ const MainPage = () => {
               )}
             </div>
           </div>
-          {specialPizzas && (
+          {Object.keys(specialPizzas).length !== 0 && (
             <>
               <h2 className="font-bold text-xl mb-6 mt-6">Weekly Special</h2>
               {Object.entries(activePizzas).map(
