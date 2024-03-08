@@ -106,10 +106,10 @@ const MainPage = () => {
                     className="pointer-events-auto font-bold mt-2 bg-slate-400 p-2 rounded-md"
                     onClick={openModal}
                   >
-                    Current Toppings
+                    Available Toppings
                   </button>
                   <Modal isOpen={isModalOpen} onClose={closeModal}>
-                    <h2 className="font-bold">Current Toppings</h2>
+                    <h2 className="font-bold">Toppings</h2>
                     <ul>
                       {Object.entries(activeToppings).map(([key, value]) => (
                         <li className="capitalize mt-3" key={key}>
