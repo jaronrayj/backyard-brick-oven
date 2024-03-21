@@ -15,6 +15,7 @@ const PizzaDisplay = ({ pizza, modalOpen }) => {
       {pizza.img && !modalOpen ? (
         <Zoom>
           <img
+            onError={(e) => (e.target.src = 'placeholder.jpg')}
             className="h-64 flex object-cover rounded-md shadow-md mx-auto"
             src={images.find((img) => img.includes(pizzaName))}
             alt={pizza.name}

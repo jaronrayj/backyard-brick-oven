@@ -92,7 +92,7 @@ const MainPage = () => {
                   <img className="w-14" src={facebookLogo} alt="Jaron FB" />
                 </a>
                 <a
-                  href="https://venmo.com/Jaron-Johnson-4?txn=charge&note=Backyard Brick Oven"
+                  href="https://venmo.com/Jaron-Johnson-4?txn=charge&note=Backyard+Brick+Oven"
                   target="_blank"
                   rel="noreferrer"
                 >
