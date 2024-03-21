@@ -12,7 +12,7 @@ import Carousel from '../../components/Carousel'
 import PizzaDisplay from '../../components/PizzaDisplay'
 import Modal from '../../components/Modal'
 import { objectFilter } from '../../utils'
-import ImagePreloader from '../../components/ImagePreloader'
+// import ImagePreloader from '../../components/ImagePreloader'
 
 const MainPage = () => {
   const [activePizzas, setActivePizzas] = useState({})
@@ -43,7 +43,7 @@ const MainPage = () => {
 
   return (
     <>
-      <ImagePreloader />
+      {/* <ImagePreloader /> */}
       <div className="bg-white lg:w-3/4 m-auto">
         <div className="p-4">
           <div className="md:flex">
