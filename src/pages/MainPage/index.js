@@ -90,8 +90,9 @@ const MainPage = () => {
                   <img className="w-14" src={facebookLogo} alt="Jaron FB" />
                 </a>
                 <a
-                  // href="https://account.venmo.com/Taryn-Johnson-15?txn=pay&note=Backyard+Brick+Oven"
-                  href="venmo://paycharge?txn=pay&recipients=Taryn-Johnson-15&amount=10&note=Backyard+Brick+Oven"
+                  href="https://account.venmo.com/u/Jaron-Johnson-4"
+                  // href="https://account.venmo.com/Jaron-Johnson-4?txn=pay&note=Backyard+Brick+Oven"
+                  // href="venmo://paycharge?txn=pay&recipients=Taryn-Johnson-15&amount=10&note=Backyard+Brick+Oven"
                   target="_blank"
                   rel="noreferrer"
                 >
