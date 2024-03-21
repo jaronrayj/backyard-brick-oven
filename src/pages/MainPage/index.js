@@ -82,17 +82,17 @@ const MainPage = () => {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  <img className="w-14" src={instagramLogo} alt="Jaron Venmo" />
+                  <img className="w-14" src={instagramLogo} alt="Jaron IG" />
                 </a>
                 <a
                   href="https://www.facebook.com/people/Backyard-Brick-Oven-LLC/100090391791253/"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  <img className="w-14" src={facebookLogo} alt="Jaron Venmo" />
+                  <img className="w-14" src={facebookLogo} alt="Jaron FB" />
                 </a>
                 <a
-                  href="https://account.venmo.com/u/Jaron-Johnson-4"
+                  href="https://venmo.com/Jaron-Johnson-4?txn=charge&note=Backyard Brick Oven"
                   target="_blank"
                   rel="noreferrer"
                 >
