@@ -3,11 +3,6 @@ import Zoom from 'react-medium-image-zoom'
 import 'react-medium-image-zoom/dist/styles.css'
 
 const PizzaDisplay = ({ pizza, modalOpen }) => {
-  // const importAll = (r) => r.keys().map(r)
-  // const images = importAll(
-  //   require.context('../../assets/pizzas', false, /\.(jpg)$/)
-  // )
-  // const pizzaName = pizza.name.toLowerCase().replace(/\s/g, '_')
   const toppings = pizza.toppings.split(',')
 
   return (
@@ -17,7 +12,6 @@ const PizzaDisplay = ({ pizza, modalOpen }) => {
           <img
             onError={(e) => (e.target.src = 'placeholder.jpg')}
             className="h-64 flex object-cover rounded-md shadow-md mx-auto"
-            // src={images.find((img) => img.includes(pizzaName))}
             src={pizza.img}
             alt={pizza.name}
           />

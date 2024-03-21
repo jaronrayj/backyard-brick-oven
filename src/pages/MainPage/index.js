@@ -12,7 +12,6 @@ import Carousel from '../../components/Carousel'
 import PizzaDisplay from '../../components/PizzaDisplay'
 import Modal from '../../components/Modal'
 import { objectFilter } from '../../utils'
-// import ImagePreloader from '../../components/ImagePreloader'
 
 const MainPage = () => {
   const [activePizzas, setActivePizzas] = useState({})
@@ -43,7 +42,6 @@ const MainPage = () => {
 
   return (
     <>
-      {/* <ImagePreloader /> */}
       <div className="bg-white lg:w-3/4 m-auto">
         <div className="p-4">
           <div className="md:flex">
@@ -92,7 +90,7 @@ const MainPage = () => {
                   <img className="w-14" src={facebookLogo} alt="Jaron FB" />
                 </a>
                 <a
-                  href="https://venmo.com/Jaron-Johnson-4?txn=charge&note=Backyard+Brick+Oven"
+                  href="https://venmo.com/Taryn-Johnson-15?txn=pay&note=Backyard+Brick+Oven"
                   target="_blank"
                   rel="noreferrer"
                 >
