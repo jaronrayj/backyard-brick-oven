@@ -76,7 +76,7 @@ const MainPage = () => {
               </div>
               <div className="flex justify-center">
                 <a
-                  href="https://www.instagram.com/backyardbrickovenllc/"
+                  href="https://www.instagram.com/backyard_brick_oven/"
                   target="_blank"
                   rel="noreferrer"
                 >
