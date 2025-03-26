@@ -51,20 +51,23 @@ const MainPage = () => {
             <div className="md:w-1/2 md:ml-4 bg-slate-200 rounded-md p-8 text-lg m-auto">
               <p className="mt-2">
                 Come enjoy <span className="font-bold">Pizza Friday</span> with
-                us in our backyard! We are open from{' '}
-                <span className="font-bold">5pm-7pm</span>. Pick from some of
-                our favorites below or mix and match to your liking. Each pizza
+                us in our backyard! 
+                <hr />
+                We are open from{' '}
+                <span className="font-bold">5pm-7pm</span>. Each pizza
                 costs <span className="font-bold">$8</span>.
               </p>
               <p className="mt-4">
-                Each thin crust pie is cooked on the spot in about 70 seconds
-                and measures about 9-10 inches. We accept Venmo or cash.
+                Each thin crust pie is about 10 inches and is flame cooked in our Gozney dome 
+                around 900° F for about 70 seconds.
+                <hr />
+                We accept Venmo or cash.
               </p>
 
               <div className="flex justify-center mt-4">
                 <div className="mt-auto mb-auto">
                   <a
-                    href="https://goo.gl/maps/sQ3ZoUpVgMqc2aZg8"
+                    href="https://g.co/kgs/8o94du5"
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -100,7 +103,7 @@ const MainPage = () => {
               <div className="flex justify-center mt-4">
                 Follow us on social media for updates!
               </div>
-              {activeToppings && (
+              {activeToppings && false && (
                 <>
                   <button
                     className="pointer-events-auto font-bold mt-2 bg-slate-400 p-2 rounded-md"
