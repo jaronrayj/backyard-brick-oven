@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import pizzaFam from '../../assets/pizza_fam_short.JPG'
+import pizzaFam from '../../assets/bybo_team-min.jpg'
 import venmoLogo from '../../assets/venmo.png'
 import facebookLogo from '../../assets/facebook.png'
 import instagramLogo from '../../assets/instagram.png'
-// import Map from '../../components/Map'
 import {
   fetchActivePizzas,
   fetchActiveToppings,
 } from '../../utils/rtdb_queries'
-import Carousel from '../../components/Carousel'
 import PizzaDisplay from '../../components/PizzaDisplay'
 import Modal from '../../components/Modal'
 import { objectFilter } from '../../utils'
@@ -46,7 +44,7 @@ const MainPage = () => {
         <div className="p-4">
           <div className="md:flex">
             <div className="md:w-1/2 self-center">
-              <img src={pizzaFam} alt="pizza fam" />
+              <img src={pizzaFam} alt="pizza fam" className='rounded-xl' />
             </div>
             <div className="md:w-1/2 md:ml-4 bg-slate-200 rounded-md p-8 text-lg m-auto">
               <p className="mt-2">
@@ -59,7 +57,7 @@ const MainPage = () => {
               </p>
               <p className="mt-4">
                 Each thin crust pie is about 10 inches and is flame cooked in our Gozney dome 
-                around 900° F for about 70 seconds.
+                around 950° F for about 70 seconds.
                 <hr />
                 We accept Venmo or cash.
               </p>
