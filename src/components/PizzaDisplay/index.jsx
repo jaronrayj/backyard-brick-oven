@@ -10,7 +10,7 @@ const PizzaDisplay = ({ pizza, modalOpen }) => {
       {pizza.img && !modalOpen ? (
         <Zoom>
           <img
-            onError={(e) => (e.target.src = 'placeholder.jpg')}
+            onError={(e) => (e.target.src = 'https://placehold.co/600x400')}
             className="h-64 flex object-cover rounded-md shadow-md mx-auto"
             src={pizza.img}
             alt={pizza.name}
