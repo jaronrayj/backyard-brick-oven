@@ -62,27 +62,30 @@ const MainPage = () => {
                 We accept Venmo or cash
               </p>
 
-              <div className="flex justify-center">
+              <div className="flex justify-center gap-4">
                 <a
                   href="https://www.instagram.com/backyard_brick_oven/"
                   target="_blank"
                   rel="noreferrer"
+                  className="bg-white rounded-full p-1 shadow-md hover:shadow-lg transition-shadow duration-200 w-16 h-16"
                 >
-                  <img className="w-14" src={instagramLogo} alt="Backyard Brick Oven IG" />
+                  <img className="w-14 h-14" src={instagramLogo} alt="Backyard Brick Oven IG" />
                 </a>
                 <a
                   href="https://www.facebook.com/people/Backyard-Brick-Oven-LLC/100090391791253/"
                   target="_blank"
                   rel="noreferrer"
+                  className="bg-white rounded-full p-1 shadow-md hover:shadow-lg transition-shadow duration-200 w-16 h-16"
                 >
-                  <img className="w-14" src={facebookLogo} alt="Backyard Brick Oven FB" />
+                  <img className="w-14 h-14" src={facebookLogo} alt="Backyard Brick Oven FB" />
                 </a>
                 <a
                   href="https://account.venmo.com/Jaron-Johnson-4?txn=pay&note=Backyard+Brick+Oven"
                   target="_blank"
                   rel="noreferrer"
+                  className="bg-white rounded-full p-1 shadow-md hover:shadow-lg transition-shadow duration-200 w-16 h-16 flex"
                 >
-                  <img className="w-14" src={venmoLogo} alt="Jaron Venmo" />
+                  <img className="w-12 h-12 m-auto" src={venmoLogo} alt="Jaron Venmo" />
                 </a>
               </div>
               <div className="flex flex-col md:flex-row justify-center items-center gap-4 mt-4">
@@ -110,7 +113,7 @@ const MainPage = () => {
               {/* {activeToppings && (
                 <>
                   <button
-                    className="pointer-events-auto font-bold mt-2 bg-slate-400 p-2 rounded-md"
+                    className="pointer-events-auto font-bold mt-2 bg-slate-400 p-1 rounded-md"
                     onClick={openModal}
                   >
                     Available Toppings
