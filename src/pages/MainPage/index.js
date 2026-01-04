@@ -38,15 +38,52 @@ const MainPage = () => {
     setSpecialPizzas(specials)
   }, [activePizzas])
 
+  const socialMediaLinks = useMemo(() => {
+    return [
+      {
+        href: 'https://www.instagram.com/backyard_brick_oven/',
+        imgSrc: instagramLogo,
+        altText: 'Backyard Brick Oven IG',
+      },
+      {
+        href: 'https://www.facebook.com/people/Backyard-Brick-Oven-LLC/100090391791253/',
+        imgSrc: facebookLogo,
+        altText: 'Backyard Brick Oven FB',
+      },
+      {
+        href: 'https://account.venmo.com/Jaron-Johnson-4?txn=pay&note=Backyard+Brick+Oven',
+        imgSrc: venmoLogo,
+        altText: 'Jaron Venmo',
+      },
+    ]
+  }, [])
+
+  const googleLinks = useMemo(() => {
+    return [
+      {
+        href: 'https://g.co/kgs/8o94du5',
+        imgSrc: googleLogo,
+        altText: 'Google Calendar',
+        text: 'Directions',
+      },
+      {
+        href: 'https://calendar.google.com/calendar/u/0?cid=NDcyZDQ1ZjgwNGRhOTFiMTljYzBmNWE1OWUxNDQ1MjA1NzBhYjE5OTQzZGRjOTBlMDJjMmY0M2NhYTg3MDQ2MkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t',
+        imgSrc: googleCalendarLogo,
+        altText: 'Google Calendar',
+        text: 'Pizza Friday Calendar',
+      },
+    ]
+  }, [])
+
   return (
     <>
-      <div className="bg-white lg:w-3/4 m-auto">
+      <div className="bg-slate-200 lg:w-3/4 m-auto">
         <div className="p-4">
           <div className="md:flex">
             <div className="md:w-1/2 self-center">
               <img src={pizzaFam} alt="pizza fam" className='rounded-xl' />
             </div>
-            <div className="md:w-1/2 md:ml-4 bg-slate-200 rounded-md p-8 text-lg m-auto">
+            <div className="md:w-1/2 md:ml-4 rounded-md p-8 text-lg m-auto">
               <div className="text-center leading-relaxed">
                 <p className="mt-2">
                   Come enjoy <span className="font-bold">Pizza Friday</span> with us in our backyard!
@@ -57,79 +94,41 @@ const MainPage = () => {
               </div>
               <p className="mt-4">
                 Each thin crust pie is about 10 inches and is flame cooked in our Gozney dome 
-                around 950°F for about 70 seconds
-                <hr />
-                We accept Venmo or cash
+                around 1000°F for about 60 seconds
+              </p>
+              <p className="m-4">
+                We accept cash or Venmo
               </p>
 
               <div className="flex justify-center gap-4">
-                <a
-                  href="https://www.instagram.com/backyard_brick_oven/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="bg-white rounded-full p-1 shadow-md hover:shadow-lg transition-shadow duration-200 w-16 h-16"
-                >
-                  <img className="w-14 h-14" src={instagramLogo} alt="Backyard Brick Oven IG" />
-                </a>
-                <a
-                  href="https://www.facebook.com/people/Backyard-Brick-Oven-LLC/100090391791253/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="bg-white rounded-full p-1 shadow-md hover:shadow-lg transition-shadow duration-200 w-16 h-16"
-                >
-                  <img className="w-14 h-14" src={facebookLogo} alt="Backyard Brick Oven FB" />
-                </a>
-                <a
-                  href="https://account.venmo.com/Jaron-Johnson-4?txn=pay&note=Backyard+Brick+Oven"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="bg-white rounded-full p-1 shadow-md hover:shadow-lg transition-shadow duration-200 w-16 h-16 flex"
-                >
-                  <img className="w-12 h-12 m-auto" src={venmoLogo} alt="Jaron Venmo" />
-                </a>
-              </div>
-              <div className="flex flex-col md:flex-row justify-center items-center gap-4 mt-4">
-                <a
-                  href="https://g.co/kgs/8o94du5"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center space-x-2 bg-white rounded-full px-4 py-2 shadow-md hover:shadow-lg transition-shadow duration-200 w-auto h-12 min-w-[200px]"
-                >
-                  <img className="w-10 h-10" src={googleLogo} alt="Google Directions" />
-                  <p className="text-sm font-bold whitespace-normal">
-                    Directions
-                  </p>
-                </a>
-                <a
-                  href="https://calendar.google.com/calendar/u/0?cid=NDcyZDQ1ZjgwNGRhOTFiMTljYzBmNWE1OWUxNDQ1MjA1NzBhYjE5OTQzZGRjOTBlMDJjMmY0M2NhYTg3MDQ2MkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center space-x-2 bg-white rounded-full px-4 py-2 shadow-md hover:shadow-lg transition-shadow duration-200 w-auto h-12 min-w-[200px]"
-                >
-                  <img className="h-10" src={googleCalendarLogo} alt="Google Calendar" />
-                  <p className="text-sm font-bold">Pizza Friday Calendar</p>
-                </a>
-              </div>
-              {/* {activeToppings && (
-                <>
-                  <button
-                    className="pointer-events-auto font-bold mt-2 bg-slate-400 p-1 rounded-md"
-                    onClick={openModal}
+                {socialMediaLinks.map(({ href, imgSrc, altText }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="bg-white rounded-full p-1 shadow-md hover:shadow-lg transition-shadow duration-200 w-16 h-16 flex"
                   >
-                    Available Toppings
-                  </button>
-                  <Modal isOpen={isModalOpen} onClose={closeModal}>
-                    <h2 className="font-bold">Toppings</h2>
-                    <ul>
-                      {Object.entries(activeToppings).map(([key, value]) => (
-                        <li className="capitalize mt-3" key={key}>
-                          {value.topping}
-                        </li>
-                      ))}
-                    </ul>
-                  </Modal>
-                </>
-              )} */}
+                    <img className="w-14 h-14" src={imgSrc} alt={altText} />
+                  </a>
+                ))}
+              </div>
+              <div className="flex flex-col xl:flex-row justify-center items-center gap-4 mt-4">
+                {googleLinks.map(({ href, imgSrc, altText, text }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center space-x-2 bg-white rounded-full px-4 py-2 shadow-md hover:shadow-lg transition-shadow duration-200 w-auto h-12 min-w-[200px]"
+                  >
+                    <img className="w-10 h-10" src={imgSrc} alt={altText} />
+                    <p className="text-sm font-bold whitespace-normal">
+                      {text}
+                    </p>
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
           {Object.keys(specialPizzas).length !== 0 && (
@@ -161,16 +160,18 @@ const MainPage = () => {
               )}
           </div>
         </div>
-        {/* <p className="mx-3">
-          We are open to catering! Hit us up on our social media or email us at{' '}
+        <p className="mx-3">
+          Wanna see us at your place? We travel!
+          <br />
+          {/* Check our catering page for more info. */}
           <a
             className="pointer text-blue-900"
-            href="jj.backyardbrickoven@gmail.com"
+            href="mailto:jj.backyardbrickoven@gmail.com"
           >
             jj.backyardbrickoven@gmail.com
           </a>{' '}
-          for any inquiries.
-        </p> */}
+          for inquiries.
+        </p>
       </div>
     </>
   )
