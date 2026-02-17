@@ -170,7 +170,7 @@ const Inquiries = () => {
       </div>
 
       {/* Contact CTA */}
-      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg p-8 shadow-lg text-center text-white">
+      <div className="block bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white font-bold text-center py-6 px-8 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
         <h2 className="text-3xl font-bold mb-4">Ready to Book Your Event?</h2>
         <p className="text-xl mb-6">Let's make your next gathering unforgettable!</p>
         <div className="flex flex-col md:flex-row gap-4 justify-center items-center mb-6">
