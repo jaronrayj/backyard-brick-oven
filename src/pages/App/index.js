@@ -7,8 +7,9 @@ import ResetPassword from '../ResetPassword'
 import Navbar from '../Navbar'
 import Order from '../Order'
 import Admin from '../Admin'
+import Inquiries from '../Inquiries'
 
-export const isSiteReadyForOrders = false
+export const isSiteReadyForOrders = true
 
 const App = () => {
   return (
@@ -20,6 +21,7 @@ const App = () => {
             <Route exact path="/" element={<MainPage />} />
             <Route exact path="/login" element={<Login />} />
             <Route exact path="/order" element={<Order />} />
+            <Route exact path="/inquiries" element={<Inquiries />} />
             <Route exact path="/register" element={<Register />} />
             <Route exact path="/reset_password" element={<ResetPassword />} />
             <Route exact path="/admin" element={<Admin />} />

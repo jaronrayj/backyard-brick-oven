@@ -9,9 +9,10 @@ import { isSiteReadyForOrders } from '../App/index'
 import logo from '../../assets/BrickovenLogo.png'
 
 const navigation = [
-  { name: 'Home', href: '/', current: true },
-  { name: 'Order', href: '/order', current: false },
-  // { name: "About Me", href: "#", current: false },
+  { name: 'Home', href: '/' },
+  // { name: 'Order', href: '/order' },
+  { name: 'Inquiries', href: '/inquiries' },
+  // { name: "About Me", href: "#" },
 ]
 
 const classNames = (...classes) => {
@@ -23,6 +24,7 @@ const Navbar = () => {
   const [name, setName] = useState('')
   const [loaded, setLoaded] = useState(false)
   const [dbUser, setDbUser] = useState()
+  const currentPath = window.location.pathname
 
   const fetchUser = async () => {
     try {
@@ -54,46 +56,63 @@ const Navbar = () => {
           <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
             <div className="relative flex items-center justify-between h-16">
               <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
-                <img
-                  className="block h-14 mr-4"
-                  src={logo}
-                  alt="Backyard Brick Oven"
-                />
-                <h2 className="text-xl font-mono">Backyard Brick Oven</h2>
+                <a href="/" className="flex items-center hover:opacity-80 transition-opacity">
+                  <img
+                    className="block h-14 mr-4"
+                    src={logo}
+                    alt="Backyard Brick Oven"
+                  />
+                  <h2 className="text-xl font-mono">Backyard Brick Oven</h2>
+                </a>
               </div>
-              <div className="flex-1 flex items-center justify-center sm:items-stretch sm:justify-start">
-                <div className="hidden sm:block sm:ml-6">
-                  <div className="flex space-x-4">
+              <div className="flex-1 flex items-center justify-between sm:items-stretch">
+                <div className="hidden sm:flex sm:items-center sm:ml-6">
+                  <a href="/" className="flex items-center space-x-4 hover:opacity-80 transition-opacity">
                     <img
                       className="block h-14"
                       src={logo}
                       alt="Backyard Brick Oven"
                     />
-                    <div className="m-auto">
-                      <span className="text-3xl font-mono h-14">
-                        Backyard Brick Oven
-                      </span>
-                    </div>
+                    <span className="text-3xl font-mono">
+                      Backyard Brick Oven
+                    </span>
+                  </a>
+                </div>
+                <div className="hidden sm:flex sm:items-center sm:space-x-4">
                     {isSiteReadyForOrders &&
-                      navigation.map((item) => (
-                        <a
-                          key={item.name}
-                          href={item.href}
-                          className={classNames(
-                            item.current
-                              ? 'bg-gray-900 text-white'
-                              : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                            'px-3 py-2 rounded-md text-sm font-medium'
-                          )}
-                          aria-current={item.current ? 'page' : undefined}
-                        >
-                          {item.name}
-                        </a>
-                      ))}
+                      navigation.filter(item => item.name !== 'Inquiries').map((item) => {
+                        const isCurrent = currentPath === item.href
+                        return (
+                          <a
+                            key={item.name}
+                            href={item.href}
+                            className={classNames(
+                              isCurrent
+                                ? 'bg-gray-900 text-white'
+                                : 'text-gray-900 hover:bg-gray-900 hover:text-white',
+                              'px-3 py-2 rounded-md text-sm font-medium'
+                            )}
+                            aria-current={isCurrent ? 'page' : undefined}
+                          >
+                            {item.name}
+                          </a>
+                        )
+                      })}
+                    <a
+                      href="/inquiries"
+                      className={classNames(
+                        currentPath === '/inquiries'
+                          ? 'bg-gray-900 text-white'
+                          : 'text-gray-900 hover:bg-gray-900 hover:text-white',
+                        'px-3 py-2 rounded-md text-sm font-medium'
+                      )}
+                      aria-current={currentPath === '/inquiries' ? 'page' : undefined}
+                    >
+                      Inquiries
+                    </a>
                   </div>
                 </div>
-              </div>
-              {isSiteReadyForOrders && (
+              {/* {isSiteReadyForOrders && (
                 <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
                   <button
                     type="button"
@@ -104,7 +123,7 @@ const Navbar = () => {
                   </button>
 
                   {/* Profile dropdown */}
-                  <Menu as="div" className="ml-3 relative">
+                  {/* <Menu as="div" className="ml-3 relative">
                     {name ? (
                       <>
                         <div>
@@ -160,28 +179,31 @@ const Navbar = () => {
                     )}
                   </Menu>
                 </div>
-              )}
+              )} */}
             </div>
           </div>
 
           <Disclosure.Panel className="sm:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {navigation.map((item) => (
-                <Disclosure.Button
-                  key={item.name}
-                  as="a"
-                  href={item.href}
-                  className={classNames(
-                    item.current
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                    'block px-3 py-2 rounded-md text-base font-medium'
-                  )}
-                  aria-current={item.current ? 'page' : undefined}
-                >
-                  {item.name}
-                </Disclosure.Button>
-              ))}
+              {navigation.map((item) => {
+                const isCurrent = currentPath === item.href
+                return (
+                  <Disclosure.Button
+                    key={item.name}
+                    as="a"
+                    href={item.href}
+                    className={classNames(
+                      isCurrent
+                        ? 'bg-gray-900 text-white'
+                        : 'text-gray-900 hover:bg-gray-900 hover:text-white',
+                      'block px-3 py-2 rounded-md text-base font-medium'
+                    )}
+                    aria-current={isCurrent ? 'page' : undefined}
+                  >
+                    {item.name}
+                  </Disclosure.Button>
+                )
+              })}
             </div>
           </Disclosure.Panel>
         </>

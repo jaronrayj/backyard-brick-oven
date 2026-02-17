@@ -160,18 +160,15 @@ const MainPage = () => {
               )}
           </div>
         </div>
-        <p className="mx-3">
-          Wanna see us at your place? We travel!
-          <br />
-          {/* Check our catering page for more info. */}
+        <div className="mx-3 mb-6">
           <a
-            className="pointer text-blue-900"
-            href="mailto:jj.backyardbrickoven@gmail.com"
+            href="/inquiries"
+            className="block bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white font-bold text-center py-6 px-8 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
           >
-            jj.backyardbrickoven@gmail.com
-          </a>{' '}
-          for inquiries.
-        </p>
+            <div className="text-2xl mb-2">🍕 Wanna see us at your place? We travel! 🍕</div>
+            <div className="text-lg">Click here for catering inquiries →</div>
+          </a>
+        </div>
       </div>
     </>
   )
