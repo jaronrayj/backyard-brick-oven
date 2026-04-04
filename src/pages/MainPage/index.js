@@ -79,11 +79,11 @@ const MainPage = () => {
     <>
       <div className="bg-slate-200 lg:w-3/4 m-auto">
         <div className="p-4">
-          <div className="md:flex">
-            <div className="md:w-1/2 self-center">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="self-center">
               <img src={pizzaFam} alt="pizza fam" className='rounded-xl' />
             </div>
-            <div className="md:w-1/2 md:ml-4 rounded-md p-4 text-lg m-auto">
+            <div className="rounded-md text-lg flex flex-col justify-center">
               <div className="text-center leading-relaxed">
                 <p className="mt-2">
                   Come enjoy <span className="font-bold">Pizza Friday</span> with us in our backyard!

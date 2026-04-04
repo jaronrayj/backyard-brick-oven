@@ -11,7 +11,7 @@ const PizzaDisplay = ({ pizza, modalOpen }) => {
         <Zoom>
           <img
             onError={(e) => (e.target.src = 'https://placehold.co/600x400')}
-            className="h-64 flex object-cover rounded-md shadow-md mx-auto"
+            className="h-64 w-full object-cover rounded-md shadow-md"
             src={pizza.img}
             alt={pizza.name}
           />
@@ -21,7 +21,7 @@ const PizzaDisplay = ({ pizza, modalOpen }) => {
           <span className="text-center w-full">Picture Coming Soon!</span>
         </div>
       )}
-      <div className="mt-1 max-w-sm m-auto">
+      <div className="mt-1">
         <h2 className="capitalize font-bold text-center text-lg h-12 sm:h-4 flex items-center justify-center mt-2">{pizza.name}</h2>
         <div className="p-1 h-30 sm:h-20 flex flex-col justify-center">
           <p className="text-sm">
