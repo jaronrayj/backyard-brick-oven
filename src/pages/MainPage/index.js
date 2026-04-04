@@ -83,7 +83,7 @@ const MainPage = () => {
             <div className="md:w-1/2 self-center">
               <img src={pizzaFam} alt="pizza fam" className='rounded-xl' />
             </div>
-            <div className="md:w-1/2 md:ml-4 rounded-md p-8 text-lg m-auto">
+            <div className="md:w-1/2 md:ml-4 rounded-md p-4 text-lg m-auto">
               <div className="text-center leading-relaxed">
                 <p className="mt-2">
                   Come enjoy <span className="font-bold">Pizza Friday</span> with us in our backyard!
