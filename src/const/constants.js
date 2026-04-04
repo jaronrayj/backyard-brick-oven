@@ -2,7 +2,7 @@ export const defaultPizza = {
   id: "fsfds1231221das",
   name: "Select a pizza",
   toppings: [],
-  price: 7,
+  price: 10,
   sliced: true,
   customizable: false,
   img: "https://via.placeholder.com/150x150",
