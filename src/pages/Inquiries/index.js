@@ -12,11 +12,11 @@ const Inquiries = () => {
           The Easiest Way to Impress Your Guests
         </h1>
         <p className="text-xl text-gray-700 mb-6">
-          We bring a wood-fired oven to your event and serve incredible pizza — hot, fast, and nonstop.
+          We bring a brick oven to your event and serve incredible Neapolitan-style pizza — hot, fast, and nonstop.
         </p>
         <img
           src={pizzaParty}
-          alt="Wood-fired pizza catering setup"
+          alt="Brick oven pizza catering setup"
           className="rounded-xl mx-auto shadow-md max-h-80 object-cover"
         />
         <p className="mt-6 text-gray-700 max-w-2xl mx-auto">
@@ -37,7 +37,7 @@ const Inquiries = () => {
         <div className="grid md:grid-cols-2 gap-4 text-gray-700">
           <div className="flex items-start">
             <span className="text-green-600 mr-2 mt-1">✓</span>
-            <span>On-site wood-fired oven setup</span>
+            <span>On-site brick oven setup</span>
           </div>
           <div className="flex items-start">
             <span className="text-green-600 mr-2 mt-1">✓</span>
@@ -117,7 +117,7 @@ const Inquiries = () => {
             </p>
             <p className="mb-2 font-semibold">You'll learn:</p>
             <p className="mb-4">
-              Dough stretching, topping combinations, and how to cook in a real wood-fired oven.
+              Dough stretching, topping combinations, and how to cook in a real brick oven.
             </p>
             <p>
               Everyone makes (and eats) their own pizza. We bring everything — you just show up hungry.
