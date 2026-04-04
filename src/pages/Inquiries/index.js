@@ -78,12 +78,12 @@ const Inquiries = () => {
       </div>
 
       {/* Events */}
-      <div className="bg-white rounded-lg p-6 shadow-md mb-8 transition-shadow duration-200 hover:shadow-lg">
+      <div className="bg-amber-50 rounded-lg p-6 shadow-md mb-8 border-l-4 border-amber-400 transition-shadow duration-200 hover:shadow-lg">
         <h2 className="text-2xl font-bold mb-2">Perfect for Any Event</h2>
         <p className="text-gray-600 mb-4">
           Birthdays, weddings, corporate events, graduations, neighborhood parties — we've done it all. Groups of 25–200.
         </p>
-        <div className="p-4 bg-gray-50 rounded">
+        <div className="p-4 bg-white rounded">
           <p className="font-semibold mb-1">Big crowd? No problem.</p>
           <p className="text-gray-700">
             We run continuous service with rotating pizzas, so guests can grab fresh slices anytime — no long waits.
@@ -92,7 +92,7 @@ const Inquiries = () => {
       </div>
 
       {/* Social Proof */}
-      <div className="bg-slate-50 rounded-lg p-6 shadow-md mb-8 transition-shadow duration-200 hover:shadow-lg">
+      <div className="bg-orange-50 rounded-lg p-6 shadow-md mb-8 border-l-4 border-orange-300 transition-shadow duration-200 hover:shadow-lg">
         <h2 className="text-2xl font-bold mb-4">What People Say</h2>
         <p className="italic text-gray-700 mb-3">
           "Best food at the party — hands down. People were going back for thirds."
