@@ -103,22 +103,22 @@ const Inquiries = () => {
       </div>
 
       {/* Pizza Classes */}
-      <div className="bg-gradient-to-r from-orange-100 to-yellow-100 rounded-lg p-6 shadow-md mb-8 border-2 border-orange-300 transition-shadow duration-200 hover:shadow-lg">
-        <h2 className="text-2xl font-bold mb-2">Want to Make Your Own Pizza?</h2>
-        <div className="md:flex gap-6 mb-4">
+      <div className="bg-gradient-to-r from-orange-100 to-yellow-100 rounded-lg p-8 shadow-md mb-8 border-2 border-orange-300 transition-shadow duration-200 hover:shadow-lg">
+        <h2 className="text-2xl font-bold mb-6">Want to Make Your Own Pizza?</h2>
+        <div className="md:flex gap-8">
           <img
             src={nightPizza}
             alt="Pizza class"
-            className="rounded-xl md:w-1/2 mb-4 md:mb-0 object-cover"
+            className="rounded-xl md:w-1/2 mb-6 md:mb-0 object-cover max-h-72"
           />
-          <div className="text-gray-700">
-            <p className="mb-4">
+          <div className="text-gray-700 flex flex-col justify-center space-y-4">
+            <p>
               We offer hands-on pizza classes for groups of 8–30. Perfect for date nights, team events, or just a fun night with friends.
             </p>
-            <p className="mb-2 font-semibold">You'll learn:</p>
-            <p className="mb-4">
-              Dough stretching, topping combinations, and how to cook in a real brick oven.
-            </p>
+            <div>
+              <p className="font-semibold mb-1">You'll learn:</p>
+              <p>Dough stretching, topping combinations, and how to cook in a real brick oven.</p>
+            </div>
             <p>
               Everyone makes (and eats) their own pizza. We bring everything — you just show up hungry.
             </p>
