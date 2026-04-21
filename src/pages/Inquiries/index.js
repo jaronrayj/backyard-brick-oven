@@ -3,16 +3,25 @@ import nightPizza from '../../assets/night_pizza.jpg'
 import pizzaParty from '../../assets/pizza_party.jpg'
 
 const Inquiries = () => {
+  const [showForm, setShowForm] = React.useState(false)
+  const [submitted, setSubmitted] = React.useState(false)
+
+  React.useEffect(() => {
+    const handleEsc = (e) => { if (e.key === 'Escape') setShowForm(false) }
+    document.addEventListener('keydown', handleEsc)
+    return () => document.removeEventListener('keydown', handleEsc)
+  }, [])
+
   return (
     <div className="bg-slate-200 lg:w-3/4 m-auto p-8">
 
       {/* Hero */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">
-          The Easiest Way to Impress Your Guests
+          Let's Make Your Next Event Unforgettable
         </h1>
         <p className="text-xl text-gray-700 mb-6">
-          We bring a brick oven to your event and serve incredible Neapolitan-style pizza — hot, fast, and nonstop.
+          We bring a brick oven right to you and serve up incredible Neapolitan-style pizza — hot, fresh, and nonstop.
         </p>
         <img
           src={pizzaParty}
@@ -33,7 +42,7 @@ const Inquiries = () => {
 
       {/* What You Get */}
       <div className="bg-white rounded-lg p-6 shadow-md mb-8 transition-shadow duration-200 hover:shadow-lg">
-        <h2 className="text-2xl font-bold mb-4">Full-Service Experience</h2>
+        <h2 className="text-2xl font-bold mb-4">What We Bring to You</h2>
         <div className="grid md:grid-cols-2 gap-4 text-gray-700">
           <div className="flex items-start">
             <span className="text-green-600 mr-2 mt-1">✓</span>
@@ -92,7 +101,7 @@ const Inquiries = () => {
       </div>
 
       {/* Social Proof */}
-      <div className="bg-orange-50 rounded-lg p-6 shadow-md mb-8 border-l-4 border-orange-300 transition-shadow duration-200 hover:shadow-lg">
+      {/* <div className="bg-orange-50 rounded-lg p-6 shadow-md mb-8 border-l-4 border-orange-300 transition-shadow duration-200 hover:shadow-lg">
         <h2 className="text-2xl font-bold mb-4">What People Say</h2>
         <p className="italic text-gray-700 mb-3">
           "Best food at the party — hands down. People were going back for thirds."
@@ -100,7 +109,7 @@ const Inquiries = () => {
         <p className="italic text-gray-700">
           "All our guests raved about it!"
         </p>
-      </div>
+      </div> */}
 
       {/* Pizza Classes */}
       <div className="bg-gradient-to-r from-orange-100 to-yellow-100 rounded-lg p-8 shadow-md mb-8 border-2 border-orange-300 transition-shadow duration-200 hover:shadow-lg">
@@ -126,17 +135,6 @@ const Inquiries = () => {
         </div>
       </div>
 
-      {/* Pricing */}
-      <div className="bg-white rounded-lg p-6 shadow-md mb-8 transition-shadow duration-200 hover:shadow-lg">
-        <h2 className="text-2xl font-bold mb-2">Pricing</h2>
-        <p className="text-gray-700 mb-2">
-          Every event is a little different, but most fall between <strong>$12–$18 per person</strong>.
-        </p>
-        <p className="text-gray-700">
-          Reach out and we'll put together a quick, no-pressure quote based on your event.
-        </p>
-      </div>
-
       {/* Service Area */}
       <div className="bg-stone-50 rounded-lg p-6 shadow-md mb-8 transition-shadow duration-200 hover:shadow-lg">
         <h2 className="text-2xl font-bold mb-2">Service Area</h2>
@@ -146,29 +144,95 @@ const Inquiries = () => {
       </div>
 
       {/* CTA */}
-      <div className="bg-amber-600 text-white font-bold text-center py-6 px-8 rounded-lg shadow-md">
-        <h2 className="text-3xl font-bold mb-4">Check Your Date</h2>
+      <div className="bg-amber-600 text-white text-center py-6 px-8 rounded-lg shadow-md">
+        <h2 className="text-3xl font-bold mb-4">Let's Get You a Quote</h2>
         <p className="text-xl mb-6">
-          Text us your date and guest count — we'll get you a quick quote.
+          Tell us a little about your event and we'll take it from there!
         </p>
-        <div className="flex flex-col md:flex-row gap-4 justify-center items-center mb-6">
-          <a
-            href="sms:+18018723439"
-            className="inline-block bg-white text-orange-600 font-bold text-lg py-4 px-6 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md"
-          >
-            Text: (801) 872-3439
-          </a>
-          <a
-            href="mailto:jj.backyardbrickoven@gmail.com"
-            className="inline-block bg-white text-orange-600 font-bold text-lg py-4 px-6 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md"
-          >
-            Email Us
-          </a>
-        </div>
-        <p className="mt-4 text-sm">
-          Include your date, location, and guest count — we'll take it from there.
+        <button
+          onClick={() => setShowForm(true)}
+          className="bg-white text-orange-600 font-bold text-lg py-4 px-8 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md"
+        >
+          Get a Quote
+        </button>
+        <p className="text-sm mt-4">
+          Prefer to reach out directly? Text us at <a href="sms:+18018723439" className="underline">(801) 872-3439</a>
         </p>
       </div>
+
+      {/* Quote Modal */}
+      <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 ${showForm ? '' : 'hidden'}`} onClick={() => setShowForm(false)}>
+          <div className="bg-white rounded-lg p-8 max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            {submitted ? (
+              <div className="text-center py-8">
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">Thanks for reaching out!</h2>
+                <p className="text-gray-600 mb-6">We'll get back to you soon.</p>
+                <button
+                  onClick={() => { setSubmitted(false); setShowForm(false) }}
+                  className="bg-amber-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-700 transition-colors duration-200"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+            <>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Get a Quote</h2>
+              <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault()
+                const form = e.target
+                await fetch('https://formspree.io/f/xdaywnne', {
+                  method: 'POST',
+                  body: new FormData(form),
+                  headers: { Accept: 'application/json' },
+                })
+                form.reset()
+                setSubmitted(true)
+              }}
+              className="text-left"
+            >
+              <label className="block mb-3">
+                <span className="text-sm text-gray-700">Name</span>
+                <input type="text" name="name" required className="w-full mt-1 p-2 rounded border text-gray-800" />
+              </label>
+              <label className="block mb-3">
+                <span className="text-sm text-gray-700">Type of Event</span>
+                <input type="text" name="event_type" required placeholder="e.g. Birthday, Wedding, Corporate, Pizza Class" className="w-full mt-1 p-2 rounded border text-gray-800" />
+              </label>
+              <label className="block mb-3">
+                <span className="text-sm text-gray-700">Event Date</span>
+                <input type="date" name="event_date" required className="w-full mt-1 p-2 rounded border text-gray-800" />
+              </label>
+              <label className="block mb-3">
+                <span className="text-sm text-gray-700">Rough Time</span>
+                <input type="text" name="rough_event_time" placeholder="e.g. Around 6pm, Afternoon" className="w-full mt-1 p-2 rounded border text-gray-800" />
+              </label>
+              <label className="block mb-3">
+                <span className="text-sm text-gray-700">Estimated Guest Count</span>
+                <input type="number" name="estimated_guests" min="1" required className="w-full mt-1 p-2 rounded border text-gray-800" />
+              </label>
+              <label className="block mb-3">
+                <span className="text-sm text-gray-700">Email or Phone</span>
+                <input type="text" name="contact" required className="w-full mt-1 p-2 rounded border text-gray-800" />
+              </label>
+              <label className="block mb-4">
+                <span className="text-sm text-gray-700">Anything else? (optional)</span>
+                <textarea name="comments" rows="3" className="w-full mt-1 p-2 rounded border text-gray-800" />
+              </label>
+              <button
+                type="submit"
+                className="w-full bg-amber-600 text-white font-bold text-lg py-3 rounded-lg hover:bg-amber-700 transition-colors duration-200"
+              >
+                Send It
+              </button>
+            </form>
+            </>
+            )}
+          </div>
+        </div>
 
     </div>
   )
