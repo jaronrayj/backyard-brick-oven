@@ -81,24 +81,25 @@ const MainPage = () => {
         <div className="p-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="self-center">
-              <img src={pizzaFam} alt="pizza fam" className='rounded-xl' />
+              <img src={pizzaFam} alt="pizza fam" className="rounded-xl" />
             </div>
             <div className="rounded-md text-lg flex flex-col justify-center">
               <div className="text-center leading-relaxed">
-                <p className="mt-2">
-                  Come enjoy <span className="font-bold">Pizza Friday</span> with us in our backyard!
+                <p className="mt-2 text-xl">
+                  Come enjoy <span className="font-bold">Pizza Friday</span>{' '}
+                  with us!
                 </p>
                 <p className="mt-2">
-                  <span className="font-bold">5pm-7pm</span> &middot; <span className="font-bold">$10 a pie</span>
+                  <span className="font-bold">5pm-7:30pm</span> &middot;{' '}
+                  <span className="font-bold">$12 a pie</span>
                 </p>
               </div>
               <p className="mt-4">
-                🔥 Each 10" thin crust pizza is flame cooked in our Gozney dome at 1000°F — ready in about 60 seconds flat
-              </p>
-              <p className="m-4">
-                Cash or Venmo — no card, no problem
+                🔥 Each 10" thin crust pizza is flame cooked in our Gozney dome
+                at 1000°F — ready in about 60 seconds flat
               </p>
 
+              <br />
               <div className="flex justify-center gap-4">
                 {socialMediaLinks.map(({ href, imgSrc, altText }) => (
                   <a
@@ -108,7 +109,11 @@ const MainPage = () => {
                     rel="noreferrer"
                     className="bg-white rounded-full p-1 shadow-md hover:shadow-lg transition-shadow duration-200 w-16 h-16 flex"
                   >
-                    <img className="w-14 h-14 object-contain" src={imgSrc} alt={altText} />
+                    <img
+                      className="w-14 h-14 object-contain"
+                      src={imgSrc}
+                      alt={altText}
+                    />
                   </a>
                 ))}
               </div>
@@ -121,7 +126,11 @@ const MainPage = () => {
                     rel="noreferrer"
                     className="flex items-center space-x-2 bg-white rounded-full px-4 py-2 shadow-md hover:shadow-lg transition-shadow duration-200 w-auto h-12 min-w-[200px]"
                   >
-                    <img className="w-10 h-10 object-contain shrink-0" src={imgSrc} alt={altText} />
+                    <img
+                      className="w-10 h-10 object-contain shrink-0"
+                      src={imgSrc}
+                      alt={altText}
+                    />
                     <p className="text-sm font-bold whitespace-normal">
                       {text}
                     </p>
@@ -131,8 +140,10 @@ const MainPage = () => {
             </div>
           </div>
           {Object.keys(specialPizzas).length !== 0 && (
-            <div className='mb-14'>
-              <h2 className="font-bold text-xl mb-4 mt-6">Special of the Week!</h2>
+            <div className="mb-14">
+              <h2 className="font-bold text-xl mb-4 mt-6">
+                Special of the Week!
+              </h2>
               {Object.entries(activePizzas).map(
                 ([key, value]) =>
                   value.special && (
@@ -141,7 +152,7 @@ const MainPage = () => {
                       pizza={value}
                       modalOpen={isModalOpen}
                     />
-                  )
+                  ),
               )}
             </div>
           )}
@@ -155,7 +166,7 @@ const MainPage = () => {
                       pizza={value}
                       modalOpen={isModalOpen}
                     />
-                  )
+                  ),
               )}
           </div>
         </div>
@@ -164,7 +175,9 @@ const MainPage = () => {
             href="/inquiries"
             className="block bg-amber-600 hover:bg-amber-700 text-white font-bold text-center py-6 px-8 rounded-lg shadow-md transition-colors duration-200"
           >
-            <div className="text-2xl mb-2">Wanna see us at your place? We travel!</div>
+            <div className="text-2xl mb-2">
+              Wanna see us at your place? We travel!
+            </div>
             <div className="text-lg">Click here for catering inquiries →</div>
           </a>
         </div>
