@@ -13,6 +13,8 @@ jobs:
         with:
           node-version: 20
       - run: yarn install && yarn build
+        env:
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: "${{ secrets.GITHUB_TOKEN }}"

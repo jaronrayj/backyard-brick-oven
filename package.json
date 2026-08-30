@@ -28,7 +28,7 @@
     "dev:emulator": "firebase emulators:start --only functions,hosting",
     "dev:cra": "react-scripts start",
     "build": "react-scripts build",
-    "postbuild": "react-snap",
+    "postbuild": "node scripts/run-react-snap.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
