@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Helmet } from 'react-helmet-async'
-import pizzaFam from '../../assets/bybo_team-min.jpg'
+import pizzaFam from '../../assets/main_cover.jpg'
 import venmoLogo from '../../assets/venmo.png'
 import facebookLogo from '../../assets/facebook.png'
 import instagramLogo from '../../assets/instagram.png'
@@ -10,6 +10,13 @@ import {
   fetchActivePizzas,
 } from '../../utils/rtdb_queries'
 import PizzaDisplay from '../../components/PizzaDisplay'
+import ImageCarousel from '../../components/ImageCarousel'
+import actionTeamOvens from '../../assets/action_team_ovens.jpg'
+import actionGuestLine from '../../assets/action_guest_line.jpg'
+import actionCookingGuests from '../../assets/action_cooking_guests.jpg'
+import actionPavilionCrowd from '../../assets/action_pavilion_crowd.jpg'
+import actionCrew from '../../assets/action_crew.jpg'
+import actionOvenMountains from '../../assets/action_oven_mountains.jpg'
 import { objectFilter } from '../../utils'
 
 const MainPage = () => {
@@ -90,7 +97,11 @@ const MainPage = () => {
         <div className="p-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="self-center">
-              <img src={pizzaFam} alt="pizza fam" className="rounded-xl" />
+              <img
+                src={pizzaFam}
+                alt="Backyard Brick Oven owners at their mobile pizza topping station with a fired-up brick oven"
+                className="rounded-xl w-full max-h-[28rem] object-cover"
+              />
             </div>
             <div className="bg-white rounded-xl shadow-md p-6 text-lg flex flex-col justify-center">
               <div className="text-center leading-relaxed">
@@ -177,6 +188,44 @@ const MainPage = () => {
                     />
                   ),
               )}
+          </div>
+
+          {/* See Us in Action */}
+          <div className="mt-10">
+            <h2 className="font-bold text-xl mb-1 text-center">
+              See Us in Action
+            </h2>
+            <p className="text-gray-600 text-center mb-4">
+              From backyard parties to big events across Utah.
+            </p>
+            <ImageCarousel
+              images={[
+                {
+                  src: actionPavilionCrowd,
+                  alt: 'A packed pavilion event with guests seated at tables while the crew cooks pizzas',
+                },
+                {
+                  src: actionGuestLine,
+                  alt: 'Guests lined up at the dough station during a neighborhood pizza event',
+                },
+                {
+                  src: actionTeamOvens,
+                  alt: 'The Backyard Brick Oven team cooking on multiple ovens at a large outdoor event',
+                },
+                {
+                  src: actionCookingGuests,
+                  alt: 'Cooking fresh pizzas for guests with a Utah mountain backdrop',
+                },
+                {
+                  src: actionOvenMountains,
+                  alt: 'Firing up the brick oven at an outdoor event with mountains behind',
+                },
+                {
+                  src: actionCrew,
+                  alt: 'The Backyard Brick Oven team ready to serve at an event',
+                },
+              ]}
+            />
           </div>
         </div>
         <div className="mx-3 mb-6">

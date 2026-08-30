@@ -35,6 +35,8 @@ const PizzaDisplay = ({ pizza, modalOpen }) => {
             className="h-64 w-full object-cover"
             src={pizza.img}
             alt={pizza.name}
+            loading="lazy"
+            decoding="async"
           />
         </Zoom>
       ) : (

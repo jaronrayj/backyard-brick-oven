@@ -2,6 +2,8 @@ import React from 'react'
 import { Helmet } from 'react-helmet-async'
 import nightPizza from '../../assets/night_pizza.jpg'
 import pizzaParty from '../../assets/pizza_party.jpg'
+import specialSpread from '../../assets/special_touches_spread.jpg'
+import servingCanopy from '../../assets/serving_canopy.jpg'
 
 const Inquiries = () => {
   const [showForm, setShowForm] = React.useState(false)
@@ -39,8 +41,7 @@ const Inquiries = () => {
             Let's Make Your Next Event Unforgettable
           </h1>
           <p className="text-lg md:text-xl mb-8 max-w-2xl drop-shadow">
-            We bring a brick oven right to you — hot, fresh, Neapolitan-style pizza
-            with no long lines and zero cleanup for you.
+            Fresh brick oven pizza, right at your event. No lines, no cleanup.
           </p>
           <button
             onClick={() => setShowForm(true)}
@@ -62,8 +63,13 @@ const Inquiries = () => {
         {/* What we bring + how it works, side by side on desktop */}
         <div className="grid lg:grid-cols-2 gap-6">
           {/* What We Bring */}
-          <div className="bg-white rounded-xl p-6 shadow-md">
-            <h2 className="text-2xl font-bold mb-4">What We Bring to You</h2>
+          <div className="bg-white rounded-xl p-6 shadow-md flex flex-col justify-center">
+            <h2 className="text-2xl font-bold mb-4 text-center">What We Bring to You</h2>
+            <img
+              src={servingCanopy}
+              alt="Backyard Brick Oven serving station set up under a canopy at an event"
+              className="rounded-lg w-full h-44 object-cover mb-5"
+            />
             <ul className="space-y-3 text-gray-700">
               {[
                 'On-site brick oven, set up and ready to go',
@@ -80,21 +86,21 @@ const Inquiries = () => {
           </div>
 
           {/* How It Works */}
-          <div className="bg-white rounded-xl p-6 shadow-md">
-            <h2 className="text-2xl font-bold mb-1">Simple. Stress-Free. Done.</h2>
-            <p className="text-gray-600 mb-5">Three steps and you're set.</p>
-            <div className="space-y-4">
+          <div className="bg-white rounded-xl p-6 shadow-md flex flex-col justify-center">
+            <h2 className="text-2xl font-bold mb-1 text-center">Simple. Stress-Free. Done.</h2>
+            <p className="text-gray-600 mb-5 text-center">Three steps and you're set.</p>
+            <div className="space-y-4 text-left mx-auto">
               {[
-                ['1', 'Tell us about your event', 'Date, guest count, and location — that\'s all we need to start.'],
-                ['2', 'We plan it with you', 'Pick from our pizzas or build a custom menu together.'],
-                ['3', 'We show up & cook', 'We handle everything so you can enjoy your event.'],
+                ['1', 'Tell us about your event', 'Date, guest count, and location.'],
+                ['2', 'We plan it with you', 'Pick our pizzas or build your own.'],
+                ['3', 'We show up & cook', 'You relax — we handle the rest.'],
               ].map(([num, title, desc]) => (
-                <div key={num} className="flex items-start">
+                <div key={num} className="flex items-center">
                   <div className="bg-yellow-500 text-white rounded-full w-9 h-9 flex items-center justify-center font-bold shrink-0 mr-3">
                     {num}
                   </div>
                   <div>
-                    <h3 className="font-bold">{title}</h3>
+                    <h3 className="font-bold leading-tight">{title}</h3>
                     <p className="text-gray-700 text-sm">{desc}</p>
                   </div>
                 </div>
@@ -107,10 +113,97 @@ const Inquiries = () => {
         <div className="bg-amber-50 rounded-xl p-6 shadow-md border-l-4 border-amber-400">
           <h2 className="text-2xl font-bold mb-2">Perfect for Any Event</h2>
           <p className="text-gray-700">
-            Birthdays, weddings, corporate events, graduations, neighborhood
-            parties — groups of 25–200. We run continuous service with rotating
-            pizzas, so guests grab fresh slices anytime with no long waits.
+            Birthdays, weddings, corporate parties, graduations — groups of
+            25–200. Fresh slices come out nonstop, so nobody waits in line.
           </p>
+        </div>
+
+        {/* Pricing */}
+        <div className="bg-white rounded-xl p-6 md:p-8 shadow-md">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold">Pricing</h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Weddings */}
+            <div className="rounded-xl p-6 border-2 border-amber-300 bg-gradient-to-br from-orange-50 to-yellow-50 flex flex-col text-left">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-xl font-bold">Weddings</h3>
+                <span className="text-xs font-semibold uppercase tracking-wide text-amber-700 bg-amber-100 rounded-full px-3 py-1">
+                  Most popular
+                </span>
+              </div>
+              <p className="text-gray-700 mb-4 min-h-[3rem]">
+                A brick oven front and center, and a spread guests remember.
+              </p>
+              <p className="mb-4 text-3xl font-bold text-gray-900">
+                Starting at $1,500
+              </p>
+              <ul className="space-y-2 text-gray-700 text-sm flex-1">
+                {[
+                  'On-site brick oven, setup, service & cleanup',
+                  'Rotating fresh pizzas served buffet-style',
+                  'Custom menu built with you',
+                ].map((item) => (
+                  <li key={item} className="flex items-start">
+                    <span className="text-green-600 mr-2 mt-0.5">✓</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Groups / Parties */}
+            <div className="rounded-xl p-6 border border-gray-200 bg-white flex flex-col text-left">
+              <h3 className="text-xl font-bold mb-1">Parties & Groups</h3>
+              <p className="text-gray-700 mb-4 min-h-[3rem]">
+                Buffet-style service with four pizzas in constant rotation.
+              </p>
+              <p className="mb-4 text-3xl font-bold text-gray-900">
+                Priced per guest
+              </p>
+              <ul className="space-y-2 text-gray-700 text-sm flex-1">
+                {[
+                  'Buffet-style, four pizzas in constant rotation',
+                  'Booked in groups of 10 (we round up)',
+                  'Travel included in your quote',
+                ].map((item) => (
+                  <li key={item} className="flex items-start">
+                    <span className="text-green-600 mr-2 mt-0.5">✓</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Special Touches — featured with a real spread photo */}
+          <div className="mt-6 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 md:flex">
+            <img
+              src={specialSpread}
+              alt="Catered spread with panna cotta, charcuterie board, and beet & goat cheese salad"
+              className="w-full md:w-1/2 h-64 md:h-auto object-cover"
+            />
+            <div className="p-6 md:p-8 md:w-1/2 flex flex-col justify-center">
+              <h4 className="text-2xl font-bold text-gray-800 mb-3">
+                Special Touches
+              </h4>
+              <p className="text-gray-700 leading-relaxed">
+                Something more intimate — a bridal shower or bachelorette party?
+                We can add elevated touches like charcuterie boards, seasonal
+                salads, and house-made desserts. Quoted to match.
+              </p>
+            </div>
+          </div>
+
+          {/* Travel note */}
+          <div className="mt-6 rounded-xl p-5 bg-slate-50 border border-slate-200">
+            <h4 className="font-bold text-gray-800 mb-1">Travel</h4>
+            <p className="text-gray-700 text-sm">
+              Based in Bountiful, happy to travel. A travel fee may apply by
+              distance — always spelled out in your quote.
+            </p>
+          </div>
         </div>
 
         {/* Pizza Classes */}
@@ -121,17 +214,17 @@ const Inquiries = () => {
               alt="Hands-on pizza class"
               className="rounded-xl md:w-1/2 mb-6 md:mb-0 object-cover max-h-64 w-full"
             />
-            <div className="text-gray-700 space-y-3">
+            <div className="text-gray-700 space-y-3 leading-relaxed">
               <h2 className="text-2xl font-bold">Want to Make Your Own Pizza?</h2>
               <p>
-                Hands-on pizza classes for groups of 8–30 — perfect for date
-                nights, team events, or a fun night with friends.
+                Hands-on classes for groups of 8–30 — great for date nights and
+                team events.
               </p>
               <p>
-                You'll learn dough stretching, topping combos, and how to cook in
-                a real brick oven. Everyone makes (and eats) their own. We bring
-                everything — you just show up hungry.
+                Stretch your own dough, load it up, and cook it in a real brick
+                oven. Then eat what you made.
               </p>
+              <p>We bring everything. You just show up hungry.</p>
             </div>
           </div>
         </div>
@@ -148,7 +241,7 @@ const Inquiries = () => {
           <div className="bg-amber-600 text-white text-center py-8 px-6 rounded-xl shadow-md lg:col-span-2 flex flex-col justify-center">
             <h2 className="text-3xl font-bold mb-3">Let's Get You a Quote</h2>
             <p className="text-lg mb-6">
-              Tell us a little about your event and we'll take it from there.
+              Tell us about your event and we'll take it from there.
             </p>
             <button
               onClick={() => setShowForm(true)}
