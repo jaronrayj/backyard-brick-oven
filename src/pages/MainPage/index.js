@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import { Helmet } from 'react-helmet-async'
 import pizzaFam from '../../assets/bybo_team-min.jpg'
 import venmoLogo from '../../assets/venmo.png'
 import facebookLogo from '../../assets/facebook.png'
@@ -77,13 +78,21 @@ const MainPage = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Backyard Brick Oven | Neapolitan-Style Pizza in Bountiful, Utah</title>
+        <meta
+          name="description"
+          content="Backyard Brick Oven — Neapolitan-style brick oven pizza in Bountiful, Utah by Jaron Johnson. Join us for Pizza Friday or book catering for your next event."
+        />
+        <link rel="canonical" href="https://backyard-brickoven.web.app/" />
+      </Helmet>
       <div className="bg-slate-200 lg:w-3/4 m-auto">
         <div className="p-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="self-center">
               <img src={pizzaFam} alt="pizza fam" className="rounded-xl" />
             </div>
-            <div className="rounded-md text-lg flex flex-col justify-center">
+            <div className="bg-white rounded-xl shadow-md p-6 text-lg flex flex-col justify-center">
               <div className="text-center leading-relaxed">
                 <p className="mt-2 text-xl">
                   Come enjoy <span className="font-bold">Pizza Friday</span>{' '}
@@ -107,7 +116,7 @@ const MainPage = () => {
                     href={href}
                     target="_blank"
                     rel="noreferrer"
-                    className="bg-white rounded-full p-1 shadow-md hover:shadow-lg transition-shadow duration-200 w-16 h-16 flex"
+                    className="bg-white ring-1 ring-gray-300 rounded-full p-1 shadow-md cursor-pointer w-16 h-16 flex active:scale-95 active:shadow-sm hover:shadow-lg hover:ring-yellow-400 transition-all duration-150"
                   >
                     <img
                       className="w-14 h-14 object-contain"
@@ -124,7 +133,7 @@ const MainPage = () => {
                     href={href}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center space-x-2 bg-white rounded-full px-4 py-2 shadow-md hover:shadow-lg transition-shadow duration-200 w-auto h-12 min-w-[200px]"
+                    className="flex items-center space-x-2 bg-white ring-1 ring-gray-300 rounded-full px-4 py-2 shadow-md cursor-pointer w-auto h-12 min-w-[200px] active:scale-95 active:shadow-sm hover:shadow-lg hover:ring-yellow-400 transition-all duration-150"
                   >
                     <img
                       className="w-10 h-10 object-contain shrink-0"

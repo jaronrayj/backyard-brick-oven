@@ -1,3 +1,8 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Disallow: /admin
+Disallow: /login
+Disallow: /register
+Disallow: /reset_password
+
+Sitemap: https://backyard-brickoven.web.app/sitemap.xml

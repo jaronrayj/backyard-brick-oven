@@ -1,0 +1,23 @@
+{
+  "name": "functions",
+  "description": "Cloud Functions for Backyard Brick Oven — inquiry email delivery",
+  "type": "module",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "dependencies": {
+    "firebase-functions": "5.1.1",
+    "nodemailer": "6.9.15"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "3.3.0"
+  },
+  "private": true
+}

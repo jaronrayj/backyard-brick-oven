@@ -1,10 +1,6 @@
-import React, { useEffect, useState } from 'react'
-import { useAuthState } from 'react-firebase-hooks/auth'
-import { auth, db, logout } from '../../utils/firebase'
-import { Fragment } from 'react'
-import { Disclosure, Menu, Transition } from '@headlessui/react'
-import { BellIcon, MenuIcon, XIcon } from '@heroicons/react/outline'
-import { collection, query, where, addDoc, getDocs } from 'firebase/firestore'
+import React from 'react'
+import { Disclosure } from '@headlessui/react'
+import { MenuIcon, XIcon } from '@heroicons/react/outline'
 import { isSiteReadyForOrders } from '../App/index'
 import logo from '../../assets/BrickovenLogo.png'
 
@@ -20,34 +16,8 @@ const classNames = (...classes) => {
 }
 
 const Navbar = () => {
-  const [user, loading, error] = useAuthState(auth)
-  const [name, setName] = useState('')
-  const [loaded, setLoaded] = useState(false)
-  const [dbUser, setDbUser] = useState()
-  const currentPath = window.location.pathname
-
-  const fetchUser = async () => {
-    try {
-      const q = query(collection(db, 'users'), where('uid', '==', user?.uid))
-      const doc = await getDocs(q)
-      const data = doc.docs[0].data()
-      setDbUser(data)
-    } catch (err) {
-      console.error(err)
-    }
-  }
-  useEffect(() => {
-    if (loading) return
-    user && setName(user.displayName)
-    !dbUser && fetchUser()
-    if (dbUser && navigation.length < 3 && !loaded) {
-      dbUser.role === 'admin' &&
-        navigation.push({ name: 'Admin', href: '/admin', current: false })
-      setLoaded(true)
-    }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, loading, dbUser, navigation, loaded])
+  const currentPath =
+    typeof window !== 'undefined' ? window.location.pathname : '/'
 
   return (
     <Disclosure as="nav" className="bg-yellow-500">

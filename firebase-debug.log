@@ -1,0 +1,138 @@
+[debug] [2026-08-30T01:19:44.560Z] ----------------------------------------------------------------------
+[debug] [2026-08-30T01:19:44.562Z] Command:       /Users/jaronjohnson/.asdf/installs/nodejs/25.2.1/bin/node /Users/jaronjohnson/.asdf/installs/nodejs/25.2.1/bin/firebase emulators:start --only functions,hosting
+[debug] [2026-08-30T01:19:44.562Z] CLI Version:   15.28.2
+[debug] [2026-08-30T01:19:44.562Z] Platform:      darwin
+[debug] [2026-08-30T01:19:44.562Z] Node Version:  v25.2.1
+[debug] [2026-08-30T01:19:44.562Z] Detected Agent: unknown
+[debug] [2026-08-30T01:19:44.562Z] Time:          Sat Aug 29 2026 19:19:44 GMT-0600 (Mountain Daylight Time)
+[debug] [2026-08-30T01:19:44.562Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-08-30T01:19:45.044Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-30T01:19:45.045Z] > authorizing via signed-in user (jj.backyardbrickoven@gmail.com)
+[info] i  emulators: Starting emulators: functions, hosting {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: functions, hosting"}}
+[debug] [2026-08-30T01:19:45.391Z] [logging] Logging Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-08-30T01:19:45.391Z] [hosting] Hosting Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-08-30T01:19:45.391Z] assigned listening specs for emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"hosting":[{"address":"127.0.0.1","family":"IPv4","port":5050}]},"metadata":{"message":"assigned listening specs for emulators"}}
+[debug] [2026-08-30T01:19:45.394Z] Write emulator hub locator at /var/folders/t1/s0jdbln16lsdx3kt8yv2q_vc0000gn/T/hub-backyard-brickoven.json
+[debug] [2026-08-30T01:19:45.648Z] [functions] Functions Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-08-30T01:19:45.648Z] [eventarc] Eventarc Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-08-30T01:19:45.648Z] [tasks] Cloud Tasks Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-08-30T01:19:45.648Z] late-assigned ports for functions and eventarc emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"hosting":[{"address":"127.0.0.1","family":"IPv4","port":5050}],"functions":[{"address":"127.0.0.1","family":"IPv4","port":5001}],"eventarc":[{"address":"127.0.0.1","family":"IPv4","port":9299}],"tasks":[{"address":"127.0.0.1","family":"IPv4","port":9499}]},"metadata":{"message":"late-assigned ports for functions and eventarc emulators"}}
+[warn] ⚠  functions: The following emulators are not running, calls to these services from the Functions emulator will affect production: apphosting, auth, firestore, database, pubsub, storage, dataconnect {"metadata":{"emulator":{"name":"functions"},"message":"The following emulators are not running, calls to these services from the Functions emulator will affect production: \u001b[1mapphosting, auth, firestore, database, pubsub, storage, dataconnect\u001b[22m"}}
+[debug] [2026-08-30T01:19:45.655Z] defaultcredentials: writing to file /Users/jaronjohnson/.config/firebase/jj_backyardbrickoven_gmail.com_application_default_credentials.json
+[debug] [2026-08-30T01:19:45.655Z] Setting GAC to /Users/jaronjohnson/.config/firebase/jj_backyardbrickoven_gmail.com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to /Users/jaronjohnson/.config/firebase/jj_backyardbrickoven_gmail.com_application_default_credentials.json"}}
+[debug] [2026-08-30T01:19:45.656Z] Checked if tokens are valid: true, expires at: 1788055064278
+[debug] [2026-08-30T01:19:45.656Z] Checked if tokens are valid: true, expires at: 1788055064278
+[debug] [2026-08-30T01:19:45.656Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/backyard-brickoven/adminSdkConfig [none]
+[debug] [2026-08-30T01:19:46.193Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/backyard-brickoven/adminSdkConfig 200
+[debug] [2026-08-30T01:19:46.193Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/backyard-brickoven/adminSdkConfig {"projectId":"backyard-brickoven","databaseURL":"https://backyard-brickoven-default-rtdb.firebaseio.com","storageBucket":"backyard-brickoven.appspot.com","locationId":"us-central"}
+[debug] [2026-08-30T01:19:46.204Z] Checked if tokens are valid: true, expires at: 1788055064278
+[debug] [2026-08-30T01:19:46.204Z] Checked if tokens are valid: true, expires at: 1788055064278
+[debug] [2026-08-30T01:19:46.204Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/backyard-brickoven/sites 
+[debug] [2026-08-30T01:19:46.571Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/backyard-brickoven/sites 200
+[debug] [2026-08-30T01:19:46.571Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/backyard-brickoven/sites {"sites":[{"name":"projects/backyard-brickoven/sites/backyard-brickoven","defaultUrl":"https://backyard-brickoven.web.app","appId":"1:617331177853:web:b1a726a44ad1a3654ff414","type":"DEFAULT_SITE"}]}
+[debug] [2026-08-30T01:19:46.571Z] Checked if tokens are valid: true, expires at: 1788055064278
+[debug] [2026-08-30T01:19:46.571Z] Checked if tokens are valid: true, expires at: 1788055064278
+[debug] [2026-08-30T01:19:46.571Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/backyard-brickoven/webApps/1:617331177853:web:b1a726a44ad1a3654ff414/config [none]
+[debug] [2026-08-30T01:19:47.127Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/backyard-brickoven/webApps/1:617331177853:web:b1a726a44ad1a3654ff414/config 200
+[debug] [2026-08-30T01:19:47.127Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/backyard-brickoven/webApps/1:617331177853:web:b1a726a44ad1a3654ff414/config {"projectId":"backyard-brickoven","appId":"1:617331177853:web:b1a726a44ad1a3654ff414","databaseURL":"https://backyard-brickoven-default-rtdb.firebaseio.com","storageBucket":"backyard-brickoven.appspot.com","locationId":"us-central","apiKey":"AIzaSyB0Db6k61cOIzvwuQ_LHdJhL_XdUTkg0Ww","authDomain":"backyard-brickoven.firebaseapp.com","messagingSenderId":"617331177853","measurementId":"G-RB0DB3R1SY","projectNumber":"617331177853","version":"2"}
+[debug] [2026-08-30T01:19:47.133Z] Checked if tokens are valid: true, expires at: 1788055064278
+[debug] [2026-08-30T01:19:47.133Z] Checked if tokens are valid: true, expires at: 1788055064278
+[debug] [2026-08-30T01:19:47.133Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/backyard-brickoven [none]
+[debug] [2026-08-30T01:19:47.388Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/backyard-brickoven 200
+[debug] [2026-08-30T01:19:47.388Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/backyard-brickoven {"projectId":"backyard-brickoven","projectNumber":"617331177853","displayName":"backyard-brickoven","name":"projects/backyard-brickoven","resources":{"hostingSite":"backyard-brickoven","realtimeDatabaseInstance":"backyard-brickoven-default-rtdb","locationId":"us-central"},"state":"ACTIVE","labels":{"firebase":"enabled"},"etag":"1_420cfe96-dd82-45b0-b969-0c0ead0f094c"}
+[info] i  hosting[backyard-brickoven]: Serving hosting files from: build {"metadata":{"emulator":{"name":"hosting"},"message":"Serving hosting files from: \u001b[1mbuild\u001b[22m"}}
+[info] ✔  hosting[backyard-brickoven]: Local server: http://127.0.0.1:5050 {"metadata":{"emulator":{"name":"hosting"},"message":"Local server: \u001b[4m\u001b[1mhttp://127.0.0.1:5050\u001b[22m\u001b[24m"}}
+[info] i  functions: Watching "/Users/jaronjohnson/dev/backyard-brick-oven/functions" for Cloud Functions... {"metadata":{"emulator":{"name":"functions"},"message":"Watching \"/Users/jaronjohnson/dev/backyard-brick-oven/functions\" for Cloud Functions..."}}
+[debug] [2026-08-30T01:19:47.452Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2026-08-30T01:19:47.975Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Backyard Brick Oven — inquiry email delivery",
+  "type": "module",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "dependencies": {
+    "firebase-functions": "5.1.1",
+    "nodemailer": "6.9.15"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "3.3.0"
+  },
+  "private": true
+}
+[debug] [2026-08-30T01:19:47.975Z] Building nodejs source
+[debug] [2026-08-30T01:19:47.976Z] Failed to find version of module node: reached end of search path /Users/jaronjohnson/dev/backyard-brick-oven/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "20" doesn't match your global version "25". Using node@25 from host. 
+[debug] [2026-08-30T01:19:47.977Z] Could not find functions.yaml. Must use http discovery
+[debug] [2026-08-30T01:19:47.981Z] Found firebase-functions binary at '/Users/jaronjohnson/dev/backyard-brick-oven/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8632
+
+[debug] [2026-08-30T01:19:48.298Z] Got response from /__/functions.yaml {"endpoints":{"sendInquiry":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["us-central1"],"secretEnvironmentVariables":[{"key":"GMAIL_APP_PASSWORD"}],"labels":{},"httpsTrigger":{},"entryPoint":"sendInquiry"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{},"params":[{"type":"secret","name":"GMAIL_APP_PASSWORD"}]}
+[info] ✔  functions: Loaded functions definitions from source: sendInquiry. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: sendInquiry."}}
+[info] ✔  functions[us-central1-sendInquiry]: http function initialized (http://127.0.0.1:5001/backyard-brickoven/us-central1/sendInquiry). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/backyard-brickoven/us-central1/sendInquiry)."}}
+[debug] [2026-08-30T01:19:51.337Z] Could not find VSCode notification endpoint: TypeError: fetch failed. If you are not running the Firebase SQL Connect VSCode extension, this is expected and not an issue.
+[info] 
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+│ i  View Emulator UI at http://127.0.0.1:4000/               │
+└─────────────────────────────────────────────────────────────┘
+
+┌───────────┬────────────────┬─────────────────────────────────┐
+│ Emulator  │ Host:Port      │ View in Emulator UI             │
+├───────────┼────────────────┼─────────────────────────────────┤
+│ Functions │ 127.0.0.1:5001 │ http://127.0.0.1:4000/functions │
+├───────────┼────────────────┼─────────────────────────────────┤
+│ Hosting   │ 127.0.0.1:5050 │ n/a                             │
+└───────────┴────────────────┴─────────────────────────────────┘
+  Emulator Hub host: 127.0.0.1 port: 4400
+  Other reserved ports: 4500
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
+[info] i  hosting: 127.0.0.1 - - [30/Aug/2026:01:19:52 +0000] "GET /inquiries/ HTTP/1.1" 200 - "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [30/Aug/2026:01:19:52 +0000] \"GET /inquiries/ HTTP/1.1\" 200 - \"-\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [30/Aug/2026:01:19:52 +0000] "GET /dist/output.css HTTP/1.1" 304 - "http://localhost:5050/inquiries/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [30/Aug/2026:01:19:52 +0000] \"GET /dist/output.css HTTP/1.1\" 304 - \"http://localhost:5050/inquiries/\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [30/Aug/2026:01:19:52 +0000] "GET /manifest.json HTTP/1.1" 200 340 "http://localhost:5050/inquiries/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [30/Aug/2026:01:19:52 +0000] \"GET /manifest.json HTTP/1.1\" 200 340 \"http://localhost:5050/inquiries/\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [30/Aug/2026:01:19:52 +0000] "GET /static/css/main.6064b761.css HTTP/1.1" 200 - "http://localhost:5050/inquiries/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [30/Aug/2026:01:19:52 +0000] \"GET /static/css/main.6064b761.css HTTP/1.1\" 200 - \"http://localhost:5050/inquiries/\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [30/Aug/2026:01:19:52 +0000] "GET /static/js/main.487dff1c.js HTTP/1.1" 200 - "http://localhost:5050/inquiries/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [30/Aug/2026:01:19:52 +0000] \"GET /static/js/main.487dff1c.js HTTP/1.1\" 200 - \"http://localhost:5050/inquiries/\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [30/Aug/2026:01:19:52 +0000] "GET /static/media/BrickovenLogo.ebf293123dd3c0530c87.png HTTP/1.1" 200 96750 "http://localhost:5050/inquiries/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [30/Aug/2026:01:19:52 +0000] \"GET /static/media/BrickovenLogo.ebf293123dd3c0530c87.png HTTP/1.1\" 200 96750 \"http://localhost:5050/inquiries/\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [30/Aug/2026:01:19:52 +0000] "GET /static/media/night_pizza.8edbff825931e0b0ca32.jpg HTTP/1.1" 200 2426385 "http://localhost:5050/inquiries/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [30/Aug/2026:01:19:52 +0000] \"GET /static/media/night_pizza.8edbff825931e0b0ca32.jpg HTTP/1.1\" 200 2426385 \"http://localhost:5050/inquiries/\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [30/Aug/2026:01:19:53 +0000] "GET /static/media/pizza_party.d3ec371d712dc57d783e.jpg HTTP/1.1" 200 4305657 "http://localhost:5050/inquiries/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [30/Aug/2026:01:19:53 +0000] \"GET /static/media/pizza_party.d3ec371d712dc57d783e.jpg HTTP/1.1\" 200 4305657 \"http://localhost:5050/inquiries/\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [30/Aug/2026:01:19:53 +0000] "GET /bybo.ico HTTP/1.1" 200 - "http://localhost:5050/inquiries/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [30/Aug/2026:01:19:53 +0000] \"GET /bybo.ico HTTP/1.1\" 200 - \"http://localhost:5050/inquiries/\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36\""}}
+[info] [hosting] Rewriting /api/inquiry to http://127.0.0.1:5001/backyard-brickoven/us-central1/sendInquiry for local Function us-central1/sendInquiry
+[debug] [2026-08-30T01:20:11.500Z] >>> [apiv2][query] POST http://127.0.0.1:5001/backyard-brickoven/us-central1/sendInquiry/api/inquiry 
+[debug] [2026-08-30T01:20:11.500Z] >>> [apiv2][body] POST http://127.0.0.1:5001/backyard-brickoven/us-central1/sendInquiry/api/inquiry [stream]
+[debug] [2026-08-30T01:20:11.505Z] [work-queue] {"queuedWork":["/backyard-brickoven/us-central1/sendInquiry/api/inquiry-2026-08-30T01:20:11.505Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2026-08-30T01:20:11.506Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/backyard-brickoven/us-central1/sendInquiry/api/inquiry-2026-08-30T01:20:11.505Z"],"workRunningCount":1}
+[debug] [2026-08-30T01:20:11.506Z] Accepted request POST /backyard-brickoven/us-central1/sendInquiry/api/inquiry --> us-central1-sendInquiry
+[debug] [2026-08-30T01:20:11.507Z] [functions] Runtime ready! Sending request! {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Runtime ready! Sending request!"}}
+[debug] [2026-08-30T01:20:11.508Z] [functions] Got req.url=/backyard-brickoven/us-central1/sendInquiry/api/inquiry, mapping to path=/api/inquiry {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Got req.url=/backyard-brickoven/us-central1/sendInquiry/api/inquiry, mapping to path=/api/inquiry"}}
+[debug] [2026-08-30T01:20:11.514Z] [worker-pool] addWorker(us-central1-sendInquiry) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] addWorker(us-central1-sendInquiry)"}}
+[debug] [2026-08-30T01:20:11.514Z] [worker-pool] Adding worker with key us-central1-sendInquiry, total=1 {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Adding worker with key us-central1-sendInquiry, total=1"}}
+[warn] ⚠  The Cloud Functions emulator requires the module "firebase-admin" to be installed as a dependency. To fix this, run "npm install --save firebase-admin" in your functions directory. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-sendInquiry"},"extension":{},"message":"The Cloud Functions emulator requires the module \"firebase-admin\" to be installed as a dependency. To fix this, run \"npm install --save firebase-admin\" in your functions directory."}}
+[info] i  functions: Your functions could not be parsed due to an issue with your node_modules (see above) {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-sendInquiry"},"extension":{},"message":"Your functions could not be parsed due to an issue with your node_modules (see above)"}}
+[debug] [2026-08-30T01:20:12.059Z] [runtime-status] [44581] Functions runtime initialized. {"cwd":"/Users/jaronjohnson/dev/backyard-brick-oven/functions","node_version":"25.2.1"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-sendInquiry"},"extension":{},"message":"[runtime-status] [44581] Functions runtime initialized. {\"cwd\":\"/Users/jaronjohnson/dev/backyard-brick-oven/functions\",\"node_version\":\"25.2.1\"}"}}
+[debug] [2026-08-30T01:20:12.059Z] [runtime-status] [44581] Listening to port: /var/folders/t1/s0jdbln16lsdx3kt8yv2q_vc0000gn/T/fire_emu_bc350f08dd499cd6.sock {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-sendInquiry"},"extension":{},"message":"[runtime-status] [44581] Listening to port: /var/folders/t1/s0jdbln16lsdx3kt8yv2q_vc0000gn/T/fire_emu_bc350f08dd499cd6.sock"}}
+[debug] [2026-08-30T01:20:12.125Z] [worker-us-central1-sendInquiry-c78bae0c-705d-461c-a4d3-f36163ea8e09]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-sendInquiry"},"extension":{},"message":"[worker-us-central1-sendInquiry-c78bae0c-705d-461c-a4d3-f36163ea8e09]: IDLE"}}
+[debug] [2026-08-30T01:20:12.126Z] [worker-pool] submitRequest(triggerId=us-central1-sendInquiry) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] submitRequest(triggerId=us-central1-sendInquiry)"}}
+[info] i  functions: Beginning execution of "us-central1-sendInquiry" {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-sendInquiry"},"extension":{},"message":"Beginning execution of \"us-central1-sendInquiry\""}}
+[debug] [2026-08-30T01:20:12.126Z] [worker-us-central1-sendInquiry-c78bae0c-705d-461c-a4d3-f36163ea8e09]: BUSY {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-sendInquiry"},"extension":{},"message":"[worker-us-central1-sendInquiry-c78bae0c-705d-461c-a4d3-f36163ea8e09]: BUSY"}}
+[info] >  {"severity":"INFO","message":"Inquiry email sent"} {"user":{"severity":"INFO","message":"Inquiry email sent"},"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-sendInquiry"},"extension":{},"message":"\u001b[90m> \u001b[39m {\"severity\":\"INFO\",\"message\":\"Inquiry email sent\"}"}}
+[debug] [2026-08-30T01:20:13.448Z] Finishing up request with event=pause {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-sendInquiry"},"extension":{},"message":"Finishing up request with event=pause"}}
+[info] i  functions: Finished "us-central1-sendInquiry" in 1322.484792ms {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-sendInquiry"},"extension":{},"message":"Finished \"us-central1-sendInquiry\" in 1322.484792ms"}}
+[debug] [2026-08-30T01:20:13.449Z] [worker-us-central1-sendInquiry-c78bae0c-705d-461c-a4d3-f36163ea8e09]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-sendInquiry"},"extension":{},"message":"[worker-us-central1-sendInquiry-c78bae0c-705d-461c-a4d3-f36163ea8e09]: IDLE"}}
+[debug] [2026-08-30T01:20:13.449Z] Finishing up request with event=finish {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-sendInquiry"},"extension":{},"message":"Finishing up request with event=finish"}}
+[debug] [2026-08-30T01:20:13.449Z] Finishing up request with event=close {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-sendInquiry"},"extension":{},"message":"Finishing up request with event=close"}}
+[debug] [2026-08-30T01:20:13.449Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2026-08-30T01:20:13.453Z] <<< [apiv2][status] POST http://127.0.0.1:5001/backyard-brickoven/us-central1/sendInquiry/api/inquiry 200
+[debug] [2026-08-30T01:20:13.453Z] <<< [apiv2][body] POST http://127.0.0.1:5001/backyard-brickoven/us-central1/sendInquiry/api/inquiry [stream]
+[info] i  hosting: 127.0.0.1 - - [30/Aug/2026:01:20:13 +0000] "POST /api/inquiry HTTP/1.1" 200 11 "http://localhost:3000/inquiries/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [30/Aug/2026:01:20:13 +0000] \"POST /api/inquiry HTTP/1.1\" 200 11 \"http://localhost:3000/inquiries/\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36\""}}

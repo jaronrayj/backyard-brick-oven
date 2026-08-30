@@ -3,32 +3,72 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ffa100" />
     <meta name="description" content="Backyard Brick Oven — Neapolitan-style brick oven pizza in Bountiful, Utah by Jaron Johnson. Join us for Pizza Friday or book catering for your next event." />
     <meta name="keywords" content="pizza, Neapolitan pizza, Bountiful Utah, pizza catering, brick oven pizza, Pizza Friday, Jaron Johnson, Backyard Brick Oven, food catering Utah" />
+
+    <!-- Open Graph -->
+    <meta property="og:site_name" content="Backyard Brick Oven" />
     <meta property="og:title" content="Backyard Brick Oven — Neapolitan-Style Pizza in Bountiful, Utah" />
     <meta property="og:description" content="Neapolitan-style brick oven pizza by Jaron Johnson in Bountiful, Utah. Pizza Friday every week or catering for your next event." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://backyard-brickoven.web.app" />
     <meta property="og:image" content="https://backyard-brickoven.web.app/og-image.jpg" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Backyard Brick Oven — Neapolitan-Style Pizza in Bountiful, Utah" />
+    <meta name="twitter:description" content="Neapolitan-style brick oven pizza by Jaron Johnson in Bountiful, Utah. Pizza Friday every week or catering for your next event." />
+    <meta name="twitter:image" content="https://backyard-brickoven.web.app/og-image.jpg" />
+
     <link rel="canonical" href="https://backyard-brickoven.web.app" />
     <link rel="icon" href="%PUBLIC_URL%/bybo.ico" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <title>Backyard Brick Oven | Neapolitan-Style Pizza in Bountiful, Utah</title>
-    <script
-      src="https://unpkg.com/react/umd/react.production.min.js"
-      crossorigin
-    ></script>
+
+    <!-- LocalBusiness structured data (JSON-LD) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FoodEstablishment",
+        "name": "Backyard Brick Oven",
+        "description": "Neapolitan-style brick oven pizza in Bountiful, Utah by Jaron Johnson. Pizza Friday every week and catering for events.",
+        "servesCuisine": "Neapolitan Pizza",
+        "url": "https://backyard-brickoven.web.app",
+        "image": "https://backyard-brickoven.web.app/og-image.jpg",
+        "founder": {
+          "@type": "Person",
+          "name": "Jaron Johnson"
+        },
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Bountiful",
+          "addressRegion": "UT",
+          "addressCountry": "US"
+        },
+        "areaServed": {
+          "@type": "City",
+          "name": "Bountiful, Utah"
+        }
+      }
+    </script>
+
     <link href="/dist/output.css" rel="stylesheet" />
 
-    <script
-      src="https://unpkg.com/react-dom/umd/react-dom.production.min.js"
-      crossorigin
-    ></script>
     <script
       src="https://cdn.jsdelivr.net/npm/publicalbum@latest/embed-ui.min.js"
       async
     ></script>
   </head>
   <body>
+    <noscript>
+      <h1>Backyard Brick Oven</h1>
+      <p>
+        Neapolitan-style brick oven pizza in Bountiful, Utah by Jaron Johnson.
+        Join us for Pizza Friday every week, or book catering for your next
+        event. Please enable JavaScript to use the full site.
+      </p>
+    </noscript>
     <div id="message"></div>
   </body>
 </html>
