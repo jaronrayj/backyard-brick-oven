@@ -2,6 +2,21 @@ import React from 'react'
 import Zoom from 'react-medium-image-zoom'
 import 'react-medium-image-zoom/dist/styles.css'
 
+// Renders toppings centered and wrapping across rows using flex `gap` for
+// spacing. There are no inline bullet separators, so no separator can ever
+// dangle at the left or right edge of a wrapped row, and because nothing is
+// conditionally shown/hidden there is no measuring and no reflow jitter. This
+// is fully responsive to any viewport.
+const ToppingsList = ({ toppings }) => (
+  <div className="text-sm text-gray-600 leading-relaxed flex flex-wrap justify-center items-center gap-x-3 gap-y-1">
+    {toppings.map((topping, index) => (
+      <span key={index} className="capitalize whitespace-nowrap">
+        {topping}
+      </span>
+    ))}
+  </div>
+)
+
 const PizzaDisplay = ({ pizza, modalOpen }) => {
   const toppings = (pizza.toppings || '')
     .split(',')
@@ -35,18 +50,7 @@ const PizzaDisplay = ({ pizza, modalOpen }) => {
         </h2>
         <div className="mt-2 flex flex-col justify-center flex-1">
           {toppings.length > 0 ? (
-            <p className="text-sm text-gray-600 text-center leading-relaxed">
-              {toppings.map((topping, index) => (
-                <span key={index} className="capitalize inline-block whitespace-nowrap">
-                  {topping}
-                  {index < toppings.length - 1 && (
-                    <span className="text-amber-600 mx-1.5" aria-hidden="true">
-                      &bull;
-                    </span>
-                  )}
-                </span>
-              ))}
-            </p>
+            <ToppingsList toppings={toppings} />
           ) : (
             <p className="text-sm text-gray-400 text-center italic">
               Toppings coming soon
