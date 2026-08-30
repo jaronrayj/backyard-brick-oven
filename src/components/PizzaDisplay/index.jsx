@@ -37,7 +37,7 @@ const PizzaDisplay = ({ pizza, modalOpen }) => {
           {toppings.length > 0 ? (
             <p className="text-sm text-gray-600 text-center leading-relaxed">
               {toppings.map((topping, index) => (
-                <span key={index} className="capitalize">
+                <span key={index} className="capitalize inline-block whitespace-nowrap">
                   {topping}
                   {index < toppings.length - 1 && (
                     <span className="text-amber-600 mx-1.5" aria-hidden="true">
