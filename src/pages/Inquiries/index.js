@@ -5,17 +5,66 @@ import pizzaParty from '../../assets/pizza_party.jpg'
 import specialSpread from '../../assets/special_touches_spread.jpg'
 import servingCanopy from '../../assets/serving_canopy.jpg'
 
+const EVENT_TYPES = [
+  'Wedding',
+  'Birthday or family party',
+  'Holiday party',
+  'Corporate or work event',
+  'Bridal shower or bachelorette',
+  'Pizza class',
+  'Other',
+]
+
+const ADD_ONS = ['Salad', 'Pasta', 'Dessert', 'Charcuterie board']
+
+const todayISO = () => {
+  const d = new Date()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${mm}-${dd}`
+}
+
+// Shape the form into the payload the sendInquiry function expects.
+// The live function requires `event_type` and `contact`, so add-ons are folded
+// into the event type and email/phone are joined into `contact`.
+const buildPayload = (form) => {
+  const fd = new FormData(form)
+  const addOns = fd.getAll('add_ons')
+  const type = fd.get('event_type_choice') === 'Other'
+    ? String(fd.get('event_type_other') || '').trim() || 'Other'
+    : String(fd.get('event_type_choice') || '').trim()
+  const email = String(fd.get('email') || '').trim()
+  const phone = String(fd.get('phone') || '').trim()
+
+  const payload = {}
+  for (const [key, value] of fd.entries()) {
+    if (['add_ons', 'event_type_choice', 'event_type_other', 'email', 'phone'].includes(key)) continue
+    payload[key] = value
+  }
+  payload.event_type = addOns.length ? `${type} + ${addOns.join(', ')}` : type
+  payload.contact = [email, phone].filter(Boolean).join(' / ')
+  return payload
+}
+
 const Inquiries = () => {
   const [showForm, setShowForm] = React.useState(false)
   const [submitted, setSubmitted] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
   const [error, setError] = React.useState('')
+  const [eventType, setEventType] = React.useState('')
 
   React.useEffect(() => {
     const handleEsc = (e) => { if (e.key === 'Escape') setShowForm(false) }
     document.addEventListener('keydown', handleEsc)
     return () => document.removeEventListener('keydown', handleEsc)
   }, [])
+
+  const openForm = (type = '') => {
+    if (type) setEventType(type)
+    setShowForm(true)
+  }
+
+  const showAddOns = eventType && eventType !== 'Pizza class'
 
   return (
     <div className="bg-slate-200 lg:w-3/4 m-auto">
@@ -44,7 +93,7 @@ const Inquiries = () => {
             Fresh brick oven pizza, right at your event. No lines, no cleanup.
           </p>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => openForm()}
             className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-lg py-4 px-10 rounded-lg shadow-lg transition-colors duration-200"
           >
             Get a Quote
@@ -136,14 +185,16 @@ const Inquiries = () => {
               <p className="text-gray-700 mb-4 min-h-[3rem]">
                 A brick oven front and center, and a spread guests remember.
               </p>
-              <p className="mb-4 text-3xl font-bold text-gray-900">
+              <p className="text-3xl font-bold text-gray-900">
                 Starting at $1,500
               </p>
+              <p className="mb-4 text-sm text-gray-600">Up to 100 guests</p>
               <ul className="space-y-2 text-gray-700 text-sm flex-1">
                 {[
                   'On-site brick oven, setup, service & cleanup',
                   'Rotating fresh pizzas served buffet-style',
                   'Custom menu built with you',
+                  'Add salad or pasta for $3–5 per guest',
                 ].map((item) => (
                   <li key={item} className="flex items-start">
                     <span className="text-green-600 mr-2 mt-0.5">✓</span>
@@ -244,7 +295,7 @@ const Inquiries = () => {
               Tell us about your event and we'll take it from there.
             </p>
             <button
-              onClick={() => setShowForm(true)}
+              onClick={() => openForm()}
               className="bg-white text-amber-700 font-bold text-lg py-4 px-8 rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-md self-center"
             >
               Get a Quote
@@ -279,9 +330,14 @@ const Inquiries = () => {
                 e.preventDefault()
                 const form = e.target
                 setError('')
+                const fd = new FormData(form)
+                if (!String(fd.get('email') || '').trim() && !String(fd.get('phone') || '').trim()) {
+                  setError('Please add an email or phone number so we can reach you.')
+                  return
+                }
                 setSubmitting(true)
                 try {
-                  const payload = Object.fromEntries(new FormData(form))
+                  const payload = buildPayload(form)
                   const res = await fetch('/api/inquiry', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -298,6 +354,7 @@ const Inquiries = () => {
                     throw new Error(message)
                   }
                   form.reset()
+                  setEventType('')
                   setSubmitted(true)
                 } catch (err) {
                   setError(
@@ -325,15 +382,51 @@ const Inquiries = () => {
               </label>
               <label className="block mb-3">
                 <span className="text-sm text-gray-700">Type of Event</span>
-                <input type="text" name="event_type" required placeholder="e.g. Birthday, Wedding, Corporate, Pizza Class" className="w-full mt-1 p-2 rounded border text-gray-800" />
+                <select
+                  name="event_type_choice"
+                  required
+                  value={eventType}
+                  onChange={(e) => setEventType(e.target.value)}
+                  className="w-full mt-1 p-2 rounded border text-gray-800 bg-white"
+                >
+                  <option value="" disabled>Choose one</option>
+                  {EVENT_TYPES.map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
               </label>
+              {eventType === 'Other' && (
+                <label className="block mb-3">
+                  <span className="text-sm text-gray-700">What kind of event?</span>
+                  <input type="text" name="event_type_other" required className="w-full mt-1 p-2 rounded border text-gray-800" />
+                </label>
+              )}
+              {eventType === 'Wedding' && (
+                <p className="mb-3 -mt-1 text-xs text-gray-600">
+                  Weddings start at $1,500 for up to 100 guests.
+                </p>
+              )}
+              {showAddOns && (
+                <fieldset className="mb-3">
+                  <legend className="text-sm text-gray-700">Add-ons (optional)</legend>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1">
+                    {ADD_ONS.map((item) => (
+                      <label key={item} className="flex items-center text-sm text-gray-800">
+                        <input type="checkbox" name="add_ons" value={item} className="mr-2" />
+                        {item}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Salad or pasta adds about $3–5 per guest.</p>
+                </fieldset>
+              )}
               <label className="block mb-3">
                 <span className="text-sm text-gray-700">Who's the event for?</span>
                 <input type="text" name="event_for" required placeholder="e.g. Myself, my daughter, our company" className="w-full mt-1 p-2 rounded border text-gray-800" />
               </label>
               <label className="block mb-3">
                 <span className="text-sm text-gray-700">Event Date</span>
-                <input type="date" name="event_date" required className="w-full mt-1 p-2 rounded border text-gray-800" />
+                <input type="date" name="event_date" required min={todayISO()} className="w-full mt-1 p-2 rounded border text-gray-800" />
               </label>
               <label className="block mb-3">
                 <span className="text-sm text-gray-700">Event Location</span>
@@ -347,10 +440,17 @@ const Inquiries = () => {
                 <span className="text-sm text-gray-700">Estimated Guest Count</span>
                 <input type="number" name="estimated_guests" min="1" required className="w-full mt-1 p-2 rounded border text-gray-800" />
               </label>
-              <label className="block mb-3">
-                <span className="text-sm text-gray-700">Email or Phone</span>
-                <input type="text" name="contact" required className="w-full mt-1 p-2 rounded border text-gray-800" />
-              </label>
+              <div className="grid grid-cols-2 gap-3 mb-1">
+                <label className="block">
+                  <span className="text-sm text-gray-700">Email</span>
+                  <input type="email" name="email" autoComplete="email" className="w-full mt-1 p-2 rounded border text-gray-800" />
+                </label>
+                <label className="block">
+                  <span className="text-sm text-gray-700">Phone</span>
+                  <input type="tel" name="phone" autoComplete="tel" className="w-full mt-1 p-2 rounded border text-gray-800" />
+                </label>
+              </div>
+              <p className="mb-3 text-xs text-gray-500">Either one works.</p>
               <label className="block mb-3">
                 <span className="text-sm text-gray-700">How did you hear about us? (optional)</span>
                 <input type="text" name="heard_about" placeholder="e.g. Instagram, a friend, Pizza Friday" className="w-full mt-1 p-2 rounded border text-gray-800" />

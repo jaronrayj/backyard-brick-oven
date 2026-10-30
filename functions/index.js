@@ -176,10 +176,16 @@ export const sendInquiry = onRequest(
         },
       });
 
+      // `contact` may be an email, a phone number, or "email / phone".
+      // Only use it as Reply-To when it holds an email address.
+      const replyEmail = (/[^\s/]+@[^\s/]+\.[^\s/]+/.exec(
+        String(body.contact)
+      ) || [])[0];
+
       await transporter.sendMail({
         from: `"Backyard Brick Oven" <${GMAIL_USER}>`,
         to: NOTIFY_TO,
-        replyTo: String(body.contact).trim(),
+        ...(replyEmail ? { replyTo: replyEmail } : {}),
         subject: `New inquiry: ${String(body.event_type).trim()} — ${String(
           body.name
         ).trim()}`,
