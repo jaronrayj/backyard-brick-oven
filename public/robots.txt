@@ -5,4 +5,4 @@ Disallow: /login
 Disallow: /register
 Disallow: /reset_password
 
-Sitemap: https://backyard-brickoven.web.app/sitemap.xml
+Sitemap: https://backyardbrickovenpizza.com/sitemap.xml
