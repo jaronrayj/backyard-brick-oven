@@ -17,13 +17,6 @@ const EVENT_TYPES = [
 
 const ADD_ONS = ['Salad', 'Pasta', 'Dessert', 'Charcuterie board']
 
-// Holiday party season: show the booking banner from Oct 15 through Dec 20.
-const isHolidaySeason = (date) => {
-  const month = date.getMonth() // 0-based
-  const day = date.getDate()
-  return (month === 9 && day >= 15) || month === 10 || (month === 11 && day <= 20)
-}
-
 const todayISO = () => {
   const d = new Date()
   const mm = String(d.getMonth() + 1).padStart(2, '0')
@@ -59,18 +52,11 @@ const Inquiries = () => {
   const [submitting, setSubmitting] = React.useState(false)
   const [error, setError] = React.useState('')
   const [eventType, setEventType] = React.useState('')
-  const [holidaySeason, setHolidaySeason] = React.useState(false)
 
   React.useEffect(() => {
     const handleEsc = (e) => { if (e.key === 'Escape') setShowForm(false) }
     document.addEventListener('keydown', handleEsc)
     return () => document.removeEventListener('keydown', handleEsc)
-  }, [])
-
-  // Decided in the browser, not at build time, so the prerendered page
-  // doesn't freeze the banner on or off.
-  React.useEffect(() => {
-    setHolidaySeason(isHolidaySeason(new Date()))
   }, [])
 
   const openForm = (type = '') => {
@@ -100,14 +86,6 @@ const Inquiries = () => {
           className="w-full h-[70vh] min-h-[420px] object-cover"
         />
         <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center text-center text-white px-6">
-          {holidaySeason && (
-            <button
-              onClick={() => openForm('Holiday party')}
-              className="mb-5 bg-white bg-opacity-90 text-amber-800 text-sm font-semibold rounded-full px-4 py-2 shadow hover:bg-opacity-100 transition"
-            >
-              Now booking holiday parties for November and December →
-            </button>
-          )}
           <h1 className="text-4xl md:text-5xl font-bold mb-4 max-w-3xl drop-shadow">
             Let's Make Your Next Event Unforgettable
           </h1>
