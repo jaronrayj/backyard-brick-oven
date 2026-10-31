@@ -40,9 +40,13 @@ const Team = () => {
                 <li key={tool.key}>
                   <a
                     href={tool.href}
+                    {...(tool.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                     className="block border border-gray-300 rounded-md p-4 hover:border-gray-900 hover:bg-yellow-50"
                   >
-                    <span className="block text-lg font-medium">{tool.name}</span>
+                    <span className="block text-lg font-medium">
+                      {tool.name}
+                      {tool.external && <span aria-hidden="true"> ↗</span>}
+                    </span>
                     <span className="block text-sm text-gray-600">{tool.blurb}</span>
                   </a>
                 </li>
