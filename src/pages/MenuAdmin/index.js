@@ -5,6 +5,7 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'fire
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { auth, rtdb, signInWithGoogle } from '../../utils/firebase'
 import { sortPizzas } from '../../utils'
+import PhotoEditor from './PhotoEditor'
 
 // Menu manager: the website menu lives in the Realtime Database at `pizzas/`,
 // one entry per pizza: { name, toppings, img, active, special, order }.
@@ -15,30 +16,10 @@ import { sortPizzas } from '../../utils'
 // Database keys can't contain . $ # [ ] /
 const keyFor = (name) => name.trim().replace(/[.$#[\]/]/g, '_') || 'pizza'
 
-// Phone photos are large: scale to at most 1200px wide as a JPEG before upload.
-const shrinkImage = (file) =>
-  new Promise((resolve) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-    img.onload = () => {
-      const scale = Math.min(1, 1200 / img.width)
-      const canvas = document.createElement('canvas')
-      canvas.width = Math.round(img.width * scale)
-      canvas.height = Math.round(img.height * scale)
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
-      URL.revokeObjectURL(url)
-      canvas.toBlob((blob) => resolve(blob || file), 'image/jpeg', 0.82)
-    }
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      resolve(file)
-    }
-    img.src = url
-  })
-
-const uploadPhoto = async (file) => {
-  const blob = await shrinkImage(file)
-  const path = `pizzas/${Date.now()}-${file.name.replace(/[^\w.-]+/g, '_')}`
+// The photo editor (PhotoEditor.js) crops and scales to 1200px wide before this.
+const uploadPhoto = async (blob, name) => {
+  const base = name.replace(/\.[^.]*$/, '').replace(/[^\w-]+/g, '_') || 'photo'
+  const path = `pizzas/${Date.now()}-${base}.jpg`
   const snap = await uploadBytes(storageRef(getStorage(), path), blob, {
     contentType: 'image/jpeg',
     cacheControl: 'public, max-age=31536000, immutable',
@@ -128,13 +109,21 @@ const Editor = ({ pizza, onSave, onCancel, onDelete }) => {
   const [error, setError] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const pick = async (e) => {
+  const [draft, setDraft] = useState(null)
+
+  const pick = (e) => {
     const file = e.target.files && e.target.files[0]
-    if (!file) return
+    e.target.value = ''
+    if (file) setDraft(file)
+  }
+
+  const upload = async (blob) => {
+    const name = draft.name
+    setDraft(null)
     setBusy(true)
     setError('')
     try {
-      setImg(await uploadPhoto(file))
+      setImg(await uploadPhoto(blob, name))
     } catch (err) {
       setError("The photo didn't upload. Check your connection and try again.")
     }
@@ -168,6 +157,7 @@ const Editor = ({ pizza, onSave, onCancel, onDelete }) => {
 
   return (
     <div className="grid gap-3 text-left">
+      {draft && <PhotoEditor file={draft} onDone={upload} onCancel={() => setDraft(null)} />}
       <label className="grid gap-1 text-sm text-gray-600">
         Name
         <input className="border border-gray-300 rounded-lg px-3 py-2 text-base text-gray-900" value={name} onChange={(e) => setName(e.target.value)} />
