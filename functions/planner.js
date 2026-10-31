@@ -9,6 +9,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import logger from "firebase-functions/logger";
 import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getDatabase } from "firebase-admin/database";
 
 if (!getApps().length) initializeApp();
 
@@ -16,14 +17,14 @@ const TRACKER = "1osNU39tVU3GrkrgSiR7Mw1kdE6ErDxnu5R3nu0K0izQ"; // money tracker
 const DOUGH = "1XXguNl452UEv8s_dmo35Jzwr8M9kQ2Vvn98qoT5SL3o"; // dough calculator
 const MENU = "1s27EIGl6zKq78czysmHNdmjGGOrK8JhGfcr-V6FO6WE"; // pizza selection
 
-// Only these ranges are read. From the money tracker that is dough counts,
+// The menu comes from the website's own list (Realtime Database `pizzas/`,
+// edited at /admin/menu). Only these sheet ranges are read. From the money tracker that is dough counts,
 // "could have sold more", event name and date: no money columns.
 const RANGES = {
   counts: [TRACKER, "Form Responses!B1:D"],
   meta: [TRACKER, "Form Responses!J1:L"],
   recipe: [DOUGH, "dough recipe!A1:B12"],
   settings: [DOUGH, "Planner settings!A1:B"],
-  menu: [MENU, "pizzas!A1:E"],
   amounts: [MENU, "Topping amounts!A1:G"],
   sauces: [MENU, "Sauce recipes!A1:C"],
   sections: [MENU, "Store sections!A1:C"],
@@ -103,15 +104,9 @@ export const buildRef = (v) => {
   return {
     recipe: v.recipe.slice(1).filter((r) => r[0]).map((r) => ({ item: String(r[0]).trim(), amount: num(r[1]) || 0 })),
     settings: v.settings.slice(1).filter((r) => r[0]).map((r) => ({ setting: String(r[0]).trim(), value: num(r[1]) })),
-    menu: v.menu
-      .slice(1)
-      .filter((r) => r[0])
-      .map((r) => ({
-        name: String(r[0]).trim(),
-        toppings: String(r[1] || ""),
-        active: String(r[4] || "").toUpperCase() === "TRUE",
-      }))
-      .filter((p) => p.active),
+    menu: Object.values(v.pizzas || {})
+      .filter((p) => p && p.active && p.name)
+      .map((p) => ({ name: String(p.name).trim(), toppings: String(p.toppings || ""), active: true })),
     amounts: v.amounts
       .slice(1)
       .filter((r) => r[0])
@@ -155,6 +150,7 @@ const refresh = async () => {
   keys.forEach((k, i) => {
     values[k] = answers[i];
   });
+  values.pizzas = (await getDatabase().ref("pizzas").get()).val();
   const ref = buildRef(values);
   const docRef = getFirestore().doc("planner/ref");
   const current = (await docRef.get()).data();

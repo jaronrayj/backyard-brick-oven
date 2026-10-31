@@ -16,9 +16,10 @@ sign in with Google; nobody needs access to the Google Sheets.
 
 The function reads only these ranges: dough counts, "could have sold more",
 event name and date from the money tracker (no money columns), plus the dough
-recipe and planner settings tabs of the Dough calculator, and the pizzas,
-Topping amounts, Sauce recipes and Store sections tabs of the pizza selection
-sheet.
+recipe and planner settings tabs of the Dough calculator, and the Topping
+amounts, Sauce recipes and Store sections tabs of the pizza selection sheet.
+The menu itself comes from the website's own list (Realtime Database
+`pizzas/`, edited at `/admin/menu`).
 
 ## One-time setup
 
