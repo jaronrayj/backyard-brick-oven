@@ -75,7 +75,7 @@ const Inquiries = () => {
           name="description"
           content="Book Backyard Brick Oven for your next event. Mobile brick oven catering serving fresh Neapolitan-style pizza in Bountiful, Utah and surrounding areas."
         />
-        <link rel="canonical" href="https://backyard-brickoven.web.app/inquiries" />
+        <link rel="canonical" href="https://backyardbrickovenpizza.com/inquiries" />
       </Helmet>
 
       {/* Hero — image background with headline + primary CTA above the fold */}

@@ -10,7 +10,7 @@ const Order = () => {
           name="description"
           content="Order Neapolitan-style brick oven pizza from Backyard Brick Oven for Pizza Friday in Bountiful, Utah."
         />
-        <link rel="canonical" href="https://backyard-brickoven.web.app/order" />
+        <link rel="canonical" href="https://backyardbrickovenpizza.com/order" />
       </Helmet>
     </div>
   );

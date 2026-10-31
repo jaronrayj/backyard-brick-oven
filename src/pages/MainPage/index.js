@@ -93,7 +93,7 @@ const MainPage = () => {
           name="description"
           content="Backyard Brick Oven — Neapolitan-style brick oven pizza in Bountiful, Utah by Jaron Johnson. Join us for Pizza Friday or book catering for your next event."
         />
-        <link rel="canonical" href="https://backyard-brickoven.web.app/" />
+        <link rel="canonical" href="https://backyardbrickovenpizza.com/" />
       </Helmet>
       <div className="bg-slate-200 lg:w-3/4 m-auto">
         <div className="p-4">
