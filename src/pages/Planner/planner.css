@@ -1,0 +1,90 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Public+Sans:wght@400;500;600&display=swap");
+
+  /* Dough planner: one narrow column built for a phone in the kitchen or the store. All rules are scoped to .bybo-planner. */
+  .bybo-planner {
+    --bg: #f4f5f1;
+    --panel: #ffffff;
+    --fg: #1d2420;
+    --muted: #5c665f;
+    --line: #dde1da;
+    --accent: #2f6b45;
+    --accent-ink: #ffffff;
+    --soft: #e8efe8;
+    --warn: #9a5b00;
+    --bad: #b3261e;
+    --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --body: "Public Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .bybo-planner {
+      --bg: #121614; --panel: #1a201c; --fg: #e8ece8; --muted: #9aa59d; --line: #2c342f;
+      --accent: #7cc494; --accent-ink: #0f1a13; --soft: #22302a; --warn: #e2a64b; --bad: #f08a80;
+      color-scheme: dark;
+    }
+  }
+  .bybo-planner { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.45; text-align: left; min-height: 100vh; }
+  .bybo-planner .wrap { max-width: 46rem; margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 12px 48px; display: grid; gap: 14px; }
+  .bybo-planner header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 8px 0; display: grid; gap: 8px; }
+  .bybo-planner h1 { font-family: var(--display); font-weight: 700; font-size: 1.5rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+  .bybo-planner .status { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+  .bybo-planner .status .warn { color: var(--warn); }
+  .bybo-planner .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+  .bybo-planner .tabs button { all: unset; cursor: pointer; padding: 10px 14px; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; font-weight: 500; }
+  .bybo-planner .tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+  .bybo-planner .tabs button:focus-visible, .bybo-planner .btn:focus-visible, .bybo-planner .chip:focus-visible, .bybo-planner .step button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .bybo-planner .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 10px; min-width: 0; }
+  .bybo-planner .card h2 { font-family: var(--display); font-weight: 500; font-size: 1.1rem; margin: 0; }
+  .bybo-planner .note { margin: 0; font-size: 13px; color: var(--muted); }
+  .bybo-planner .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+  .bybo-planner .field { display: grid; gap: 3px; font-size: 12px; color: var(--muted); min-width: 0; flex: 1 1 8rem; }
+  .bybo-planner .field input, .bybo-planner .field select { font: inherit; font-size: 15px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0; width: 100%; box-sizing: border-box; }
+  .bybo-planner .field input:focus-visible, .bybo-planner .field select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .bybo-planner .btn { all: unset; cursor: pointer; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: var(--panel); }
+  .bybo-planner .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .bybo-planner .btn.quiet { color: var(--muted); font-size: 13px; padding: 6px 10px; }
+  .bybo-planner .btn[disabled] { opacity: .45; pointer-events: none; }
+  .bybo-planner .svc { display: grid; gap: 8px; padding-block: 10px; border-bottom: 1px solid var(--line); }
+  .bybo-planner .svc:last-of-type { border-bottom: 0; }
+  .bybo-planner .svc .sugg { font-size: 13px; color: var(--muted); }
+  .bybo-planner .svc .sugg b { color: var(--fg); font-variant-numeric: tabular-nums; }
+  .bybo-planner details.tweaks summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+  .bybo-planner details.tweaks[open] summary { margin-bottom: 8px; }
+  .bybo-planner .batch { display: grid; gap: 8px; }
+  .bybo-planner .batch h3 { margin: 0; font-size: 15px; font-weight: 600; }
+  .bybo-planner .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 10px; }
+  .bybo-planner .stepcard { border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: grid; gap: 4px; align-content: start; }
+  .bybo-planner .stepcard h4 { margin: 0; font-size: 14px; font-weight: 600; }
+  .bybo-planner .stepcard .when { font-size: 12px; color: var(--muted); }
+  .bybo-planner table.g { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .bybo-planner table.g td { padding: 4px 0; border-bottom: 1px solid var(--line); }
+  .bybo-planner table.g tr:last-child td { border-bottom: 0; }
+  .bybo-planner table.g td.n { text-align: right; white-space: nowrap; }
+  .bybo-planner .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .bybo-planner .chip { all: unset; cursor: pointer; padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: 14px; background: var(--panel); user-select: none; }
+  .bybo-planner .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .bybo-planner .seg { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+  .bybo-planner .seg .btn { padding: 6px 10px; }
+  .bybo-planner .seg .btn[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .bybo-planner .counter { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; padding-block: 6px; border-bottom: 1px solid var(--line); }
+  .bybo-planner .counter:last-child { border-bottom: 0; }
+  .bybo-planner .counter .nm { min-width: 0; overflow-wrap: anywhere; }
+  .bybo-planner .step { display: inline-flex; align-items: center; gap: 4px; }
+  .bybo-planner .step button { all: unset; cursor: pointer; width: 2.4rem; height: 2.4rem; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 8px; font-size: 18px; line-height: 1; user-select: none; background: var(--panel); }
+  .bybo-planner .step input { width: 3.2rem; text-align: center; font: inherit; font-variant-numeric: tabular-nums; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 2px; }
+  .bybo-planner .list h3 { margin: 14px 0 4px; font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+  .bybo-planner .list h3:first-child { margin-top: 0; }
+  .bybo-planner .item { display: flex; align-items: center; gap: 10px; padding: 11px 2px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .bybo-planner .item input { width: 1.25rem; height: 1.25rem; margin: 0; flex: none; accent-color: var(--accent); }
+  .bybo-planner .item .nm { flex: 1 1 auto; min-width: 0; }
+  .bybo-planner .item .sub { display: block; font-size: 12px; color: var(--muted); }
+  .bybo-planner .item .amt { font-variant-numeric: tabular-nums; color: var(--muted); text-align: right; white-space: nowrap; }
+  .bybo-planner .item.done .nm, .bybo-planner .item.done .amt { text-decoration: line-through; opacity: .5; }
+  .bybo-planner .item .missing { color: var(--warn); }
+  .bybo-planner .hist { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .bybo-planner .hist th, .bybo-planner .hist td { padding: 5px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+  .bybo-planner .hist th:first-child, .bybo-planner .hist td:first-child { text-align: left; }
+  .bybo-planner .hist th { color: var(--muted); font-weight: 500; }
+  .bybo-planner .empty { color: var(--muted); font-size: 14px; }
+  .bybo-planner .ro { font-size: 13px; color: var(--warn); }
+  @media (prefers-reduced-motion: no-preference) { .bybo-planner .item, .bybo-planner .chip { transition: background-color .15s ease, opacity .15s ease; } }

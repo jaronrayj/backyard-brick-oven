@@ -1,6 +1,6 @@
 {
   "name": "functions",
-  "description": "Cloud Functions for Backyard Brick Oven — inquiry email delivery",
+  "description": "Cloud Functions for Backyard Brick Oven: inquiry email delivery and the dough planner sheet refresh",
   "type": "module",
   "engines": {
     "node": "20"
@@ -13,6 +13,7 @@
     "logs": "firebase functions:log"
   },
   "dependencies": {
+    "firebase-admin": "12.7.0",
     "firebase-functions": "5.1.1",
     "nodemailer": "6.9.15"
   },

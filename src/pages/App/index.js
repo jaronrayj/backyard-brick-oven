@@ -9,6 +9,7 @@ import Order from '../Order'
 import Admin from '../Admin'
 import Inquiries from '../Inquiries'
 import MenuAdmin from '../MenuAdmin'
+import Planner from '../Planner'
 
 export const isSiteReadyForOrders = true
 
@@ -27,6 +28,7 @@ const App = () => {
             <Route exact path="/reset_password" element={<ResetPassword />} />
             <Route exact path="/admin" element={<Admin />} />
             <Route exact path="/admin/menu" element={<MenuAdmin />} />
+            <Route exact path="/planner" element={<Planner />} />
           </Routes>
         </Router>
       </div>
