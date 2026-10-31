@@ -17,7 +17,7 @@ import actionCookingGuests from '../../assets/action_cooking_guests.jpg'
 import actionPavilionCrowd from '../../assets/action_pavilion_crowd.jpg'
 import actionCrew from '../../assets/action_crew.jpg'
 import actionOvenMountains from '../../assets/action_oven_mountains.jpg'
-import { objectFilter } from '../../utils'
+import { objectFilter, sortPizzas } from '../../utils'
 
 const MainPage = () => {
   const [activePizzas, setActivePizzas] = useState({})
@@ -45,6 +45,8 @@ const MainPage = () => {
     const specials = objectFilter(activePizzas, (pizza) => pizza.special)
     setSpecialPizzas(specials)
   }, [activePizzas])
+  // Same order as the menu manager (/admin/menu).
+  const orderedPizzas = useMemo(() => sortPizzas(activePizzas), [activePizzas])
 
   const socialMediaLinks = useMemo(() => {
     return [
@@ -164,7 +166,7 @@ const MainPage = () => {
               <h2 className="font-bold text-xl mb-4 mt-6">
                 Special of the Week!
               </h2>
-              {Object.entries(activePizzas).map(
+              {orderedPizzas.map(
                 ([key, value]) =>
                   value.special && (
                     <PizzaDisplay
@@ -178,7 +180,7 @@ const MainPage = () => {
           )}
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
             {activePizzas &&
-              Object.entries(activePizzas).map(
+              orderedPizzas.map(
                 ([key, value]) =>
                   !value.special && (
                     <PizzaDisplay
