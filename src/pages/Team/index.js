@@ -1,13 +1,17 @@
 import React from 'react'
 import { logout, signInWithGoogle } from '../../utils/firebase'
 import useTeamAccess from '../../utils/useTeamAccess'
+import KeepAwake from '../../components/KeepAwake'
 
 const Team = () => {
   const { user, loading, tools } = useTeamAccess()
 
   return (
     <div className="max-w-xl mx-auto px-4 py-10 text-left">
-      <h1 className="text-3xl font-mono mb-6">Team</h1>
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-6">
+        <h1 className="text-3xl font-mono">Team</h1>
+        {user && tools.length > 0 && <KeepAwake />}
+      </div>
 
       {loading && <p className="text-gray-500">Loading…</p>}
 
