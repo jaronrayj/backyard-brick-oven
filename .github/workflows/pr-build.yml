@@ -1,0 +1,31 @@
+# Checks that a pull request builds. No deploy: the site deploys from main
+# (firebase-hosting-merge.yml) or by hand with `firebase deploy`.
+name: Build check
+
+"on": pull_request
+
+concurrency:
+  group: pr-build-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
+        env:
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
+      - name: Functions install and syntax check
+        working-directory: functions
+        run: |
+          npm ci
+          for f in *.js; do node --check "$f"; done
