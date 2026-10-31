@@ -10,7 +10,12 @@ It replaces editing the "pizza selection - bybo" sheet.
 `pizzas/<key>`: `{ name, toppings, img, active, special, order }`.
 `toppings` is one comma-separated string. Pizzas with an `order` number come
 first, lowest first; the rest follow by name (`sortPizzas` in `src/utils`).
-Photos upload to Firebase Storage under `pizzas/`, scaled to 1600px wide.
+Photos open in a crop/rotate editor (`PhotoEditor.js`), then upload to Firebase
+Storage under `pizzas/`, scaled to 1200px wide and
+cached by browsers for a year. Google Photos links (`lh3.googleusercontent.com`)
+are copied into Storage by the `importMenuPhoto` Cloud Function, when a pizza is
+saved with one or with the "Move photos" button; the old link is kept in
+`imgGooglePhotos`.
 
 ## Who can edit
 

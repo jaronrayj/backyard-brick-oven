@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { ref, onValue, update, remove } from 'firebase/database'
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { getFunctions, httpsCallable } from 'firebase/functions'
 import { auth, rtdb, signInWithGoogle } from '../../utils/firebase'
 import { sortPizzas } from '../../utils'
+import PhotoEditor from './PhotoEditor'
 
 // Menu manager: the website menu lives in the Realtime Database at `pizzas/`,
 // one entry per pizza: { name, toppings, img, active, special, order }.
@@ -14,32 +16,75 @@ import { sortPizzas } from '../../utils'
 // Database keys can't contain . $ # [ ] /
 const keyFor = (name) => name.trim().replace(/[.$#[\]/]/g, '_') || 'pizza'
 
-// Phone photos are large: scale to at most 1600px wide as a JPEG before upload.
-const shrinkImage = (file) =>
-  new Promise((resolve) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-    img.onload = () => {
-      const scale = Math.min(1, 1600 / img.width)
-      const canvas = document.createElement('canvas')
-      canvas.width = Math.round(img.width * scale)
-      canvas.height = Math.round(img.height * scale)
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
-      URL.revokeObjectURL(url)
-      canvas.toBlob((blob) => resolve(blob || file), 'image/jpeg', 0.82)
-    }
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      resolve(file)
-    }
-    img.src = url
+// The photo editor (PhotoEditor.js) crops and scales to 1200px wide before this.
+const uploadPhoto = async (blob, name) => {
+  const base = name.replace(/\.[^.]*$/, '').replace(/[^\w-]+/g, '_') || 'photo'
+  const path = `pizzas/${Date.now()}-${base}.jpg`
+  const snap = await uploadBytes(storageRef(getStorage(), path), blob, {
+    contentType: 'image/jpeg',
+    cacheControl: 'public, max-age=31536000, immutable',
   })
-
-const uploadPhoto = async (file) => {
-  const blob = await shrinkImage(file)
-  const path = `pizzas/${Date.now()}-${file.name.replace(/[^\w.-]+/g, '_')}`
-  const snap = await uploadBytes(storageRef(getStorage(), path), blob, { contentType: 'image/jpeg' })
   return getDownloadURL(snap.ref)
+}
+
+// Google Photos share links can change or stop working, so the server copies
+// them into Storage (functions/menuPhotos.js) and the menu keeps the copy.
+const isGooglePhoto = (url) => /^https:\/\/lh3\.googleusercontent\.com\//.test(url || '')
+const importGooglePhoto = async (url) => {
+  const res = await httpsCallable(getFunctions(), 'importMenuPhoto')({ url })
+  return res.data.url
+}
+
+const MovePhotos = ({ list }) => {
+  const [state, setState] = useState({ running: false, done: 0, failed: [] })
+  const [showList, setShowList] = useState(false)
+  if (!list.length && !state.failed.length) return null
+
+  const run = async () => {
+    setState({ running: true, done: 0, failed: [] })
+    const failed = []
+    let done = 0
+    for (const [id, p] of list) {
+      try {
+        const url = await importGooglePhoto(p.img)
+        // Keep the old link alongside, so a move can be undone by hand if needed.
+        await update(ref(rtdb, `pizzas/${id}`), { img: url, imgGooglePhotos: p.img })
+        done += 1
+      } catch (e) {
+        failed.push(p.name || id)
+      }
+      setState({ running: true, done, failed: [...failed] })
+    }
+    setState({ running: false, done, failed })
+  }
+
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left grid gap-2 text-sm">
+      {list.length > 0 && (
+        <>
+          <p className="text-gray-800">
+            {list.length} {list.length === 1 ? 'photo still loads' : 'photos still load'} from Google Photos, which can stop
+            working. Move them to the site's own storage.{' '}
+            <button type="button" className="underline text-gray-600" onClick={() => setShowList(!showList)}>
+              {showList ? 'Hide list' : 'Show which'}
+            </button>
+          </p>
+          {showList && <p className="text-gray-600 capitalize">{list.map(([, p]) => p.name).join(', ')}</p>}
+          <div>
+            <button type="button" disabled={state.running} onClick={run} className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-4 py-2 rounded-lg disabled:opacity-50">
+              {state.running ? `Moving… ${state.done} done` : 'Move photos'}
+            </button>
+          </div>
+        </>
+      )}
+      {!state.running && state.failed.length > 0 && (
+        <p className="text-red-700">
+          Couldn't move: {state.failed.join(', ')}. Open {state.failed.length === 1 ? 'that pizza' : 'those pizzas'} and upload a
+          new photo.
+        </p>
+      )}
+    </div>
+  )
 }
 
 const Toggle = ({ on, label, onClick, disabled }) => (
@@ -64,13 +109,21 @@ const Editor = ({ pizza, onSave, onCancel, onDelete }) => {
   const [error, setError] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const pick = async (e) => {
+  const [draft, setDraft] = useState(null)
+
+  const pick = (e) => {
     const file = e.target.files && e.target.files[0]
-    if (!file) return
+    e.target.value = ''
+    if (file) setDraft(file)
+  }
+
+  const upload = async (blob) => {
+    const name = draft.name
+    setDraft(null)
     setBusy(true)
     setError('')
     try {
-      setImg(await uploadPhoto(file))
+      setImg(await uploadPhoto(blob, name))
     } catch (err) {
       setError("The photo didn't upload. Check your connection and try again.")
     }
@@ -85,7 +138,17 @@ const Editor = ({ pizza, onSave, onCancel, onDelete }) => {
     setBusy(true)
     setError('')
     try {
-      await onSave({ name: name.trim(), toppings: toppings.trim(), img: img.trim() })
+      let photo = img.trim()
+      if (isGooglePhoto(photo)) {
+        try {
+          photo = await importGooglePhoto(photo)
+        } catch (err) {
+          setError("That Google Photos link couldn't be copied. Upload the photo instead.")
+          setBusy(false)
+          return
+        }
+      }
+      await onSave({ name: name.trim(), toppings: toppings.trim(), img: photo })
     } catch (err) {
       setError("That didn't save. Make sure you're signed in as a menu admin.")
       setBusy(false)
@@ -94,6 +157,7 @@ const Editor = ({ pizza, onSave, onCancel, onDelete }) => {
 
   return (
     <div className="grid gap-3 text-left">
+      {draft && <PhotoEditor file={draft} onDone={upload} onCancel={() => setDraft(null)} />}
       <label className="grid gap-1 text-sm text-gray-600">
         Name
         <input className="border border-gray-300 rounded-lg px-3 py-2 text-base text-gray-900" value={name} onChange={(e) => setName(e.target.value)} />
@@ -107,7 +171,7 @@ const Editor = ({ pizza, onSave, onCancel, onDelete }) => {
         <div className="flex items-center gap-3 flex-wrap">
           {img ? <img src={img} alt="" className="h-20 w-28 object-cover rounded-lg" /> : <span className="text-gray-400">No photo yet</span>}
           <label className="px-3 py-2 rounded-lg border border-gray-300 bg-white cursor-pointer text-gray-800">
-            {busy ? 'Uploading…' : 'Upload photo'}
+            {busy ? 'Uploading…' : 'Take or upload photo'}
             <input type="file" accept="image/*" className="hidden" onChange={pick} disabled={busy} />
           </label>
           {img && (
@@ -287,6 +351,7 @@ const MenuAdmin = () => {
         </button>
       </div>
       {error && <p className="text-sm text-red-700">{error}</p>}
+      {pizzas && <MovePhotos list={sorted.filter(([, p]) => isGooglePhoto(p.img))} />}
       {editing === 'new' && (
         <div className="bg-white rounded-xl shadow-sm p-4">
           <Editor pizza={{}} onSave={addPizza} onCancel={() => setEditing(null)} />
