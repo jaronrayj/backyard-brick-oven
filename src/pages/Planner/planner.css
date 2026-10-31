@@ -25,6 +25,8 @@
   }
   .bybo-planner { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.45; text-align: left; min-height: 100vh; }
   .bybo-planner .wrap { max-width: 46rem; margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 12px 48px; display: grid; gap: 14px; }
+  .bybo-planner [hidden] { display: none !important; }
+  .bybo-planner .panel { display: grid; gap: 14px; }
   .bybo-planner header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 8px 0; display: grid; gap: 8px; }
   .bybo-planner h1 { font-family: var(--display); font-weight: 700; font-size: 1.5rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
   .bybo-planner .status { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
