@@ -3,6 +3,7 @@ import { Disclosure } from '@headlessui/react'
 import { MenuIcon, XIcon } from '@heroicons/react/outline'
 import { isSiteReadyForOrders } from '../App/index'
 import logo from '../../assets/BrickovenLogo.png'
+import useTeamAccess from '../../utils/useTeamAccess'
 
 const navigation = [
   { name: 'Home', href: '/' },
@@ -18,6 +19,8 @@ const classNames = (...classes) => {
 const Navbar = () => {
   const currentPath =
     typeof window !== 'undefined' ? window.location.pathname : '/'
+  const { tools } = useTeamAccess()
+  const links = tools.length ? [...navigation, { name: 'Team', href: '/team' }] : navigation
 
   return (
     <Disclosure as="nav" className="bg-yellow-500">
@@ -88,6 +91,20 @@ const Navbar = () => {
                     >
                       Inquiries
                     </a>
+                    {tools.length > 0 && (
+                      <a
+                        href="/team"
+                        className={classNames(
+                          currentPath === '/team'
+                            ? 'bg-gray-900 text-white'
+                            : 'text-gray-900 hover:bg-gray-900 hover:text-white',
+                          'px-3 py-2 rounded-md text-sm font-medium'
+                        )}
+                        aria-current={currentPath === '/team' ? 'page' : undefined}
+                      >
+                        Team
+                      </a>
+                    )}
                   </div>
                 </div>
               {/* {isSiteReadyForOrders && (
@@ -163,7 +180,7 @@ const Navbar = () => {
 
           <Disclosure.Panel className="sm:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {navigation.map((item) => {
+              {links.map((item) => {
                 const isCurrent = currentPath === item.href
                 return (
                   <Disclosure.Button

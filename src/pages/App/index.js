@@ -10,6 +10,7 @@ import Admin from '../Admin'
 import Inquiries from '../Inquiries'
 import MenuAdmin from '../MenuAdmin'
 import Planner from '../Planner'
+import Team from '../Team'
 
 export const isSiteReadyForOrders = true
 
@@ -29,9 +30,13 @@ const App = () => {
             <Route exact path="/admin" element={<Admin />} />
             <Route exact path="/admin/menu" element={<MenuAdmin />} />
             <Route exact path="/planner" element={<Planner />} />
+            <Route exact path="/team" element={<Team />} />
           </Routes>
         </Router>
       </div>
+      <footer className="text-center py-6 text-xs text-gray-400">
+        <a href="/team" className="hover:text-gray-700">Team sign-in</a>
+      </footer>
     </div>
   )
 }

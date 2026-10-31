@@ -57,6 +57,10 @@ const signInWithGoogle = async () => {
     }
   } catch (err) {
     console.error(err);
+    const quiet = ["auth/popup-closed-by-user", "auth/cancelled-popup-request"];
+    if (err && err.code && !quiet.includes(err.code)) {
+      window.alert(`Sign-in didn't work (${err.code}). Send this message to Jaron.`);
+    }
   }
 };
 
