@@ -8,6 +8,7 @@ import Navbar from '../Navbar'
 import Order from '../Order'
 import Admin from '../Admin'
 import Inquiries from '../Inquiries'
+import MenuAdmin from '../MenuAdmin'
 
 export const isSiteReadyForOrders = true
 
@@ -25,6 +26,7 @@ const App = () => {
             <Route exact path="/register" element={<Register />} />
             <Route exact path="/reset_password" element={<ResetPassword />} />
             <Route exact path="/admin" element={<Admin />} />
+            <Route exact path="/admin/menu" element={<MenuAdmin />} />
           </Routes>
         </Router>
       </div>
