@@ -19,7 +19,7 @@ Two lists in the Firebase console:
 | What | Where | How to add someone |
 | --- | --- | --- |
 | Edit the menu | Realtime Database, `menuAdmins` | Add a child: key = their Google email with every `.` replaced by `,` (e.g. `jj,backyardbrickoven@gmail,com`), value `true` |
-| Upload menu photos, admin on the dough planner | Firestore, `plannerAccess/team`, `admins` array | Add their email to the array |
+| Upload menu photos | Storage rules (below) | Add their email to the list in the rule |
 
 They sign in at `/admin/menu` with that Google account.
 
@@ -45,7 +45,8 @@ They sign in at `/admin/menu` with that Google account.
    ```
 
 2. **Storage rules** (console → Storage → Rules; turn Storage on first if it
-   isn't):
+   isn't). The emails are listed in the rule because checking Firestore from
+   Storage rules needs an extra IAM grant that failed to provision:
 
    ```
    rules_version = '2';
@@ -55,7 +56,11 @@ They sign in at `/admin/menu` with that Google account.
          allow read: if true;
          allow write: if request.auth != null
            && request.auth.token.email_verified == true
-           && request.auth.token.email in firestore.get(/databases/(default)/documents/plannerAccess/team).data.admins
+           && request.auth.token.email in [
+             'jj.backyardbrickoven@gmail.com',
+             'jaronjohnson14@gmail.com',
+             'bublegum.pop@gmail.com'
+           ]
            && request.resource.size < 10 * 1024 * 1024
            && request.resource.contentType.matches('image/.*');
        }
