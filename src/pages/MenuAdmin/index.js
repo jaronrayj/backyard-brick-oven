@@ -48,8 +48,8 @@ const Toggle = ({ on, label, onClick, disabled }) => (
     disabled={disabled}
     onClick={onClick}
     aria-pressed={on}
-    className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-      on ? 'bg-amber-600 border-amber-600 text-white' : 'bg-white border-gray-300 text-gray-600'
+    className={`px-2 py-0.5 rounded-full text-xs font-medium border transition-colors ${
+      on ? 'bg-amber-600 border-amber-600 text-white' : 'bg-white border-gray-300 text-gray-500'
     } disabled:opacity-50`}
   >
     {label}
@@ -141,7 +141,7 @@ const Editor = ({ pizza, onSave, onCancel, onDelete }) => {
   )
 }
 
-const PizzaRow = ({ id, pizza, editing, setEditing, move, canMoveUp, canMoveDown }) => {
+const PizzaRow = ({ id, pizza, editing, setEditing, move, canMoveUp, canMoveDown, nextOrder }) => {
   const [saving, setSaving] = useState(false)
   const set = async (fields) => {
     setSaving(true)
@@ -154,7 +154,7 @@ const PizzaRow = ({ id, pizza, editing, setEditing, move, canMoveUp, canMoveDown
 
   if (editing === id) {
     return (
-      <li className="bg-white rounded-xl shadow-sm p-4">
+      <li className="p-4 bg-amber-50">
         <Editor
           pizza={pizza}
           onCancel={() => setEditing(null)}
@@ -171,33 +171,38 @@ const PizzaRow = ({ id, pizza, editing, setEditing, move, canMoveUp, canMoveDown
     )
   }
 
+  const arrow = 'w-7 h-7 rounded-md border border-gray-200 bg-white text-sm text-gray-600 disabled:opacity-25'
+
   return (
-    <li className="bg-white rounded-xl shadow-sm p-3 flex gap-3 items-center text-left">
-      {pizza.img ? (
-        <img src={pizza.img} alt="" loading="lazy" className="h-16 w-20 object-cover rounded-lg shrink-0" />
-      ) : (
-        <div className="h-16 w-20 rounded-lg bg-gray-100 shrink-0" />
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="font-semibold capitalize text-gray-900">{pizza.name}</div>
-        <div className="text-sm text-gray-500 truncate">{pizza.toppings || 'No toppings listed'}</div>
-        <div className="flex gap-2 mt-2 flex-wrap">
-          <Toggle on={!!pizza.active} label="On the menu" disabled={saving} onClick={() => set({ active: !pizza.active })} />
-          <Toggle on={!!pizza.special} label="Special of the week" disabled={saving} onClick={() => set({ special: !pizza.special })} />
-          <button type="button" className="px-3 py-1.5 text-sm text-gray-600 underline" onClick={() => setEditing(id)}>
-            Edit
+    <li className="px-2 py-1.5 flex gap-2 items-center text-left">
+      <button type="button" onClick={() => setEditing(id)} className="flex gap-2 items-center min-w-0 flex-1 text-left" title="Edit">
+        {pizza.img ? (
+          <img src={pizza.img} alt="" loading="lazy" className="h-10 w-10 object-cover rounded-md shrink-0" />
+        ) : (
+          <span className="h-10 w-10 rounded-md bg-gray-100 shrink-0" />
+        )}
+        <span className="min-w-0">
+          <span className="block font-medium capitalize text-gray-900 truncate">{pizza.name}</span>
+          <span className="block text-xs text-gray-500 truncate">{pizza.toppings || 'No toppings listed'}</span>
+        </span>
+      </button>
+      {move ? (
+        <>
+          <Toggle on={!!pizza.special} label="Special" disabled={saving} onClick={() => set({ special: !pizza.special })} />
+          <button type="button" aria-label={`Take ${pizza.name} off the menu`} title="Take off the menu" disabled={saving} onClick={() => set({ active: false, special: false })} className="w-7 h-7 rounded-md text-gray-400 hover:text-red-700 hover:bg-red-50 shrink-0">
+            ✕
           </button>
-        </div>
-      </div>
-      {move && (
-        <div className="flex flex-col gap-1 shrink-0">
-          <button type="button" aria-label={`Move ${pizza.name} up`} disabled={!canMoveUp} onClick={() => move(-1)} className="w-9 h-9 rounded-lg border border-gray-300 bg-white disabled:opacity-30">
+          <button type="button" aria-label={`Move ${pizza.name} up`} disabled={!canMoveUp} onClick={() => move(-1)} className={arrow}>
             ↑
           </button>
-          <button type="button" aria-label={`Move ${pizza.name} down`} disabled={!canMoveDown} onClick={() => move(1)} className="w-9 h-9 rounded-lg border border-gray-300 bg-white disabled:opacity-30">
+          <button type="button" aria-label={`Move ${pizza.name} down`} disabled={!canMoveDown} onClick={() => move(1)} className={arrow}>
             ↓
           </button>
-        </div>
+        </>
+      ) : (
+        <button type="button" disabled={saving} onClick={() => set({ active: true, order: nextOrder })} className="px-2 py-0.5 rounded-full text-xs font-medium border border-amber-600 text-amber-700 bg-white disabled:opacity-50 shrink-0">
+          + Menu
+        </button>
       )}
     </li>
   )
@@ -228,6 +233,12 @@ const MenuAdmin = () => {
   const sorted = useMemo(() => sortPizzas(pizzas || {}), [pizzas])
   const onMenu = sorted.filter(([, p]) => p.active)
   const offMenu = sorted.filter(([, p]) => !p.active)
+  const [showOff, setShowOff] = useState(false)
+  const [search, setSearch] = useState('')
+  const term = search.trim().toLowerCase()
+  const offShown = term
+    ? offMenu.filter(([, p]) => `${p.name || ''} ${p.toppings || ''}`.toLowerCase().includes(term))
+    : offMenu
 
   // Reordering renumbers the whole on-menu list so the order stays clean.
   const move = (index, dir) => {
@@ -268,7 +279,7 @@ const MenuAdmin = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 grid gap-6">
+    <div className="max-w-2xl mx-auto px-4 py-6 grid gap-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h1 className="text-2xl font-bold">Menu</h1>
         <button type="button" onClick={() => setEditing('new')} className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-4 py-2 rounded-lg">
@@ -287,9 +298,10 @@ const MenuAdmin = () => {
       ) : (
         <>
           <section className="grid gap-2">
-            <h2 className="text-left font-semibold text-gray-700">On the menu ({onMenu.length})</h2>
-            <p className="text-left text-sm text-gray-500">The order here is the order on the website.</p>
-            <ul className="grid gap-2">
+            <h2 className="text-left font-semibold text-gray-700">
+              On the menu ({onMenu.length}) <span className="font-normal text-sm text-gray-500">· shown on the site in this order. Tap a pizza to edit it.</span>
+            </h2>
+            <ul className="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
               {onMenu.map(([id, p], i) => (
                 <PizzaRow
                   key={id}
@@ -305,12 +317,27 @@ const MenuAdmin = () => {
             </ul>
           </section>
           <section className="grid gap-2">
-            <h2 className="text-left font-semibold text-gray-700">Off the menu ({offMenu.length})</h2>
-            <ul className="grid gap-2">
-              {offMenu.map(([id, p]) => (
-                <PizzaRow key={id} id={id} pizza={p} editing={editing} setEditing={setEditing} />
-              ))}
-            </ul>
+            <button type="button" onClick={() => setShowOff(!showOff)} className="text-left font-semibold text-gray-700 flex items-center gap-2">
+              <span className="text-xs text-gray-400">{showOff ? '▼' : '▶'}</span>
+              Off the menu ({offMenu.length})
+            </button>
+            {showOff && (
+              <>
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Find a pizza"
+                  className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                />
+                <ul className="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+                  {offShown.map(([id, p]) => (
+                    <PizzaRow key={id} id={id} pizza={p} editing={editing} setEditing={setEditing} nextOrder={onMenu.length + 1} />
+                  ))}
+                  {offShown.length === 0 && <li className="px-3 py-2 text-sm text-gray-500 text-left">No matches.</li>}
+                </ul>
+              </>
+            )}
           </section>
         </>
       )}
