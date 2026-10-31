@@ -3,7 +3,7 @@
   "description": "Cloud Functions for Backyard Brick Oven: inquiry email delivery and the dough planner sheet refresh",
   "type": "module",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "index.js",
   "scripts": {
