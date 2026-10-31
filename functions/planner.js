@@ -54,13 +54,23 @@ const serviceAccountEmail = async () => {
 const readRange = async (token, [spreadsheetId, range]) => {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (res.ok) return (await res.json()).values || [];
+  const body = await res.text();
+  logger.error(`Sheets read failed for ${range}: ${res.status} ${body}`);
+  // A disabled Sheets API also answers 403, so only blame sharing when it is about access to the file.
+  if (/SERVICE_DISABLED|has not been used|is disabled/i.test(body)) {
+    throw new HttpsError(
+      "failed-precondition",
+      "The Google Sheets API is turned off for this Firebase project. Turn it on at " +
+        "https://console.cloud.google.com/apis/library/sheets.googleapis.com?project=backyard-brickoven, then refresh again."
+    );
+  }
   if (res.status === 403 || res.status === 404) {
     const err = new Error(`Can't read ${range}`);
     err.denied = true;
     throw err;
   }
-  if (!res.ok) throw new Error(`Sheets ${range}: ${res.status} ${await res.text()}`);
-  return (await res.json()).values || [];
+  throw new Error(`Sheets ${range}: ${res.status} ${body}`);
 };
 
 const num = (v) => {
