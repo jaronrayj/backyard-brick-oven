@@ -4,6 +4,7 @@ import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { auth, db, signInWithGoogle } from '../../utils/firebase'
 import { mountPlanner } from './planner'
+import KeepAwake from '../../components/KeepAwake'
 import './planner.css'
 
 // The planner keeps three Firestore documents under `planner/`:
@@ -92,7 +93,14 @@ const Planner = () => {
       </Message>
     )
   }
-  return <div className="bybo-planner" ref={rootRef} />
+  return (
+    <>
+      <div className="bybo-planner" ref={rootRef} />
+      <div className="fixed bottom-4 right-4 z-10">
+        <KeepAwake className="shadow-md" />
+      </div>
+    </>
+  )
 }
 
 export default Planner

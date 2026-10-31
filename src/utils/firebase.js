@@ -42,13 +42,24 @@ const rtdb = getDatabase(app);
 
 const googleProvider = new GoogleAuthProvider();
 const signInWithGoogle = async () => {
+  let user;
   try {
-    const res = await signInWithPopup(auth, googleProvider);
-    const user = res.user;
+    user = (await signInWithPopup(auth, googleProvider)).user;
+  } catch (err) {
+    console.error(err);
+    const quiet = ["auth/popup-closed-by-user", "auth/cancelled-popup-request"];
+    if (err && err.code && !quiet.includes(err.code)) {
+      window.alert(`Sign-in didn't work (${err.code}). Send this message to Jaron.`);
+    }
+    return;
+  }
+  // Best effort: the old users/ record. Signing in already worked if this fails
+  // (the Firestore rules may not allow it), so don't report it as a sign-in error.
+  try {
     const q = query(collection(db, "users"), where("uid", "==", user.uid));
     const docs = await getDocs(q);
     if (docs.docs.length === 0) {
-      const newUser = defaultUser;
+      const newUser = { ...defaultUser };
       newUser.email = user.email;
       newUser.name = user.displayName;
       newUser.uid = user.uid;
@@ -56,7 +67,7 @@ const signInWithGoogle = async () => {
       await addDoc(collection(db, "users"), newUser);
     }
   } catch (err) {
-    console.error(err);
+    console.warn("Couldn't save the users/ record", err);
   }
 };
 
