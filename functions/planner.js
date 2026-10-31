@@ -166,7 +166,8 @@ const isAdmin = async (email) => {
 };
 
 // "Refresh from sheets" on the planner page. Admins only.
-export const refreshPlannerData = onCall(async (request) => {
+// invoker "public" lets browsers reach it; the admin check below does the gating.
+export const refreshPlannerData = onCall({ invoker: "public" }, async (request) => {
   const email = request.auth?.token?.email;
   if (!request.auth?.token?.email_verified || !(await isAdmin(email))) {
     throw new HttpsError("permission-denied", "Only planner admins can refresh from the sheets.");
