@@ -28,19 +28,41 @@ const toBlob = (canvas) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not make the image'))), 'image/jpeg', 0.82)
   )
 
-// A smaller copy of the picked file to edit, as an object URL.
-const workingCopy = async (file) => {
+// iPhone photos are often HEIC, which only Safari can show. When the browser
+// can't open a photo, convert it to JPEG with heic2any (loaded only then: it's
+// about 1 MB). Anything still unreadable throws, and the editor says so.
+const openImage = async (file) => {
   const url = URL.createObjectURL(file)
   try {
-    const img = await loadImage(url)
-    const scale = Math.min(1, WORKING_EDGE / Math.max(img.width, img.height))
-    if (scale === 1) return url
+    return { url, img: await loadImage(url) }
+  } catch (e) {
+    URL.revokeObjectURL(url)
+  }
+  const { default: heic2any } = await import('heic2any')
+  const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 })
+  const jpeg = Array.isArray(out) ? out[0] : out
+  const converted = URL.createObjectURL(jpeg)
+  try {
+    return { url: converted, img: await loadImage(converted) }
+  } catch (e) {
+    URL.revokeObjectURL(converted)
+    throw e
+  }
+}
+
+// A smaller copy of the picked file to edit, as an object URL.
+const workingCopy = async (file) => {
+  const { url, img } = await openImage(file)
+  const scale = Math.min(1, WORKING_EDGE / Math.max(img.width, img.height))
+  if (scale === 1) return url
+  try {
     const canvas = document.createElement('canvas')
     canvas.width = Math.round(img.width * scale)
     canvas.height = Math.round(img.height * scale)
     canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+    const small = URL.createObjectURL(await toBlob(canvas))
     URL.revokeObjectURL(url)
-    return URL.createObjectURL(await toBlob(canvas))
+    return small
   } catch (e) {
     return url
   }
@@ -81,14 +103,19 @@ const PhotoEditor = ({ file, onDone, onCancel }) => {
   const [area, setArea] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [unreadable, setUnreadable] = useState(false)
 
   useEffect(() => {
     let url = null
     let gone = false
-    workingCopy(file).then((u) => {
-      if (gone) URL.revokeObjectURL(u)
-      else setSrc((url = u))
-    })
+    workingCopy(file)
+      .then((u) => {
+        if (gone) URL.revokeObjectURL(u)
+        else setSrc((url = u))
+      })
+      .catch(() => {
+        if (!gone) setUnreadable(true)
+      })
     return () => {
       gone = true
       if (url) URL.revokeObjectURL(url)
@@ -151,8 +178,12 @@ const PhotoEditor = ({ file, onDone, onCancel }) => {
             onCropComplete={onComplete}
             onMediaLoaded={(m) => setNatural({ width: m.naturalWidth, height: m.naturalHeight })}
           />
+        ) : unreadable ? (
+          <p className="text-gray-200 p-6">
+            This photo couldn't be opened. Try another photo, or take a screenshot of it and upload that.
+          </p>
         ) : (
-          <p className="text-gray-300 p-6">Opening photo…</p>
+          <p className="text-gray-300 p-6">Opening photo… iPhone photos can take a few seconds.</p>
         )}
       </div>
       <div className="bg-gray-900 text-white px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] grid gap-3">
