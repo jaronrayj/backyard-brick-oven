@@ -45,6 +45,7 @@
   .bybo-planner .btn { all: unset; cursor: pointer; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: var(--panel); }
   .bybo-planner .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   .bybo-planner .btn.quiet { color: var(--muted); font-size: 13px; padding: 6px 10px; }
+  .bybo-planner .status .btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
   .bybo-planner .btn[disabled] { opacity: .45; pointer-events: none; }
   .bybo-planner .svc { display: grid; gap: 8px; padding-block: 10px; border-bottom: 1px solid var(--line); }
   .bybo-planner .svc:last-of-type { border-bottom: 0; }

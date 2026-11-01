@@ -22,7 +22,8 @@ const writePref = (on) => {
   }
 }
 
-const KeepAwake = ({ className = '' }) => {
+// `bare`: use only `className` for styling (the planner passes its own button classes).
+const KeepAwake = ({ className = '', bare = false }) => {
   const supported = typeof navigator !== 'undefined' && 'wakeLock' in navigator
   const [on, setOn] = useState(readPref)
   const [active, setActive] = useState(false)
@@ -68,9 +69,13 @@ const KeepAwake = ({ className = '' }) => {
       type="button"
       onClick={on && !active ? () => { setOn(false); setTimeout(() => setOn(true)) } : toggle}
       aria-pressed={on && active}
-      className={`px-3 py-1.5 rounded-full text-sm font-medium border ${
-        on && active ? 'bg-gray-900 border-gray-900 text-white' : 'bg-white border-gray-300 text-gray-800'
-      } ${className}`}
+      className={
+        bare
+          ? className
+          : `px-3 py-1.5 rounded-full text-sm font-medium border ${
+              on && active ? 'bg-gray-900 border-gray-900 text-white' : 'bg-white border-gray-300 text-gray-800'
+            } ${className}`
+      }
     >
       {on && active ? '☀︎ ' : ''}
       {label}
