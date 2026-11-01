@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore'
 import { getFunctions, httpsCallable } from 'firebase/functions'
@@ -47,6 +48,7 @@ const Planner = () => {
   const [user, loading] = useAuthState(auth)
   const [access, setAccess] = useState(null) // null while checking, 'denied', or { admin }
   const rootRef = useRef(null)
+  const [awakeSlot, setAwakeSlot] = useState(null)
 
   useEffect(() => {
     if (!user) {
@@ -66,7 +68,12 @@ const Planner = () => {
 
   useEffect(() => {
     if (!access || access === 'denied' || !rootRef.current) return undefined
-    return mountPlanner(rootRef.current, { store, canWrite: true, isAdmin: access.admin, refresh })
+    const unmount = mountPlanner(rootRef.current, { store, canWrite: true, isAdmin: access.admin, refresh })
+    setAwakeSlot(rootRef.current.querySelector('#keep-awake-slot'))
+    return () => {
+      setAwakeSlot(null)
+      unmount()
+    }
   }, [access])
 
   if (loading || (user && !access)) {
@@ -96,9 +103,7 @@ const Planner = () => {
   return (
     <>
       <div className="bybo-planner" ref={rootRef} />
-      <div className="fixed bottom-4 right-4 z-10">
-        <KeepAwake className="shadow-md" />
-      </div>
+      {awakeSlot && createPortal(<KeepAwake bare className="btn quiet" />, awakeSlot)}
     </>
   )
 }

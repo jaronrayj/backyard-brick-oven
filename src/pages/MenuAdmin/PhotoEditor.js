@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Cropper from 'react-easy-crop'
 
 // Crop, zoom and rotate a photo before it uploads. Returns a JPEG blob at most
@@ -114,9 +115,27 @@ const PhotoEditor = ({ file, onDone, onCancel }) => {
     }
   }
 
-  const btn = 'px-3 py-1.5 rounded-lg border text-sm font-medium'
-  return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col" role="dialog" aria-modal="true" aria-label="Edit photo">
+  const btn = 'px-3 py-2 rounded-lg border text-sm font-medium'
+  // Rendered on <body> and sized to the visible screen (100dvh), with the
+  // actions in a top bar, so phone toolbars and page width can't hide them.
+  return createPortal(
+    <div
+      className="fixed left-0 top-0 z-50 w-full bg-black flex flex-col text-left"
+      style={{ height: '100dvh', maxHeight: '-webkit-fill-available' }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Edit photo"
+    >
+      <div className="bg-gray-900 text-white px-4 pb-2 pt-[max(8px,env(safe-area-inset-top))] flex items-center gap-2">
+        <button type="button" onClick={onCancel} disabled={busy} className={`${btn} border-gray-600 text-gray-200`}>
+          Cancel
+        </button>
+        <span className="flex-1 text-center text-sm text-gray-300">Edit photo</span>
+        <button type="button" onClick={use} disabled={busy || !area} className={`${btn} bg-amber-600 border-amber-600 text-white disabled:opacity-50`}>
+          {busy ? 'Saving…' : 'Use photo'}
+        </button>
+      </div>
+      {error && <p className="bg-gray-900 px-4 pb-2 text-sm text-red-300">{error}</p>}
       <div className="relative flex-1 min-h-0">
         {src ? (
           <Cropper
@@ -155,19 +174,11 @@ const PhotoEditor = ({ file, onDone, onCancel }) => {
         </div>
         <label className="flex items-center gap-3 text-sm text-gray-300">
           Zoom
-          <input type="range" min={1} max={4} step={0.01} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="flex-1" />
+          <input type="range" min={1} max={4} step={0.01} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="flex-1 min-w-0" />
         </label>
-        {error && <p className="text-sm text-red-300">{error}</p>}
-        <div className="flex gap-2">
-          <button type="button" onClick={onCancel} disabled={busy} className={`${btn} border-gray-600 text-gray-200`}>
-            Cancel
-          </button>
-          <button type="button" onClick={use} disabled={busy || !area} className={`${btn} ml-auto bg-amber-600 border-amber-600 text-white disabled:opacity-50`}>
-            {busy ? 'Saving…' : 'Use photo'}
-          </button>
-        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
