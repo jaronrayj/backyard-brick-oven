@@ -59,7 +59,7 @@ const MovePhotos = ({ list }) => {
   }
 
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left grid gap-2 text-sm">
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left grid grid-cols-[minmax(0,1fr)] gap-2 text-sm">
       {list.length > 0 && (
         <>
           <p className="text-gray-800">
@@ -156,17 +156,17 @@ const Editor = ({ pizza, onSave, onCancel, onDelete }) => {
   }
 
   return (
-    <div className="grid gap-3 text-left">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-3 text-left">
       {draft && <PhotoEditor file={draft} onDone={upload} onCancel={() => setDraft(null)} />}
-      <label className="grid gap-1 text-sm text-gray-600">
+      <label className="grid grid-cols-[minmax(0,1fr)] gap-1 text-sm text-gray-600">
         Name
         <input className="border border-gray-300 rounded-lg px-3 py-2 text-base text-gray-900" value={name} onChange={(e) => setName(e.target.value)} />
       </label>
-      <label className="grid gap-1 text-sm text-gray-600">
+      <label className="grid grid-cols-[minmax(0,1fr)] gap-1 text-sm text-gray-600">
         Toppings, separated by commas
         <textarea rows={2} className="border border-gray-300 rounded-lg px-3 py-2 text-base text-gray-900" value={toppings} onChange={(e) => setToppings(e.target.value)} />
       </label>
-      <div className="grid gap-2 text-sm text-gray-600">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-2 text-sm text-gray-600">
         Photo
         <div className="flex items-center gap-3 flex-wrap">
           {img ? <img src={img} alt="" className="h-20 w-28 object-cover rounded-lg" /> : <span className="text-gray-400">No photo yet</span>}
@@ -328,7 +328,7 @@ const MenuAdmin = () => {
   if (loading || (user && isAdmin === null)) return <div className="p-8 text-gray-500">Loading…</div>
   if (!isAdmin) {
     return (
-      <div className="max-w-md mx-auto p-8 grid gap-4">
+      <div className="max-w-md mx-auto p-8 grid grid-cols-[minmax(0,1fr)] gap-4">
         <h1 className="text-2xl font-bold">Menu</h1>
         <p className="text-gray-600">
           {user ? `${user.email} isn't on the menu admin list yet.` : 'Sign in with Google to edit the menu.'}
@@ -343,7 +343,7 @@ const MenuAdmin = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 grid gap-5">
+    <div className="max-w-2xl mx-auto px-4 py-6 grid grid-cols-[minmax(0,1fr)] gap-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h1 className="text-2xl font-bold">Menu</h1>
         <button type="button" onClick={() => setEditing('new')} className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-4 py-2 rounded-lg">
@@ -362,7 +362,7 @@ const MenuAdmin = () => {
         <p className="text-gray-500">Loading the menu…</p>
       ) : (
         <>
-          <section className="grid gap-2">
+          <section className="grid grid-cols-[minmax(0,1fr)] gap-2">
             <h2 className="text-left font-semibold text-gray-700">
               On the menu ({onMenu.length}) <span className="font-normal text-sm text-gray-500">· shown on the site in this order. Tap a pizza to edit it.</span>
             </h2>
@@ -381,7 +381,7 @@ const MenuAdmin = () => {
               ))}
             </ul>
           </section>
-          <section className="grid gap-2">
+          <section className="grid grid-cols-[minmax(0,1fr)] gap-2">
             <button type="button" onClick={() => setShowOff(!showOff)} className="text-left font-semibold text-gray-700 flex items-center gap-2">
               <span className="text-xs text-gray-400">{showOff ? '▼' : '▶'}</span>
               Off the menu ({offMenu.length})
