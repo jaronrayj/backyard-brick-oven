@@ -16,8 +16,11 @@ reminders for booked events. Admins only ([team.md](team.md)).
 | Dough reminder emails | `functions/events.js` `doughReminders`, daily at 2 pm Utah time |
 | Weather | [Open-Meteo](https://open-meteo.com/) (free, no key). The location is turned into a point when an event is saved; street addresses fall back to the town. |
 
-Statuses: Inquiry → Quoted → Booked → Done, or Lost. Saving an inquiry with a
-new quote moves it to Quoted.
+Stages: Inquiry → Quoted → Booked → Done, or Lost. The list has two tabs:
+**Open** (grouped into New inquiries, Quoted and Booked) and **Done & lost**.
+Move an event with the Stage buttons at the top of its page; on a saved event
+they save as soon as you tap. Saving an inquiry with a new quote moves it to
+Quoted, and a wrap-up moves a booked event to Done.
 
 ## Quotes
 
