@@ -7,12 +7,13 @@
  * deps.store     - {doc(path) -> {set(data), onSnapshot(next, error)}} over Firestore
  *                  (paths: 'ref/snapshot', 'plan/current', 'plan/checks')
  * deps.canWrite  - whether this person may change the plan
- * deps.isAdmin   - shows "Refresh from sheets"
+ * deps.pizzas    - (onChange) => unsubscribe; the website's pizzas, live
+ * deps.isAdmin   - shows "Refresh now" (under Yeast, water and timing)
  * deps.refresh   - async () => re-read the Google Sheets on the server
  * deps.calendar  - async () => { items: [{id, title, date, time, location, notes}], problem? }, upcoming calendar entries
  */
 
-const MARKUP = '<div class="wrap">\n  <header class="top">\n    <h1>Planner</h1>\n    <div class="status"><span id="data-status">Loading recipe and menu…</span><button type="button" class="btn quiet" id="refresh" hidden>Refresh from sheets</button><span id="save-status"></span><span id="keep-awake-slot"></span></div>\n    <nav class="tabs" role="tablist" aria-label="Planner pages">\n      <button type="button" role="tab" id="tab-plan" aria-controls="page-plan" aria-selected="true" data-tab="plan">Plan</button>\n      <button type="button" role="tab" id="tab-shop" aria-controls="page-shop" aria-selected="false" data-tab="shop">Shopping</button>\n      <button type="button" role="tab" id="tab-bring" aria-controls="page-bring" aria-selected="false" data-tab="bring">Bring</button>\n      <button type="button" role="tab" id="tab-prep" aria-controls="page-prep" aria-selected="false" data-tab="prep">Prep</button>\n    </nav>\n  </header>\n\n  <p class="ro" id="readonly" hidden>You can look but not change this plan. Ask Jaron to add your account to the staff list.</p>\n\n  <section id="page-plan" role="tabpanel" aria-labelledby="tab-plan" class="panel">\n    <article class="card">\n      <h2>Services</h2>\n      <p class="note">Pizza Friday uses recent demand. Events use guests × pizzas per guest. Type a count to override.</p>\n      <div id="services"></div>\n      <div id="cal-suggest" class="cal"></div>\n      <div class="row">\n        <button type="button" class="btn" id="add-svc">Add a service</button>\n      </div>\n      <details class="tweaks">\n        <summary>Yeast, water and timing</summary>\n        <div class="row">\n          <label class="field">Extra for safety (%)<input type="number" id="t-buffer" min="0" max="100" step="5" inputmode="numeric"></label>\n          <label class="field">Mix days before service<input type="number" id="t-lead" min="0" max="5" step="1" inputmode="numeric"></label>\n          <label class="field">Yeast (% of recipe)<input type="number" id="t-yeast" min="10" max="300" step="5" inputmode="numeric"></label>\n          <label class="field">Cold water (% of recipe)<input type="number" id="t-water" min="50" max="150" step="1" inputmode="numeric"></label>\n          <button type="button" class="btn" id="t-reset">Reset to saved settings</button>\n        </div>\n      </details>\n    </article>\n\n    <article class="card">\n      <h2>Dough plan</h2>\n      <p class="note" id="plan-note">Shared mix days are combined. Big days split into even mixer batches.</p>\n      <div id="plan"></div>\n    </article>\n\n    <article class="card">\n      <h2>Pizzas</h2>\n      <p class="note">Tap the pizzas on the menu. The planned dough splits evenly across them.</p>\n      <div class="chips" id="chips"></div>\n      <div class="row">\n        <button type="button" class="btn" id="split">Split evenly again</button>\n        <button type="button" class="btn" id="clear">Clear</button>\n        <span class="seg" role="group" aria-label="Each tap">Each tap\n          <button type="button" class="btn" data-step="1" aria-pressed="false">1</button>\n          <button type="button" class="btn" data-step="5" aria-pressed="true">5</button>\n          <button type="button" class="btn" data-step="10" aria-pressed="false">10</button>\n        </span>\n      </div>\n      <p class="note" id="count-line"></p>\n      <div id="counters"></div>\n    </article>\n\n    <article class="card">\n      <h2>Recent Pizza Fridays</h2>\n      <p class="note" id="hist-note">Demand is sold + comped + could have sold more.</p>\n      <div style="overflow-x:auto"><table class="hist" id="hist"></table></div>\n    </article>\n  </section>\n\n  <section id="page-shop" role="tabpanel" aria-labelledby="tab-shop" class="panel" hidden>\n    <article class="card">\n      <h2>Shopping list</h2>\n      <p class="note" id="shop-line"></p>\n      <form class="row" id="shop-form">\n        <label class="field">Add an item<input type="text" id="shop-new" enterkeyhint="done" autocomplete="off" placeholder="e.g. Paper plates"></label>\n        <label class="field" style="flex:0 1 7rem">How much<input type="text" id="shop-qty" autocomplete="off" placeholder="optional"></label>\n        <button type="submit" class="btn" id="shop-add">Add</button>\n      </form>\n      <div class="row"><button type="button" class="btn quiet" id="uncheck">Uncheck everything</button></div>\n      <div class="list" id="shoplist"></div>\n    </article>\n  </section>\n\n  <section id="page-bring" role="tabpanel" aria-labelledby="tab-bring" class="panel" hidden>\n    <article class="card">\n      <h2>What to bring</h2>\n      <p class="note" id="bring-line">What to pack for the services on the Plan tab. Your own items show only for the kinds of services you have planned; counts follow guests or dough balls.</p>\n      <div class="list" id="bringauto"></div>\n      <div class="list" id="bringlist"></div>\n      <div class="row"><button type="button" class="btn quiet" id="bring-edit" aria-pressed="false">Edit list</button><button type="button" class="btn quiet" id="bring-uncheck">Uncheck everything</button></div>\n      <div class="row" id="bring-form" hidden>\n        <label class="field">Item<input type="text" id="bring-new" enterkeyhint="done" autocomplete="off" placeholder="e.g. Pizza peels"></label>\n        <label class="field">For<select id="bring-for"></select></label>\n        <label class="field">How many<select id="bring-per"><option value="">Just bring it</option><option value="guest">1 per … guests</option><option value="ball">1 per … dough balls</option></select></label>\n        <label class="field" id="bring-every-wrap" hidden>Every<input type="number" id="bring-every" min="1" inputmode="numeric" value="10"></label>\n        <button type="button" class="btn" id="bring-add">Add</button>\n      </div>\n    </article>\n  </section>\n\n  <section id="page-prep" role="tabpanel" aria-labelledby="tab-prep" hidden>\n    <article class="card">\n      <h2>Prep list</h2>\n      <p class="note">Day by day for the services on the Plan tab. Amounts split each service\'s share of the pizzas you picked.</p>\n      <div class="row"><button type="button" class="btn quiet" id="prep-uncheck">Uncheck everything</button></div>\n      <div class="list" id="preplist"></div>\n    </article>\n  </section>\n</div>';
+const MARKUP = '<div class="wrap">\n  <header class="top">\n    <div class="title-row"><h1>Planner</h1>\n    <div class="status"><span id="data-warn"></span><span id="save-status"></span><span id="keep-awake-slot"></span></div></div>\n    <nav class="tabs" role="tablist" aria-label="Planner pages">\n      <button type="button" role="tab" id="tab-plan" aria-controls="page-plan" aria-selected="true" data-tab="plan">Plan</button>\n      <button type="button" role="tab" id="tab-shop" aria-controls="page-shop" aria-selected="false" data-tab="shop">Shopping</button>\n      <button type="button" role="tab" id="tab-bring" aria-controls="page-bring" aria-selected="false" data-tab="bring">Bring</button>\n      <button type="button" role="tab" id="tab-prep" aria-controls="page-prep" aria-selected="false" data-tab="prep">Prep</button>\n    </nav>\n  </header>\n\n  <p class="ro" id="readonly" hidden>You can look but not change this plan. Ask Jaron to add your account to the staff list.</p>\n\n  <section id="page-plan" role="tabpanel" aria-labelledby="tab-plan" class="panel">\n    <article class="card">\n      <h2>Services</h2>\n      <p class="note">Pizza Friday uses recent demand. Events use guests × pizzas per guest. Type a count to override.</p>\n      <div id="services"></div>\n      <div id="cal-suggest" class="cal"></div>\n      <div class="row">\n        <button type="button" class="btn" id="add-svc">Add a service</button>\n      </div>\n      <details class="tweaks">\n        <summary>Yeast, water and timing</summary>\n        <div class="row">\n          <label class="field">Extra for safety (%)<input type="number" id="t-buffer" min="0" max="100" step="5" inputmode="numeric"></label>\n          <label class="field">Mix days before service<input type="number" id="t-lead" min="0" max="5" step="1" inputmode="numeric"></label>\n          <label class="field">Yeast (% of recipe)<input type="number" id="t-yeast" min="10" max="300" step="5" inputmode="numeric"></label>\n          <label class="field">Cold water (% of recipe)<input type="number" id="t-water" min="50" max="150" step="1" inputmode="numeric"></label>\n          <button type="button" class="btn" id="t-reset">Reset to saved settings</button>\n        </div>\n        <p class="note sheets-line"><span id="data-status">Loading recipe and menu…</span> <button type="button" class="linkbtn" id="refresh" hidden>Refresh now</button></p>\n      </details>\n      <details class="tweaks">\n        <summary>Recent Pizza Fridays</summary>\n        <p class="note" id="hist-note">Demand is sold + comped + could have sold more.</p>\n        <div style="overflow-x:auto"><table class="hist" id="hist"></table></div>\n      </details>\n    </article>\n\n    <article class="card">\n      <h2>Dough plan</h2>\n      <p class="note" id="plan-note">Shared mix days are combined. Big days split into even mixer batches.</p>\n      <div id="plan"></div>\n    </article>\n\n    <article class="card">\n      <h2>Pizzas</h2>\n      <p class="note">Tap the pizzas you\'re making. The planned dough splits evenly across them. Pizzas that are off the website are under Older pizzas.</p>\n      <div class="pick-groups" id="chips"></div>\n      <div class="row">\n        <button type="button" class="btn" id="split">Split evenly again</button>\n        <button type="button" class="btn" id="clear">Clear</button>\n        <span class="seg" role="group" aria-label="Each tap">Each tap\n          <button type="button" class="btn" data-step="1" aria-pressed="false">1</button>\n          <button type="button" class="btn" data-step="5" aria-pressed="true">5</button>\n          <button type="button" class="btn" data-step="10" aria-pressed="false">10</button>\n        </span>\n      </div>\n      <p class="note" id="count-line"></p>\n      <div id="counters"></div>\n    </article>\n  </section>\n\n  <section id="page-shop" role="tabpanel" aria-labelledby="tab-shop" class="panel" hidden>\n    <article class="card">\n      <h2>Shopping list</h2>\n      <p class="note" id="shop-line"></p>\n      <form class="row" id="shop-form">\n        <label class="field">Add an item<input type="text" id="shop-new" enterkeyhint="done" autocomplete="off" placeholder="e.g. Paper plates"></label>\n        <label class="field" style="flex:0 1 7rem">How much<input type="text" id="shop-qty" autocomplete="off" placeholder="optional"></label>\n        <button type="submit" class="btn" id="shop-add">Add</button>\n      </form>\n      <div class="row"><button type="button" class="btn quiet" id="uncheck">Uncheck everything</button></div>\n      <div class="list" id="shoplist"></div>\n    </article>\n  </section>\n\n  <section id="page-bring" role="tabpanel" aria-labelledby="tab-bring" class="panel" hidden>\n    <article class="card">\n      <h2>What to bring</h2>\n      <p class="note" id="bring-line">What to pack for the services on the Plan tab. Your own items show only for the kinds of services you have planned; counts follow guests or dough balls.</p>\n      <div class="list" id="bringauto"></div>\n      <div class="list" id="bringlist"></div>\n      <div class="row"><button type="button" class="btn quiet" id="bring-edit" aria-pressed="false">Edit list</button><button type="button" class="btn quiet" id="bring-uncheck">Uncheck everything</button></div>\n      <div class="row" id="bring-form" hidden>\n        <label class="field">Item<input type="text" id="bring-new" enterkeyhint="done" autocomplete="off" placeholder="e.g. Pizza peels"></label>\n        <label class="field">For<select id="bring-for"></select></label>\n        <label class="field">How many<select id="bring-per"><option value="">Just bring it</option><option value="guest">1 per … guests</option><option value="ball">1 per … dough balls</option></select></label>\n        <label class="field" id="bring-every-wrap" hidden>Every<input type="number" id="bring-every" min="1" inputmode="numeric" value="10"></label>\n        <button type="button" class="btn" id="bring-add">Add</button>\n      </div>\n    </article>\n  </section>\n\n  <section id="page-prep" role="tabpanel" aria-labelledby="tab-prep" hidden>\n    <article class="card">\n      <h2>Prep list</h2>\n      <p class="note">Day by day for the services on the Plan tab. Amounts split each service\'s share of the pizzas you picked.</p>\n      <div class="row"><button type="button" class="btn quiet" id="prep-uncheck">Uncheck everything</button></div>\n      <div class="list" id="preplist"></div>\n    </article>\n  </section>\n</div>';
 
 export function mountPlanner(root, deps) {
   root.innerHTML = MARKUP;
@@ -24,6 +25,7 @@ export function mountPlanner(root, deps) {
 
   /* ---------- State ---------- */
   let REF = null;      /* shared copy of sheet data */
+  let MENU = null;     /* live website pizzas (deps.pizzas), on and off the menu */
   let PLAN = null;     /* shared plan */
   let CHECKED = [];    /* shared shopping checkmarks */
   let db = null, canWrite = true, step = 5;
@@ -53,8 +55,15 @@ export function mountPlanner(root, deps) {
   const svcWhen = (d) => { const r = rel(d); return day(d) + (r === 'Today' || r === 'Tomorrow' ? ' (' + r.toLowerCase() + ')' : ''); };
 
   const g = (v) => (v >= 100 ? Math.round(v).toLocaleString('en-US') : (Math.round(v * 10) / 10).toLocaleString('en-US')) + ' g';
-  const amount = (v) => (v < 100 ? g(v) : kgLb(v));
-  const kgLb = (v) => (v >= 1000 ? (v / 1000).toFixed(2) + ' kg' : Math.round(v) + ' g') + ' · ' + (v / 453.592).toFixed(1) + ' lb';
+  /* Shopping amounts as rough store sizes, always rounded up: ounces under a pound,
+     then half pounds, then whole pounds from 10 lb. */
+  const shopAmount = (v) => {
+    const oz = v / 28.3495;
+    if (oz < 15) return 'about ' + Math.max(1, Math.ceil(oz)) + ' oz';
+    const lb = oz / 16;
+    if (lb < 10) { const r = Math.ceil(lb * 2) / 2; return 'about ' + (r % 1 ? Math.floor(r) + '½' : r) + ' lb'; }
+    return 'about ' + Math.ceil(lb).toLocaleString('en-US') + ' lb';
+  };
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const uid = () => Math.random().toString(36).slice(2, 9);
   const nextFriday = () => { const n = new Date(); const t = new Date(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate())); t.setUTCDate(t.getUTCDate() + ((5 - t.getUTCDay() + 7) % 7)); return t.toISOString().slice(0, 10); };
@@ -90,7 +99,10 @@ export function mountPlanner(root, deps) {
   const ballsFor = (s) => (s.balls != null && s.balls !== '' ? Number(s.balls) : suggestion(s)) || 0;
   const plannedBalls = () => (PLAN ? PLAN.services.filter((s) => s.date).reduce((t, s) => t + ballsFor(s), 0) : 0);
 
-  /* Ingredients per active pizza, sauces broken down by their batch recipe. */
+  /* Website pizzas: on the menu now, and older ones that are off the website. */
+  const allPizzas = () => MENU || (REF ? REF.menu : []).map((p) => ({...p, active: p.active !== false}));
+
+  /* Ingredients per pizza, sauces broken down by their batch recipe. */
   const pizzaRows = () => {
     if (!REF) return [];
     const byKey = REF.amounts.map((a) => ({key: norm(a.topping), a}));
@@ -108,7 +120,7 @@ export function mountPlanner(root, deps) {
       return r.parts.flatMap((p) => expand(p.ingredient, (grams * p.grams) / total, top || r.name, depth + 1));
     };
     const rows = [];
-    REF.menu.forEach((p) => {
+    allPizzas().forEach((p) => {
       p.toppings.split(',').map((t) => t.trim()).filter(Boolean).forEach((t) => {
         const hit = find(t);
         if (!hit || hit.grams == null) { rows.push({pizza: p.name, topping: hit ? hit.topping : t, grams: null, sauce: null}); return; }
@@ -212,6 +224,7 @@ export function mountPlanner(root, deps) {
       head.append(rm);
       const sugg = el('div', 'sugg'); sugg.dataset.svc = s.id;
       wrap.append(head, r1, r2, sugg);
+      if (s.type === 'pf') { const h = pfHistory(s); if (h) wrap.append(h); }
       /* Linked to a calendar entry whose date has moved: offer the new date. */
       const cal = s.calId && CAL && CAL.items.find((c) => c.id === s.calId);
       if (cal && cal.date !== s.date) {
@@ -273,6 +286,23 @@ export function mountPlanner(root, deps) {
     PLAN.services = [...PLAN.services, {id: uid(), date: c.date, type, guests: type === 'pf' ? 100 : guessGuests(c.title, c.notes) || 50, ppg: null, balls: null, name: c.title, calId: c.id}];
   };
 
+  /* Pizza Friday cards: the last two nights, and the Friday closest to this date a year ago. */
+  const nightLine = (r, withYear) => (withYear ? day(r.date) + ', ' + r.date.slice(0, 4) : day(r.date)) + ': ' + r.sold + ' sold' + (r.demand !== r.sold ? ' (' + r.demand + ' demand)' : '');
+  const pfHistory = (s) => {
+    if (!REF || !REF.nights || !REF.nights.length) return null;
+    const box = el('div', 'pf-hist');
+    const recent = REF.nights.slice(0, 2);
+    box.append(el('div', null, 'Last ' + (recent.length > 1 ? 'two' : 'one') + ': ' + recent.map((r) => nightLine(r)).join(' · ')));
+    if (s.date) {
+      const target = parse(s.date).getTime() - 364 * 864e5;
+      const near = REF.nights
+        .map((r) => ({r, off: Math.abs(parse(r.date).getTime() - target)}))
+        .filter((x) => x.off <= 10 * 864e5)
+        .sort((a, b) => a.off - b.off)[0];
+      if (near) box.append(el('div', null, 'Last year: ' + nightLine(near.r, true)));
+    }
+    return box;
+  };
   const renderSuggs = () => {
     root.querySelectorAll('.sugg[data-svc]').forEach((n) => {
       const s = PLAN.services.find((x) => x.id === n.dataset.svc);
@@ -337,7 +367,7 @@ export function mountPlanner(root, deps) {
     });
   };
 
-  const names = () => (REF ? REF.menu.map((p) => p.name) : []);
+  const names = () => allPizzas().map((p) => p.name);
   const spread = () => {
     const picked = names().filter((n) => PLAN.picked.includes(n) && !isDessert(n));
     const balls = plannedBalls();
@@ -345,20 +375,35 @@ export function mountPlanner(root, deps) {
     if (!picked.length || !balls) return;
     picked.forEach((n, i) => { PLAN.counts[n] = Math.floor(balls / picked.length) + (i < balls % picked.length ? 1 : 0); });
   };
+  const togglePick = (n) => {
+    if (PLAN.picked.includes(n)) PLAN.picked = PLAN.picked.filter((x) => x !== n); else PLAN.picked.push(n);
+    PLAN.manualCounts = false; spread(); savePlan(); renderChips(); renderCounters(); renderShop();
+  };
+  const chip = (p) => {
+    const b = el('button', 'chip', p.name); b.type = 'button';
+    b.setAttribute('aria-pressed', String(PLAN.picked.includes(p.name)));
+    if (p.toppings) b.title = p.toppings;
+    b.addEventListener('click', () => togglePick(p.name));
+    return b;
+  };
   const renderChips = () => {
     const box = $('#chips');
     box.replaceChildren();
     if (!PLAN) return;
-    if (!names().length) { box.append(el('p', 'empty', 'Waiting for the menu.')); return; }
-    names().forEach((n) => {
-      const b = el('button', 'chip', n); b.type = 'button';
-      b.setAttribute('aria-pressed', String(PLAN.picked.includes(n)));
-      b.addEventListener('click', () => {
-        if (PLAN.picked.includes(n)) PLAN.picked = PLAN.picked.filter((x) => x !== n); else PLAN.picked.push(n);
-        PLAN.manualCounts = false; spread(); savePlan(); renderChips(); renderCounters(); renderShop();
-      });
-      box.append(b);
-    });
+    const all = allPizzas();
+    if (!all.length) { box.append(el('p', 'empty', 'Waiting for the menu.')); return; }
+    const group = (title, list, wrap) => {
+      if (!list.length) return;
+      const g = el(wrap ? 'details' : 'div', 'pick-group');
+      g.append(el(wrap ? 'summary' : 'p', 'group-title', title + (wrap ? ' (' + list.length + ')' : '')));
+      const chips = el('div', 'chips');
+      list.forEach((p) => chips.append(chip(p)));
+      g.append(chips);
+      if (wrap && list.some((p) => PLAN.picked.includes(p.name))) g.open = true;
+      box.append(g);
+    };
+    group('On the website', all.filter((p) => p.active));
+    group('Older pizzas, not on the website now', all.filter((p) => !p.active), true);
     if (!canWrite) setReadOnly(true);
   };
   const renderCountLine = () => {
@@ -397,7 +442,7 @@ export function mountPlanner(root, deps) {
     const a = avgDemand();
     $('#hist-note').textContent = 'Demand is sold + comped + could have sold more.' + (a ? ' Suggestion: average of the last ' + Math.min(4, REF.nights.length) + ' nights, ' + Math.round(a) + ' pizzas.' : '');
     const head = el('tr'); ['Night', 'Made', 'Sold', 'Comped', 'More', 'Demand'].forEach((h) => head.append(el('th', null, h))); tb.append(head);
-    REF.nights.forEach((r) => { const tr = el('tr'); [day(r.date), r.dough_made ?? '', r.sold, r.comped, r.more, r.demand].forEach((v) => tr.append(el('td', null, String(v)))); tb.append(tr); });
+    REF.nights.slice(0, 6).forEach((r) => { const tr = el('tr'); [day(r.date), r.dough_made ?? '', r.sold, r.comped, r.more, r.demand].forEach((v) => tr.append(el('td', null, String(v)))); tb.append(tr); });
   };
 
   /* Bring list (PLAN.bring): items to pack, each tagged with which services it is for
@@ -571,7 +616,7 @@ export function mountPlanner(root, deps) {
     });
     const groups = new Map();
     const push = (s, row) => { if (!groups.has(s)) groups.set(s, []); groups.get(s).push(row); };
-    [...buy].sort((a, b) => b[1].grams - a[1].grams).forEach(([k, b]) => push(b.section, [k, amount(b.grams), b.uses.size ? 'for ' + [...b.uses].join(', ') : '']));
+    [...buy].sort((a, b) => b[1].grams - a[1].grams).forEach(([k, b]) => push(b.section, [k, shopAmount(b.grams), b.uses.size ? 'for ' + [...b.uses].join(', ') : '']));
     missing.forEach((k) => push(sectionOf(k), [k, 'No amount set', 'Add it to the Topping amounts tab', true]));
 
     const group = (title, rows, keyPrefix) => {
@@ -734,10 +779,17 @@ export function mountPlanner(root, deps) {
     }
     $('#refresh').disabled = false;
   };
+  // Problems show in the header; the normal "last changed" line sits quietly
+  // under Yeast, water and timing (the sheets re-read every hour on their own).
+  const dataProblem = (msg) => {
+    $('#data-warn').replaceChildren(msg ? el('span', 'warn', msg) : '');
+    $('#data-status').textContent = msg || '';
+  };
   const showDataStatus = () => {
-    if (!REF) { $('#data-status').textContent = 'No recipe or menu saved yet. An admin needs to tap Refresh from sheets once.'; return; }
+    if (!REF) { dataProblem(deps.isAdmin ? 'No recipe or menu saved yet. Open "Yeast, water and timing" and tap Refresh now.' : 'No recipe or menu saved yet. Ask Jaron to refresh the planner.'); return; }
+    dataProblem('');
     const d = new Date(REF.at || 0);
-    $('#data-status').textContent = 'Recipe and menu last changed ' + d.toLocaleString('en-US', {month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'});
+    $('#data-status').textContent = 'Recipe, toppings and Pizza Friday history come from your sheets and update every hour. Last changed ' + d.toLocaleString('en-US', {month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'}) + '.';
   };
 
   /* ---------- Boot ---------- */
@@ -748,7 +800,7 @@ export function mountPlanner(root, deps) {
   unsubs.push(db.doc('ref/snapshot').onSnapshot((snap) => {
     if (snap.exists) { REF = snap.data(); renderAll(); }
     showDataStatus();
-  }, () => { $('#data-status').textContent = 'The saved recipe and menu couldn\'t load. Reload the page.'; }));
+  }, () => { dataProblem('The saved recipe and menu couldn\'t load. Reload the page.'); }));
   unsubs.push(db.doc('plan/current').onSnapshot((snap) => {
     if (snap.metadata.hasPendingWrites) return;
     if (localPending) return;
@@ -767,6 +819,16 @@ export function mountPlanner(root, deps) {
   }));
   if (deps.calendar) {
     deps.calendar().then((d) => { CAL = d || {items: []}; if (!busy()) renderAll(); else renderCal(); }).catch(() => { CAL = {items: [], problem: "Couldn't read the calendar right now."}; renderCal(); });
+  }
+  /* The pizza list straight from the website menu, so menu edits and older pizzas show right away. */
+  if (deps.pizzas) {
+    unsubs.push(deps.pizzas((val) => {
+      MENU = Object.values(val || {})
+        .filter((p) => p && p.name)
+        .sort((a, b) => (a.order ?? 1e9) - (b.order ?? 1e9) || String(a.name).localeCompare(String(b.name)))
+        .map((p) => ({name: String(p.name).trim(), toppings: String(p.toppings || ''), active: !!p.active}));
+      if (!busy()) renderAll();
+    }));
   }
   if (deps.isAdmin && deps.refresh) {
     $('#refresh').hidden = false;

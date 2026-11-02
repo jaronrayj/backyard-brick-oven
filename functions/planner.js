@@ -68,6 +68,12 @@ const iso = (v) => {
   return m ? `${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}` : null;
 };
 
+const isoDaysBefore = (isoDate, days) => {
+  const d = new Date(`${isoDate}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+};
+
 // Same shape the planner page reads. Keep in sync with src/pages/Planner/planner.js.
 export const buildRef = (v) => {
   const counts = v.counts.slice(1);
@@ -86,7 +92,8 @@ export const buildRef = (v) => {
     })
     .filter((r) => r.event === "Pizza Friday" && r.date && r.sold > 0)
     .sort((a, b) => (a.date < b.date ? 1 : -1))
-    .slice(0, 6)
+    // About a year back, so the planner can show the same week last year.
+    .filter((r, i, all) => i < 6 || r.date >= isoDaysBefore(all[0].date, 400))
     .map((r) => ({
       date: r.date,
       dough_made: r.dough_made,
@@ -99,8 +106,9 @@ export const buildRef = (v) => {
     recipe: v.recipe.slice(1).filter((r) => r[0]).map((r) => ({ item: String(r[0]).trim(), amount: num(r[1]) || 0 })),
     settings: v.settings.slice(1).filter((r) => r[0]).map((r) => ({ setting: String(r[0]).trim(), value: num(r[1]) })),
     menu: Object.values(v.pizzas || {})
-      .filter((p) => p && p.active && p.name)
-      .map((p) => ({ name: String(p.name).trim(), toppings: String(p.toppings || ""), active: true })),
+      // Older pizzas (off the website) too, so the planner can pick them for events.
+      .filter((p) => p && p.name)
+      .map((p) => ({ name: String(p.name).trim(), toppings: String(p.toppings || ""), active: !!p.active })),
     amounts: v.amounts
       .slice(1)
       .filter((r) => r[0])
@@ -153,7 +161,7 @@ const refresh = async () => {
   return { changed: !same };
 };
 
-// "Refresh from sheets" on the planner page. Admins only.
+// "Refresh now" on the planner page (under Yeast, water and timing). Admins only.
 // invoker "public" lets browsers reach it; the admin check below does the gating.
 export const refreshPlannerData = onCall({ invoker: "public" }, async (request) => {
   await requireRole(request, ["admin"], "Only planner admins can refresh from the sheets.");
@@ -166,10 +174,10 @@ export const refreshPlannerData = onCall({ invoker: "public" }, async (request) 
   }
 });
 
-// Upcoming entries on the business calendar (next 6 weeks), for the planner's
+// Upcoming entries on the business calendar (next 2 weeks), for the planner's
 // "From your calendar" list. Team (admins and staff). A calendar problem comes
 // back as { items: [], problem } so the planner still works without it.
-const CALENDAR_DAYS = 42;
+const CALENDAR_DAYS = 14;
 const utahDate = (d) => d.toLocaleDateString("en-CA", { timeZone: "America/Denver" });
 export const plannerCalendar = onCall({ invoker: "public" }, async (request) => {
   await requireRole(request, ["admin", "staff"], "Only the team can see the calendar.");

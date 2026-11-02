@@ -2,6 +2,7 @@ import React from 'react'
 import { logout, signInWithGoogle } from '../../utils/firebase'
 import useTeamAccess from '../../utils/useTeamAccess'
 import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
+import { ToolLink } from '../../components/TeamNav'
 
 // Team sign-in, and a list of the tools for anyone who lands here. Once signed
 // in, the team bar gets you between tools.
@@ -33,9 +34,8 @@ const Team = () => {
             <ul className="grid gap-3 sm:grid-cols-2">
               {tools.map((tool) => (
                 <li key={tool.key}>
-                  <a
-                    href={tool.href}
-                    {...(tool.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  <ToolLink
+                    tool={tool}
                     className={`${ui.card} block h-full hover:border-amber-500`}
                   >
                     <span className="block text-lg font-semibold text-gray-900">
@@ -43,7 +43,7 @@ const Team = () => {
                       {tool.external && <span aria-hidden="true"> ↗</span>}
                     </span>
                     <span className="block text-sm text-gray-600">{tool.blurb}</span>
-                  </a>
+                  </ToolLink>
                 </li>
               ))}
             </ul>

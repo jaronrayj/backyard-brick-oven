@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { signInWithGoogle } from '../../utils/firebase'
 import useEventAdmin from './useEventAdmin'
@@ -25,7 +26,35 @@ const kindOf = (h) => {
   if (/hours?\s*$/i.test(h)) return 'hours'
   return 'number'
 }
-const label = (h) => String(h).replace(/\?$/, '').replace(/^Or employee cost$/i, 'Other employee cost')
+// Sections of the form, in order. Each column lands in the first group whose
+// pattern matches its header, ordered by that group's list; anything new and
+// unmatched goes under "Other" so a new sheet column still shows up.
+const GROUPS = [
+  { key: 'pizzas', title: 'Pizzas', cols: 'grid-cols-2 sm:grid-cols-3', order: [/dough made/i, /how many sold/i, /comped/i, /more could/i, /sell out/i, /what time/i] },
+  { key: 'money', title: 'Money in', cols: 'grid-cols-2 sm:grid-cols-4', order: [/venmo/i, /cash/i, /simpleswipe|card/i, /tip/i, /extras.*sold/i, /price of extras/i] },
+  { key: 'labor', title: 'Labor', cols: 'grid-cols-3 sm:grid-cols-4', order: [/hours?\s*$/i, /employee cost/i] },
+]
+const groupOf = (h) => {
+  for (const g of GROUPS) {
+    const i = g.order.findIndex((re) => re.test(h))
+    if (i >= 0) return { key: g.key, rank: i }
+  }
+  return { key: 'other', rank: 0 }
+}
+const isMoney = (h) => /venmo|cash|simpleswipe|tip|cost|price/i.test(h)
+
+const label = (h) =>
+  String(h)
+    .replace(/\?$/, '')
+    .replace(/^Or employee cost$/i, 'Other labor cost')
+    .replace(/^How much (venmo|cash|simpleswipe)$/i, (_, w) => w[0].toUpperCase() + w.slice(1))
+    .replace(/^Tip money$/i, 'Tips')
+    .replace(/^How much extras \(bread\/dessert\) sold$/i, 'Extras sold (bread/dessert)')
+    .replace(/^Potentially how many more could we have sold$/i, 'Could have sold more')
+    .replace(/^How much dough made$/i, 'Dough made')
+    .replace(/^How many (sold|comped)$/i, (_, w) => w[0].toUpperCase() + w.slice(1))
+    .replace(/^My hours$/i, 'Me')
+    .replace(/\s*hours$/i, '')
 
 const callable = (name) => httpsCallable(getFunctions(), name)
 
@@ -62,8 +91,18 @@ const WrapUpForm = ({ headers, choice, today, onDone, onBack }) => {
     }
   }
 
-  const fields = headers.filter((h) => !['skip', 'name', 'date', 'notes', 'hours'].includes(kindOf(h)))
-  const hours = headers.filter((h) => kindOf(h) === 'hours')
+  const asked = headers.filter((h) => !['skip', 'name', 'date', 'notes'].includes(kindOf(h)))
+  const sections = [...GROUPS, { key: 'other', title: 'Other', cols: 'grid-cols-2 sm:grid-cols-3' }]
+    .map((g) => ({
+      ...g,
+      headers: asked
+        .filter((h) => groupOf(h).key === g.key)
+        .sort((a, b) => groupOf(a).rank - groupOf(b).rank),
+    }))
+    .filter((g) => g.headers.length)
+  const takenIn = headers
+    .filter((h) => /venmo|cash|simpleswipe/i.test(h))
+    .reduce((t, h) => t + (Number(values[h]) || 0), 0)
 
   const control = (h) => {
     const kind = kindOf(h)
@@ -78,7 +117,14 @@ const WrapUpForm = ({ headers, choice, today, onDone, onBack }) => {
       )
     }
     if (kind === 'time') return <input className={input} type="time" value={v} onChange={(e) => set(h, e.target.value)} />
-    return <input className={input} type="number" inputMode="decimal" step="any" value={v} onChange={(e) => set(h, e.target.value)} />
+    const box = <input className={input} type="number" inputMode="decimal" step="any" value={v} onChange={(e) => set(h, e.target.value)} />
+    if (!isMoney(h)) return box
+    return (
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400" aria-hidden="true">$</span>
+        <input className={`${input} pl-6`} type="number" inputMode="decimal" step="any" value={v} onChange={(e) => set(h, e.target.value)} />
+      </div>
+    )
   }
 
   return (
@@ -119,29 +165,29 @@ const WrapUpForm = ({ headers, choice, today, onDone, onBack }) => {
         )}
       </section>
 
-      <section className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {fields.map((h) => (
-          <Field key={h} label={label(h)}>
-            {control(h)}
-          </Field>
-        ))}
-      </section>
-
-      {hours.length > 0 && (
-        <section>
-          <h3 className="font-semibold mb-2">Hours</h3>
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-            {hours.map((h) => (
-              <Field key={h} label={label(h).replace(/\s*hours$/i, '')}>
+      {sections.map((g) => (
+        <section key={g.key} className="border-t border-gray-200 pt-4">
+          <div className="flex items-baseline justify-between gap-2 mb-2">
+            <h3 className="font-semibold text-gray-900">{g.title}</h3>
+            {g.key === 'money' && takenIn > 0 && (
+              <span className="text-sm text-gray-600">
+                Venmo + cash + card: <strong>${takenIn.toLocaleString('en-US', { maximumFractionDigits: 2 })}</strong>
+              </span>
+            )}
+            {g.key === 'labor' && <span className="text-xs text-gray-500">Hours each person worked</span>}
+          </div>
+          <div className={`grid ${g.cols} gap-3`}>
+            {g.headers.map((h) => (
+              <Field key={h} label={label(h)}>
                 {control(h)}
               </Field>
             ))}
           </div>
         </section>
-      )}
+      ))}
 
       {notesH && (
-        <Field label="Notes (holidays, weather, what to remember)">
+        <Field className="border-t border-gray-200 pt-4" label="Notes (holidays, weather, what to remember)">
           <textarea className={input} rows={3} value={values[notesH] || ''} onChange={(e) => set(notesH, e.target.value)} />
         </Field>
       )}
@@ -206,7 +252,7 @@ const WrapUp = () => {
           <button type="button" className={btnQuiet} onClick={() => { setSaved(null); setChoice(null) }}>
             Wrap up another
           </button>
-          <a className={btnQuiet} href="/events">Back to events</a>
+          <Link className={btnQuiet} to="/events">Back to events</Link>
         </div>
       </Shell>
     )

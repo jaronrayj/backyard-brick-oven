@@ -12,7 +12,7 @@ sign in with Google; nobody needs access to the Google Sheets.
 | Services, picked pizzas, counts, tweaks | Firestore `planner/plan` |
 | Shopping and prep checkmarks | Firestore `planner/checks` |
 | Who can use it | The team list, admins and staff (see [team.md](team.md)) |
-| Sheet refresh | `functions/planner.js`: `refreshPlannerData` (the admin "Refresh from sheets" button) and `refreshPlannerHourly` |
+| Sheet refresh | `functions/planner.js`: `refreshPlannerData` (the admin "Refresh now" link under "Yeast, water and timing") and `refreshPlannerHourly` |
 
 The function reads only these ranges: dough counts, "could have sold more",
 event name and date from the money tracker (no money columns), plus the dough
@@ -21,11 +21,15 @@ amounts, Sauce recipes and Store sections tabs of the pizza selection sheet.
 The menu itself comes from the website's own list (Realtime Database
 `pizzas/`, edited at `/admin/menu`).
 
+**Pizzas.** The Pizzas card lists the pizzas on the website, then older
+pizzas that are off the website (collapsed), so an event can use any pizza
+you've made before. Edit or add pizzas at `/admin/menu`.
+
 ## One-time setup
 
 1. **People.** Add them to the team list ([team.md](team.md)).
-2. **Share the sheets.** Open `/planner` as an admin and tap "Refresh from
-   sheets". The first time, it says which service account email to share the
+2. **Share the sheets.** Open `/planner` as an admin, open "Yeast, water
+   and timing" and tap "Refresh now". The first time, it says which service account email to share the
    three sheets with. Share them, then tap refresh again. The hourly refresh
    keeps it current after that. (The money tracker needs Editor access for
    the wrap-up page; the other two can stay view only.)
@@ -34,7 +38,7 @@ Rules and functions deploy from the repo ([team.md](team.md)).
 
 ## From your calendar
 
-Under Services, "From your calendar" lists the next six weeks of the business
+Under Services, "From your calendar" lists the next two weeks of the business
 calendar (the same one Wrap-up reads; `plannerCalendar` in
 `functions/planner.js`) that aren't planned yet. "Add" makes a normal service
 you can edit: the calendar title becomes its name, "Pizza Friday" in the title
@@ -48,7 +52,8 @@ date.
 ## Shopping
 
 The Shopping tab builds the list from the picked pizzas and the dough,
-grouped by store section. "Add an item" puts your own things on it
+grouped by store section, with rough store amounts (ounces under a pound,
+then half pounds, rounded up). "Add an item" puts your own things on it
 (`plan.extras`: name and an optional amount), shown first under "Added" and
 kept until you remove them with ✕.
 

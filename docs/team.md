@@ -5,7 +5,7 @@ One list decides who can use the team tools: the Firestore document
 
 | Role | Gets |
 | --- | --- |
-| `admins` | Menu manager, dough planner (with "Refresh from sheets"), events and quotes, wrap-up, the dashboard link |
+| `admins` | Menu manager, planner (with "Refresh now" for the sheets), events and quotes, wrap-up, the dashboard link |
 | `staff` | Dough planner |
 
 To add or remove someone, edit that document in the Firebase console. They
