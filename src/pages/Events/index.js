@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore'
 import { db, signInWithGoogle } from '../../utils/firebase'
 import useEventAdmin from './useEventAdmin'
-import Notifications from './Notifications'
+import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 import { DEFAULT_PRICING, STATUSES, money, newQuote, prettyDate, quoteText, totals } from './quote'
 import {
   DEFAULT_REMINDERS,
@@ -45,10 +45,7 @@ const EVENT_TYPES = [
   'Other',
 ]
 
-const input = 'w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white'
-const btn = 'px-3 py-1.5 rounded-md text-sm font-medium border'
-const btnPrimary = `${btn} bg-amber-600 border-amber-600 text-white hover:bg-amber-700 disabled:opacity-50`
-const btnQuiet = `${btn} bg-white border-gray-300 text-gray-700 hover:border-gray-900`
+const { input, btnPrimary, btnQuiet } = ui
 
 const statusLabel = (key) => (STATUSES.find((s) => s.key === key) || { label: key }).label
 const STATUS_COLORS = {
@@ -378,7 +375,7 @@ const EventEditor = ({ id, initial, pricing, mixLead, onClose }) => {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 space-y-5 text-left">
+    <div className={`${ui.card} sm:p-6 space-y-5`}>
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="text-xl font-bold">{id ? event.name || 'Event' : 'New event'}</h2>
         <select className={`${input} w-auto`} value={event.status} onChange={(e) => set({ status: e.target.value })}>
@@ -553,7 +550,7 @@ const Settings = ({ pricing, reminders, mixLead, onClose }) => {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 space-y-5 text-left">
+    <div className={`${ui.card} sm:p-6 space-y-5`}>
       <h2 className="text-xl font-bold">Pricing and reminders</h2>
 
       <section className="space-y-2">
@@ -702,7 +699,7 @@ const EventRow = ({ event, mixLead, onOpen }) => {
 
 // ---------- Page ----------
 
-const Shell = ({ children }) => <div className="max-w-3xl mx-auto px-4 py-8 space-y-4 text-left">{children}</div>
+const Shell = TeamPage
 
 const Events = () => {
   const { user, loading, access } = useEventAdmin()
@@ -735,7 +732,7 @@ const Events = () => {
   if (!user) {
     return (
       <Shell>
-        <h1 className="text-3xl font-mono">Events</h1>
+        <PageHeader title="Events" />
         <p className="text-gray-700">Sign in with your Google account.</p>
         <button type="button" className={btnPrimary} onClick={signInWithGoogle}>
           Sign in with Google
@@ -746,7 +743,7 @@ const Events = () => {
   if (access === 'denied') {
     return (
       <Shell>
-        <h1 className="text-3xl font-mono">Events</h1>
+        <PageHeader title="Events" />
         <p className="text-gray-700">{user.email} isn't an admin. Ask Jaron to add it, then reload this page.</p>
       </Shell>
     )
@@ -769,21 +766,14 @@ const Events = () => {
 
   return (
     <Shell>
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h1 className="text-3xl font-mono">Events</h1>
-        <div className="flex gap-2 flex-wrap items-start">
-          <Notifications />
-          <a href="/events/wrapup" className={btnQuiet}>
-            Wrap up
-          </a>
-          <button type="button" className={btnQuiet} onClick={() => setEditing('settings')}>
-            Pricing
-          </button>
-          <button type="button" className={btnPrimary} onClick={() => setEditing({ id: null, event: blankEvent() })}>
-            + New event
-          </button>
-        </div>
-      </div>
+      <PageHeader title="Events" sub="Inquiries, quotes and bookings">
+        <button type="button" className={btnQuiet} onClick={() => setEditing('settings')}>
+          Pricing
+        </button>
+        <button type="button" className={btnPrimary} onClick={() => setEditing({ id: null, event: blankEvent() })}>
+          + New event
+        </button>
+      </PageHeader>
 
       <div className="flex flex-wrap gap-1">
         {FILTERS.map((f) => (
@@ -801,7 +791,7 @@ const Events = () => {
       </div>
 
       {shown.length === 0 ? (
-        <p className="text-gray-500">Nothing here yet. Website inquiries show up here on their own.</p>
+        <p className={`${ui.card} text-gray-500`}>Nothing here yet. Website inquiries show up here on their own.</p>
       ) : (
         <ul className="space-y-3">
           {shown.map((e) => (

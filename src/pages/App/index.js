@@ -9,13 +9,16 @@ import Planner from '../Planner'
 import Team from '../Team'
 import Events from '../Events'
 import WrapUp from '../Events/WrapUp'
+import TeamNav from '../../components/TeamNav'
+import { isTeamPath } from '../../utils/useTeamAccess'
 
 export const isSiteReadyForOrders = true
 
 const App = () => {
+  const team = typeof window !== 'undefined' && isTeamPath(window.location.pathname)
   return (
-    <div>
-      <Navbar />
+    <div className={team ? 'min-h-screen bg-gray-50' : undefined}>
+      {team ? <TeamNav /> : <Navbar />}
       <div className="text-center justify-center">
         <Router>
           <Routes>
@@ -30,9 +33,11 @@ const App = () => {
           </Routes>
         </Router>
       </div>
-      <footer className="text-center py-6 text-xs text-gray-400">
-        <a href="/team" className="hover:text-gray-700">Team sign-in</a>
-      </footer>
+      {!team && (
+        <footer className="text-center py-6 text-xs text-gray-400">
+          <a href="/team" className="hover:text-gray-700">Team sign-in</a>
+        </footer>
+      )}
     </div>
   )
 }

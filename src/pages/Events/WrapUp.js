@@ -4,6 +4,7 @@ import { signInWithGoogle } from '../../utils/firebase'
 import useEventAdmin from './useEventAdmin'
 import { prettyDate } from './quote'
 import { buildChoices } from './choices'
+import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 
 // Wrap-up after an event or prep day. Replaces the "money tracker" Google Form:
 // the server (functions/wrapup.js) lists recent events from the tracker and
@@ -11,10 +12,7 @@ import { buildChoices } from './choices'
 // tracker's Form Responses tab. The fields come from that tab's header row,
 // so adding a column (a new person's hours, say) adds a field here.
 
-const input = 'w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white'
-const btn = 'px-3 py-1.5 rounded-md text-sm font-medium border'
-const btnPrimary = `${btn} bg-amber-600 border-amber-600 text-white hover:bg-amber-700 disabled:opacity-50`
-const btnQuiet = `${btn} bg-white border-gray-300 text-gray-700 hover:border-gray-900`
+const { input, btnPrimary, btnQuiet } = ui
 
 // How each sheet column is asked for, by its header text.
 const kindOf = (h) => {
@@ -84,7 +82,7 @@ const WrapUpForm = ({ headers, choice, today, onDone, onBack }) => {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 space-y-5 text-left">
+    <div className={`${ui.card} sm:p-6 space-y-5`}>
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-xl font-bold">Wrap up: {choice.title}</h2>
         <button type="button" className="text-sm underline text-gray-600" onClick={onBack}>
@@ -161,7 +159,7 @@ const WrapUpForm = ({ headers, choice, today, onDone, onBack }) => {
   )
 }
 
-const Shell = ({ children }) => <div className="max-w-3xl mx-auto px-4 py-8 space-y-4 text-left">{children}</div>
+const Shell = TeamPage
 
 const WrapUp = () => {
   const { user, loading, access } = useEventAdmin()
@@ -183,7 +181,7 @@ const WrapUp = () => {
   if (!user) {
     return (
       <Shell>
-        <h1 className="text-3xl font-mono">Wrap up</h1>
+        <PageHeader title="Wrap-up" />
         <button type="button" className={btnPrimary} onClick={signInWithGoogle}>
           Sign in with Google
         </button>
@@ -193,7 +191,7 @@ const WrapUp = () => {
   if (access === 'denied') {
     return (
       <Shell>
-        <h1 className="text-3xl font-mono">Wrap up</h1>
+        <PageHeader title="Wrap-up" />
         <p className="text-gray-700">{user.email} isn't an admin.</p>
       </Shell>
     )
@@ -202,7 +200,7 @@ const WrapUp = () => {
   if (saved) {
     return (
       <Shell>
-        <h1 className="text-3xl font-mono">Wrap up</h1>
+        <PageHeader title="Wrap-up" />
         <p className="text-gray-800">Saved to the money tracker (row {saved}).</p>
         <div className="flex gap-2">
           <button type="button" className={btnQuiet} onClick={() => { setSaved(null); setChoice(null) }}>
@@ -226,10 +224,7 @@ const WrapUp = () => {
 
   return (
     <Shell>
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-3xl font-mono">Wrap up</h1>
-        <a href="/events" className="text-sm underline text-gray-600">Events</a>
-      </div>
+      <PageHeader title="Wrap-up" sub="Log an event or prep day to the money tracker" />
       {loadError && <p className="text-red-700">{loadError}</p>}
       {!data && !loadError && <p className="text-gray-500">Loading recent events and your calendar…</p>}
       {data && (
@@ -250,7 +245,7 @@ const WrapUp = () => {
                     <button
                       type="button"
                       onClick={() => setChoice(c)}
-                      className="w-full text-left bg-white rounded-xl shadow-sm border border-transparent hover:border-gray-900 p-3"
+                      className="w-full text-left bg-white rounded-xl shadow-sm border border-gray-200 hover:border-amber-500 p-4"
                     >
                       <span className="flex justify-between gap-2">
                         <span className="font-semibold">{c.title}</span>

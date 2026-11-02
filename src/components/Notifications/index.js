@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { getMessaging, getToken, deleteToken, isSupported } from 'firebase/messaging'
+import { BellIcon } from '@heroicons/react/outline'
+import { BellIcon as BellSolid } from '@heroicons/react/solid'
 
-// "Notifications" on /events: turns phone notifications on or off for this
+// The bell in the team bar: turns phone notifications on or off for this
 // device. The server (functions/push.js) decides who may sign up and what is
 // sent: new inquiries, dough steps, and a 7 am summary of the day.
 const callable = (name) => httpsCallable(getFunctions(), name)
@@ -40,6 +42,7 @@ const isIOSBrowserTab = () =>
 const Notifications = ({ className }) => {
   const [state, setState] = useState('loading') // loading | off | on | blocked | unsupported | busy
   const [message, setMessage] = useState('')
+  const [showHelp, setShowHelp] = useState(false)
 
   useEffect(() => {
     let live = true
@@ -73,7 +76,7 @@ const Notifications = ({ className }) => {
       await callable('registerPush')({ token, on: turnOn })
       if (!turnOn) await deleteToken(getMessaging()).catch(() => {})
       setState(turnOn ? 'on' : 'off')
-      if (turnOn) setMessage("You're set. You'll get new inquiries, dough steps, and a 7 am summary.")
+      if (turnOn) setMessage("Notifications on. You'll get new inquiries, dough steps, and a 7 am summary.")
     } catch (e) {
       console.error(e)
       setMessage(e.message || "Couldn't change notifications.")
@@ -87,19 +90,31 @@ const Notifications = ({ className }) => {
       : "This browser can't show notifications.",
     blocked: 'Notifications are blocked for this site. Allow them in the browser or app settings, then reload.',
   }[state]
+  const note = message || (showHelp && help)
+  const on = state === 'on'
+  const Icon = on ? BellSolid : BellIcon
 
   return (
-    <div className={className}>
+    <div className={`relative ${className || ''}`}>
       <button
         type="button"
-        className="px-3 py-1.5 rounded-md text-sm font-medium border bg-white border-gray-300 text-gray-700 hover:border-gray-900 disabled:opacity-50"
-        disabled={['loading', 'busy', 'unsupported', 'blocked'].includes(state)}
-        onClick={toggle}
-        title={help || ''}
+        className={`p-2 rounded-full ${on ? 'text-amber-600' : 'text-gray-500'} hover:bg-gray-100 disabled:opacity-40`}
+        disabled={['loading', 'busy'].includes(state)}
+        onClick={() => (help ? setShowHelp((v) => !v) : toggle())}
+        aria-pressed={on}
+        aria-label={on ? 'Notifications on. Tap to turn off.' : 'Turn on notifications'}
+        title={on ? 'Notifications on' : 'Turn on notifications'}
       >
-        {state === 'on' ? '🔔 Notifications on' : state === 'busy' ? '…' : '🔕 Notifications'}
+        <Icon className={`h-6 w-6 ${state === 'busy' ? 'animate-pulse' : ''}`} aria-hidden="true" />
       </button>
-      {(help || message) && <p className="text-xs text-gray-600 mt-1 max-w-xs">{help || message}</p>}
+      {note && (
+        <div role="status" className="absolute right-0 top-full mt-1 z-30 w-64 rounded-lg bg-gray-900 text-white text-xs p-3 shadow-lg">
+          {note}
+          <button type="button" className="block mt-2 underline" onClick={() => { setMessage(''); setShowHelp(false) }}>
+            OK
+          </button>
+        </div>
+      )}
     </div>
   )
 }

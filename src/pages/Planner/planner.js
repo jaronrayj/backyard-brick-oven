@@ -1,5 +1,5 @@
 /*
- * Dough planner: services, dough plan, pizza picks, shopping list and prep list.
+ * Planner: services, dough plan, pizza picks, shopping list and prep list.
  *
  * Plain DOM code (no React) so it matches the version prototyped in Claude.
  * mountPlanner(root, deps) renders into `root` and returns a cleanup function.
@@ -11,7 +11,7 @@
  * deps.refresh   - async () => re-read the Google Sheets on the server
  */
 
-const MARKUP = '<div class="wrap">\n  <header class="top">\n    <h1>Dough planner</h1>\n    <div class="status"><span id="data-status">Loading recipe and menu…</span><button type="button" class="btn quiet" id="refresh" hidden>Refresh from sheets</button><span id="save-status"></span><span id="keep-awake-slot"></span></div>\n    <nav class="tabs" role="tablist" aria-label="Planner pages">\n      <button type="button" role="tab" id="tab-plan" aria-controls="page-plan" aria-selected="true" data-tab="plan">Plan</button>\n      <button type="button" role="tab" id="tab-shop" aria-controls="page-shop" aria-selected="false" data-tab="shop">Shopping list</button>\n      <button type="button" role="tab" id="tab-prep" aria-controls="page-prep" aria-selected="false" data-tab="prep">Prep</button>\n    </nav>\n  </header>\n\n  <p class="ro" id="readonly" hidden>You can look but not change this plan. Ask Jaron to add your account to the staff list.</p>\n\n  <section id="page-plan" role="tabpanel" aria-labelledby="tab-plan" class="panel">\n    <article class="card">\n      <h2>Services</h2>\n      <p class="note">Pizza Friday uses recent demand. Events use guests × pizzas per guest. Type a count to override.</p>\n      <div id="services"></div>\n      <div class="row">\n        <button type="button" class="btn" id="add-svc">Add a service</button>\n      </div>\n      <details class="tweaks">\n        <summary>Yeast, water and timing</summary>\n        <div class="row">\n          <label class="field">Extra for safety (%)<input type="number" id="t-buffer" min="0" max="100" step="5" inputmode="numeric"></label>\n          <label class="field">Mix days before service<input type="number" id="t-lead" min="0" max="5" step="1" inputmode="numeric"></label>\n          <label class="field">Yeast (% of recipe)<input type="number" id="t-yeast" min="10" max="300" step="5" inputmode="numeric"></label>\n          <label class="field">Cold water (% of recipe)<input type="number" id="t-water" min="50" max="150" step="1" inputmode="numeric"></label>\n          <button type="button" class="btn" id="t-reset">Reset to saved settings</button>\n        </div>\n      </details>\n    </article>\n\n    <article class="card">\n      <h2>Dough plan</h2>\n      <p class="note" id="plan-note">Shared mix days are combined. Big days split into even mixer batches.</p>\n      <div id="plan"></div>\n    </article>\n\n    <article class="card">\n      <h2>Pizzas</h2>\n      <p class="note">Tap the pizzas on the menu. The planned dough splits evenly across them.</p>\n      <div class="chips" id="chips"></div>\n      <div class="row">\n        <button type="button" class="btn" id="split">Split evenly again</button>\n        <button type="button" class="btn" id="clear">Clear</button>\n        <span class="seg" role="group" aria-label="Each tap">Each tap\n          <button type="button" class="btn" data-step="1" aria-pressed="false">1</button>\n          <button type="button" class="btn" data-step="5" aria-pressed="true">5</button>\n          <button type="button" class="btn" data-step="10" aria-pressed="false">10</button>\n        </span>\n      </div>\n      <p class="note" id="count-line"></p>\n      <div id="counters"></div>\n    </article>\n\n    <article class="card">\n      <h2>Recent Pizza Fridays</h2>\n      <p class="note" id="hist-note">Demand is sold + comped + could have sold more.</p>\n      <div style="overflow-x:auto"><table class="hist" id="hist"></table></div>\n    </article>\n  </section>\n\n  <section id="page-shop" role="tabpanel" aria-labelledby="tab-shop" class="panel" hidden>\n    <article class="card">\n      <h2>Shopping list</h2>\n      <p class="note" id="shop-line"></p>\n      <div class="row"><button type="button" class="btn quiet" id="uncheck">Uncheck everything</button></div>\n      <div class="list" id="shoplist"></div>\n    </article>\n    <article class="card">\n      <h2>What to bring</h2>\n      <p class="note" id="bring-line">What to pack for the services on the Plan tab. Your own items show only for the kinds of services you have planned; counts follow guests or dough balls.</p>\n      <div class="list" id="bringauto"></div>\n      <div class="list" id="bringlist"></div>\n      <div class="row"><button type="button" class="btn quiet" id="bring-edit" aria-pressed="false">Edit list</button></div>\n      <div class="row" id="bring-form" hidden>\n        <label class="field">Item<input type="text" id="bring-new" enterkeyhint="done" autocomplete="off" placeholder="e.g. Pizza peels"></label>\n        <label class="field">For<select id="bring-for"></select></label>\n        <label class="field">How many<select id="bring-per"><option value="">Just bring it</option><option value="guest">1 per … guests</option><option value="ball">1 per … dough balls</option></select></label>\n        <label class="field" id="bring-every-wrap" hidden>Every<input type="number" id="bring-every" min="1" inputmode="numeric" value="10"></label>\n        <button type="button" class="btn" id="bring-add">Add</button>\n      </div>\n    </article>\n  </section>\n\n  <section id="page-prep" role="tabpanel" aria-labelledby="tab-prep" hidden>\n    <article class="card">\n      <h2>Prep list</h2>\n      <p class="note">Day by day for the services on the Plan tab. Amounts split each service\'s share of the pizzas you picked.</p>\n      <div class="row"><button type="button" class="btn quiet" id="prep-uncheck">Uncheck everything</button></div>\n      <div class="list" id="preplist"></div>\n    </article>\n  </section>\n</div>';
+const MARKUP = '<div class="wrap">\n  <header class="top">\n    <h1>Planner</h1>\n    <div class="status"><span id="data-status">Loading recipe and menu…</span><button type="button" class="btn quiet" id="refresh" hidden>Refresh from sheets</button><span id="save-status"></span><span id="keep-awake-slot"></span></div>\n    <nav class="tabs" role="tablist" aria-label="Planner pages">\n      <button type="button" role="tab" id="tab-plan" aria-controls="page-plan" aria-selected="true" data-tab="plan">Plan</button>\n      <button type="button" role="tab" id="tab-shop" aria-controls="page-shop" aria-selected="false" data-tab="shop">Shopping list</button>\n      <button type="button" role="tab" id="tab-prep" aria-controls="page-prep" aria-selected="false" data-tab="prep">Prep</button>\n    </nav>\n  </header>\n\n  <p class="ro" id="readonly" hidden>You can look but not change this plan. Ask Jaron to add your account to the staff list.</p>\n\n  <section id="page-plan" role="tabpanel" aria-labelledby="tab-plan" class="panel">\n    <article class="card">\n      <h2>Services</h2>\n      <p class="note">Pizza Friday uses recent demand. Events use guests × pizzas per guest. Type a count to override.</p>\n      <div id="services"></div>\n      <div class="row">\n        <button type="button" class="btn" id="add-svc">Add a service</button>\n      </div>\n      <details class="tweaks">\n        <summary>Yeast, water and timing</summary>\n        <div class="row">\n          <label class="field">Extra for safety (%)<input type="number" id="t-buffer" min="0" max="100" step="5" inputmode="numeric"></label>\n          <label class="field">Mix days before service<input type="number" id="t-lead" min="0" max="5" step="1" inputmode="numeric"></label>\n          <label class="field">Yeast (% of recipe)<input type="number" id="t-yeast" min="10" max="300" step="5" inputmode="numeric"></label>\n          <label class="field">Cold water (% of recipe)<input type="number" id="t-water" min="50" max="150" step="1" inputmode="numeric"></label>\n          <button type="button" class="btn" id="t-reset">Reset to saved settings</button>\n        </div>\n      </details>\n    </article>\n\n    <article class="card">\n      <h2>Dough plan</h2>\n      <p class="note" id="plan-note">Shared mix days are combined. Big days split into even mixer batches.</p>\n      <div id="plan"></div>\n    </article>\n\n    <article class="card">\n      <h2>Pizzas</h2>\n      <p class="note">Tap the pizzas on the menu. The planned dough splits evenly across them.</p>\n      <div class="chips" id="chips"></div>\n      <div class="row">\n        <button type="button" class="btn" id="split">Split evenly again</button>\n        <button type="button" class="btn" id="clear">Clear</button>\n        <span class="seg" role="group" aria-label="Each tap">Each tap\n          <button type="button" class="btn" data-step="1" aria-pressed="false">1</button>\n          <button type="button" class="btn" data-step="5" aria-pressed="true">5</button>\n          <button type="button" class="btn" data-step="10" aria-pressed="false">10</button>\n        </span>\n      </div>\n      <p class="note" id="count-line"></p>\n      <div id="counters"></div>\n    </article>\n\n    <article class="card">\n      <h2>Recent Pizza Fridays</h2>\n      <p class="note" id="hist-note">Demand is sold + comped + could have sold more.</p>\n      <div style="overflow-x:auto"><table class="hist" id="hist"></table></div>\n    </article>\n  </section>\n\n  <section id="page-shop" role="tabpanel" aria-labelledby="tab-shop" class="panel" hidden>\n    <article class="card">\n      <h2>Shopping list</h2>\n      <p class="note" id="shop-line"></p>\n      <div class="row"><button type="button" class="btn quiet" id="uncheck">Uncheck everything</button></div>\n      <div class="list" id="shoplist"></div>\n    </article>\n    <article class="card">\n      <h2>What to bring</h2>\n      <p class="note" id="bring-line">What to pack for the services on the Plan tab. Your own items show only for the kinds of services you have planned; counts follow guests or dough balls.</p>\n      <div class="list" id="bringauto"></div>\n      <div class="list" id="bringlist"></div>\n      <div class="row"><button type="button" class="btn quiet" id="bring-edit" aria-pressed="false">Edit list</button></div>\n      <div class="row" id="bring-form" hidden>\n        <label class="field">Item<input type="text" id="bring-new" enterkeyhint="done" autocomplete="off" placeholder="e.g. Pizza peels"></label>\n        <label class="field">For<select id="bring-for"></select></label>\n        <label class="field">How many<select id="bring-per"><option value="">Just bring it</option><option value="guest">1 per … guests</option><option value="ball">1 per … dough balls</option></select></label>\n        <label class="field" id="bring-every-wrap" hidden>Every<input type="number" id="bring-every" min="1" inputmode="numeric" value="10"></label>\n        <button type="button" class="btn" id="bring-add">Add</button>\n      </div>\n    </article>\n  </section>\n\n  <section id="page-prep" role="tabpanel" aria-labelledby="tab-prep" hidden>\n    <article class="card">\n      <h2>Prep list</h2>\n      <p class="note">Day by day for the services on the Plan tab. Amounts split each service\'s share of the pizzas you picked.</p>\n      <div class="row"><button type="button" class="btn quiet" id="prep-uncheck">Uncheck everything</button></div>\n      <div class="list" id="preplist"></div>\n    </article>\n  </section>\n</div>';
 
 export function mountPlanner(root, deps) {
   root.innerHTML = MARKUP;
@@ -20,7 +20,6 @@ export function mountPlanner(root, deps) {
   const PPG_SETTING = {wedding: 'pizzas per guest wedding', sides: 'pizzas per guest with other food', meal: 'pizzas per guest pizza only'};
   const PPG_FALLBACK = {wedding: 0.5, sides: 0.45, meal: 0.8};
   const TYPES = [['pf', 'Pizza Friday'], ['wedding', 'Wedding'], ['sides', 'Party with other food'], ['meal', 'Pizza is the meal']];
-  const TYPE_SHORT = {pf: 'Pizza Friday', wedding: 'wedding', sides: 'party', meal: 'party'};
 
   /* ---------- State ---------- */
   let REF = null;      /* shared copy of sheet data */
@@ -48,6 +47,10 @@ export function mountPlanner(root, deps) {
     if (diff >= 7 && diff < 14) return 'Next ' + DAYS[d.getUTCDay()];
     return day(s);
   };
+  /* Service headings: "Wedding · Sat Nov 14", with Today/Tomorrow when close. */
+  const svcName = (s) => (TYPES.find(([v]) => v === s.type) || [null, 'Service'])[1];
+  const svcWhen = (d) => { const r = rel(d); return day(d) + (r === 'Today' || r === 'Tomorrow' ? ' (' + r.toLowerCase() + ')' : ''); };
+
   const g = (v) => (v >= 100 ? Math.round(v).toLocaleString('en-US') : (Math.round(v * 10) / 10).toLocaleString('en-US')) + ' g';
   const amount = (v) => (v < 100 ? g(v) : kgLb(v));
   const kgLb = (v) => (v >= 1000 ? (v / 1000).toFixed(2) + ' kg' : Math.round(v) + ' g') + ' · ' + (v / 453.592).toFixed(1) + ' lb';
@@ -176,10 +179,15 @@ export function mountPlanner(root, deps) {
     if (!PLAN.services.length) box.append(el('p', 'empty', 'No services yet.'));
     PLAN.services.forEach((s) => {
       const wrap = el('div', 'svc');
+      const head = el('div', 'svc-head');
+      const title = el('h3');
+      const label = () => { title.textContent = svcName(s) + (s.date ? ' · ' + svcWhen(s.date) : ' · no date yet'); };
+      label();
+      head.append(title);
       const r1 = el('div', 'row');
       const f = (label, input) => { const l = el('label', 'field', label); l.append(input); return l; };
       const date = el('input'); date.type = 'date'; date.value = s.date || ''; date.id = 'd-' + s.id;
-      date.addEventListener('change', () => { s.date = date.value; savePlan(); renderLive(); });
+      date.addEventListener('change', () => { s.date = date.value; label(); savePlan(); renderLive(); });
       const type = el('select'); type.id = 't-' + s.id;
       TYPES.forEach(([v, t]) => { const o = el('option', null, t); o.value = v; if (s.type === v) o.selected = true; type.append(o); });
       type.addEventListener('change', () => { s.type = type.value; savePlan(); type.blur(); renderAll(); });
@@ -197,9 +205,9 @@ export function mountPlanner(root, deps) {
       r2.append(f('Dough balls', balls));
       const rm = el('button', 'btn quiet', 'Remove'); rm.type = 'button';
       rm.addEventListener('click', () => { PLAN.services = PLAN.services.filter((x) => x !== s); savePlan(); renderAll(); });
-      r2.append(rm);
+      head.append(rm);
       const sugg = el('div', 'sugg'); sugg.dataset.svc = s.id;
-      wrap.append(r1, r2, sugg);
+      wrap.append(head, r1, r2, sugg);
       box.append(wrap);
     });
     renderSuggs();
@@ -242,7 +250,9 @@ export function mountPlanner(root, deps) {
       const size = Math.ceil(balls / n);
       const p = per.poolish * size;
       const sec = el('section', 'batch');
-      sec.append(el('h3', null, balls.toLocaleString('en-US') + ' balls for ' + list.map((s) => TYPE_SHORT[s.type] + ' ' + rel(s.date)).join(' + ')));
+      const bh = el('div', 'batch-head');
+      bh.append(el('h3', null, list.map((s) => svcName(s) + ' · ' + svcWhen(s.date)).join(' + ')), el('span', 'pill', balls.toLocaleString('en-US') + ' balls'));
+      sec.append(bh);
       const steps = el('div', 'steps');
       const card = (title, when, rows) => {
         const c = el('div', 'stepcard');
@@ -363,7 +373,7 @@ export function mountPlanner(root, deps) {
     box.replaceChildren();
     if (!PLAN || !REF) return;
     const balls = plannedBalls();
-    if (balls) box.append(checkRow('bring|auto|dough', 'Dough', 'For ' + plannedServices().map((s) => TYPE_SHORT[s.type] + ' ' + rel(s.date)).join(' + '), balls.toLocaleString('en-US') + ' balls'));
+    if (balls) box.append(checkRow('bring|auto|dough', 'Dough', 'For ' + plannedServices().map((s) => svcName(s) + ' · ' + day(s.date)).join(' + '), balls.toLocaleString('en-US') + ' balls'));
     const picked = new Set(PLAN.picked);
     const rows = pizzaRows().filter((r) => picked.has(r.pizza));
     [...new Set(rows.map((r) => r.sauce).filter(Boolean))].sort().forEach((sauce) => box.append(checkRow('bring|auto|sauce|' + norm(sauce), sauce, 'Sauce for the picked pizzas')));
@@ -501,7 +511,7 @@ export function mountPlanner(root, deps) {
     const lead = Math.max(0, Math.min(5, Number(t.lead) || 0));
     const svcs = PLAN.services.filter((s) => s.date).map((s) => ({...s, use: ballsFor(s)})).filter((s) => s.use > 0);
     if (!svcs.length) { box.append(el('p', 'empty', 'Add a service on the Plan tab to see the prep list.')); return; }
-    const label = (s) => TYPE_SHORT[s.type] + ' ' + rel(s.date);
+    const label = (s) => svcName(s) + ' · ' + day(s.date);
     const days = new Map();
     /* Same task on the same day is one line: amounts add up and the services are listed together. */
     const task = (date, rank, key, title, amt, note, unitName) => {
