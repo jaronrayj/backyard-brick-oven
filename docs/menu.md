@@ -19,62 +19,12 @@ saved with one or with the "Move photos" button; the old link is kept in
 
 ## Who can edit
 
-Two lists in the Firebase console:
-
-| What | Where | How to add someone |
-| --- | --- | --- |
-| Edit the menu | Realtime Database, `menuAdmins` | Add a child: key = their Google email with every `.` replaced by `,` (e.g. `jj,backyardbrickoven@gmail,com`), value `true` |
-| Upload menu photos | Storage rules (below) | Add their email to the list in the rule |
-
-They sign in at `/admin/menu` with that Google account.
+Admins on the team list (see [team.md](team.md)). They sign in at `/admin/menu`
+or `/team` with that Google account. Photo uploads use the same check.
 
 ## One-time setup
 
-1. **Realtime Database rules.** Merge these into the existing rules (keep
-   whatever is already there for other paths):
-
-   ```json
-   {
-     "rules": {
-       "pizzas": {
-         ".read": true,
-         ".write": "auth != null && auth.token.email_verified == true && root.child('menuAdmins').child(auth.token.email.replace('.', ',')).val() == true"
-       },
-       "menuAdmins": {
-         "$email": {
-           ".read": "auth != null && auth.token.email.replace('.', ',') == $email"
-         }
-       }
-     }
-   }
-   ```
-
-2. **Storage rules** (console → Storage → Rules; turn Storage on first if it
-   isn't). The emails are listed in the rule because checking Firestore from
-   Storage rules needs an extra IAM grant that failed to provision:
-
-   ```
-   rules_version = '2';
-   service firebase.storage {
-     match /b/{bucket}/o {
-       match /pizzas/{file} {
-         allow read: if true;
-         allow write: if request.auth != null
-           && request.auth.token.email_verified == true
-           && request.auth.token.email in [
-             'jj.backyardbrickoven@gmail.com',
-             'jaronjohnson14@gmail.com',
-             'bublegum.pop@gmail.com'
-           ]
-           && request.resource.size < 10 * 1024 * 1024
-           && request.resource.contentType.matches('image/.*');
-       }
-     }
-   }
-   ```
-
-3. **Retire the sheet sync.** Once the menu page works, open the
-   "pizza selection - bybo" Apps Script project, go to Triggers (clock icon)
-   and delete the "importSheet / On change" trigger. Otherwise the next edit to
-   that sheet copies the sheet over the menu and undoes changes made here
-   (including the order).
+**Retire the sheet sync.** Open the "pizza selection - bybo" Apps Script
+project, go to Triggers (clock icon) and delete the "importSheet / On change"
+trigger. Otherwise the next edit to that sheet copies the sheet over the menu
+and undoes changes made here (including the order).

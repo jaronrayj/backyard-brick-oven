@@ -11,7 +11,7 @@ sign in with Google; nobody needs access to the Google Sheets.
 | Recipe, menu, toppings, sauces, settings, recent Pizza Fridays | Firestore `planner/ref`, written only by the Cloud Function |
 | Services, picked pizzas, counts, tweaks | Firestore `planner/plan` |
 | Shopping and prep checkmarks | Firestore `planner/checks` |
-| Who can use it | Firestore `plannerAccess/team`: `{ admins: [emails], staff: [emails] }` |
+| Who can use it | The team list, admins and staff (see [team.md](team.md)) |
 | Sheet refresh | `functions/planner.js`: `refreshPlannerData` (the admin "Refresh from sheets" button) and `refreshPlannerHourly` |
 
 The function reads only these ranges: dough counts, "could have sold more",
@@ -23,41 +23,23 @@ The menu itself comes from the website's own list (Realtime Database
 
 ## One-time setup
 
-1. **Access list.** In the Firestore console create the document
-   `plannerAccess/team` with two array fields:
-   `admins: ["jj.backyardbrickoven@gmail.com"]` and `staff: []`. Add staff
-   emails (their Google accounts) to `staff` to let them in.
-2. **Security rules.** Add these inside `match /databases/{database}/documents`
-   in the Firestore rules (console → Firestore → Rules), next to the existing
-   rules:
-
-   ```
-   match /plannerAccess/{doc} {
-     allow read: if request.auth != null;
-     allow write: if false;
-   }
-   match /planner/{doc} {
-     function team() {
-       return get(/databases/$(database)/documents/plannerAccess/team).data;
-     }
-     function onTeam() {
-       return request.auth != null
-         && request.auth.token.email_verified == true
-         && (request.auth.token.email in team().staff
-             || request.auth.token.email in team().admins);
-     }
-     allow read: if onTeam();
-     allow write: if onTeam() && doc in ['plan', 'checks'];
-   }
-   ```
-
-   `planner/ref` is written by the Cloud Function, which is not bound by rules.
-3. **Deploy the functions.** `cd functions && npm install && cd .. && firebase deploy --only functions`.
-   `npm install` also updates `functions/package-lock.json` for the new
-   `firebase-admin` dependency; commit that change.
-4. **Share the sheets.** Open `/planner` as an admin and tap "Refresh from
+1. **People.** Add them to the team list ([team.md](team.md)).
+2. **Share the sheets.** Open `/planner` as an admin and tap "Refresh from
    sheets". The first time, it says which service account email to share the
-   three sheets with (view only). Share them, then tap refresh again.
-   The hourly refresh keeps it current after that.
+   three sheets with. Share them, then tap refresh again. The hourly refresh
+   keeps it current after that. (The money tracker needs Editor access for
+   the wrap-up page; the other two can stay view only.)
+
+Rules and functions deploy from the repo ([team.md](team.md)).
+
+## What to bring
+
+The Shopping tab's "What to bring" list has two parts. The top comes from the
+plan: dough balls, each sauce the picked pizzas use, and their toppings. Below
+are your own items (`plan.bring`), each tagged with who it's for (every
+service, Pizza Friday, any catered event, or one service type) and optionally
+a count of one per so many guests or dough balls. Only items for the kinds of
+services on the Plan tab show; "Edit list" shows all of them. Older items
+without a tag count as "Every service".
 
 Hosting deploys on merge to `main` as before.

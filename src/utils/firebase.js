@@ -1,25 +1,9 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp} from "firebase/app";
-import { getDatabase, ref, onValue } from "firebase/database";
+import { getDatabase } from "firebase/database";
 // import { getAnalytics } from "firebase/analytics";
-import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
-  signOut,
-} from "firebase/auth";
-import {
-  getFirestore,
-  collection,
-  query,
-  where,
-  addDoc,
-  getDocs,
-} from "firebase/firestore";
-import { defaultUser } from "../const/constants";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -40,69 +24,17 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
 
+// Team sign-in is Google only. Who can do what is the team list (useTeamRole).
 const googleProvider = new GoogleAuthProvider();
 const signInWithGoogle = async () => {
-  let user;
   try {
-    user = (await signInWithPopup(auth, googleProvider)).user;
+    await signInWithPopup(auth, googleProvider);
   } catch (err) {
     console.error(err);
     const quiet = ["auth/popup-closed-by-user", "auth/cancelled-popup-request"];
     if (err && err.code && !quiet.includes(err.code)) {
       window.alert(`Sign-in didn't work (${err.code}). Send this message to Jaron.`);
     }
-    return;
-  }
-  // Best effort: the old users/ record. Signing in already worked if this fails
-  // (the Firestore rules may not allow it), so don't report it as a sign-in error.
-  try {
-    const q = query(collection(db, "users"), where("uid", "==", user.uid));
-    const docs = await getDocs(q);
-    if (docs.docs.length === 0) {
-      const newUser = { ...defaultUser };
-      newUser.email = user.email;
-      newUser.name = user.displayName;
-      newUser.uid = user.uid;
-      newUser.authProvider = "google";
-      await addDoc(collection(db, "users"), newUser);
-    }
-  } catch (err) {
-    console.warn("Couldn't save the users/ record", err);
-  }
-};
-
-const logInWithEmailAndPassword = async (email, password) => {
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-  } catch (err) {
-    console.error(err);
-    // todo make all of these NOT alerts
-    alert(err.message);
-  }
-};
-
-const registerWithEmailAndPassword = async (name, email, password) => {
-  try {
-    const res = await createUserWithEmailAndPassword(auth, email, password);
-    const user = res.user;
-    const newUser = defaultUser;
-    newUser.email = email;
-    newUser.name = name;
-    newUser.uid = user.uid;
-    await addDoc(collection(db, "users"), newUser);
-  } catch (err) {
-    console.error(err);
-    alert(err.message);
-  }
-};
-
-const sendPasswordReset = async (email) => {
-  try {
-    await sendPasswordResetEmail(auth, email);
-    alert("Password reset link sent!");
-  } catch (err) {
-    console.error(err);
-    alert(err.message);
   }
 };
 
@@ -110,13 +42,4 @@ const logout = () => {
   signOut(auth);
 };
 
-export {
-  auth,
-  db,
-  rtdb,
-  signInWithGoogle,
-  logInWithEmailAndPassword,
-  registerWithEmailAndPassword,
-  sendPasswordReset,
-  logout,
-};
+export { auth, db, rtdb, signInWithGoogle, logout };

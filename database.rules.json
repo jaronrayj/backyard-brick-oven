@@ -1,0 +1,12 @@
+{
+  "rules": {
+    "pizzas": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email_verified == true && auth.token.team == 'admin'"
+    },
+    "toppings": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email_verified == true && auth.token.team == 'admin'"
+    }
+  }
+}

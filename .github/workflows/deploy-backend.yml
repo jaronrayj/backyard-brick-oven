@@ -1,0 +1,53 @@
+# Deploys Cloud Functions and the Firestore, Realtime Database and Storage
+# rules when they change on main (the site itself deploys from
+# firebase-hosting-merge.yml). Can also be run by hand from the Actions tab.
+#
+# Uses the same service account key as the hosting deploy. That account needs
+# these roles in Google Cloud IAM (one time): Cloud Functions Admin,
+# Service Account User, Firebase Rules Admin, Firebase Realtime Database Admin,
+# Secret Manager Viewer, Cloud Scheduler Admin and Eventarc Admin.
+name: Deploy functions and rules
+
+"on":
+  push:
+    branches:
+      - main
+    paths:
+      - "functions/**"
+      - "firestore.rules"
+      - "database.rules.json"
+      - "storage.rules"
+      - "firebase.json"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install functions dependencies
+        working-directory: functions
+        run: npm ci
+      - name: Sign in
+        env:
+          SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BACKYARD_BRICKOVEN }}
+        run: |
+          printf '%s' "$SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      # Functions first: the rules check a sign-in tag that the functions set,
+      # so rules only go out once the functions that set the tag are live.
+      - name: Deploy functions
+        run: npx --yes firebase-tools@14 deploy --only functions --project backyard-brickoven --non-interactive --force
+      - name: Deploy rules
+        run: npx --yes firebase-tools@14 deploy --only firestore:rules,database,storage --project backyard-brickoven --non-interactive

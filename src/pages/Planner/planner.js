@@ -11,7 +11,7 @@
  * deps.refresh   - async () => re-read the Google Sheets on the server
  */
 
-const MARKUP = '<div class="wrap">\n  <header class="top">\n    <h1>Dough planner</h1>\n    <div class="status"><span id="data-status">Loading recipe and menu…</span><button type="button" class="btn quiet" id="refresh" hidden>Refresh from sheets</button><span id="save-status"></span><span id="keep-awake-slot"></span></div>\n    <nav class="tabs" role="tablist" aria-label="Planner pages">\n      <button type="button" role="tab" id="tab-plan" aria-controls="page-plan" aria-selected="true" data-tab="plan">Plan</button>\n      <button type="button" role="tab" id="tab-shop" aria-controls="page-shop" aria-selected="false" data-tab="shop">Shopping list</button>\n      <button type="button" role="tab" id="tab-prep" aria-controls="page-prep" aria-selected="false" data-tab="prep">Prep</button>\n    </nav>\n  </header>\n\n  <p class="ro" id="readonly" hidden>You can look but not change this plan. Ask Jaron to add your account to the staff list.</p>\n\n  <section id="page-plan" role="tabpanel" aria-labelledby="tab-plan" class="panel">\n    <article class="card">\n      <h2>Services</h2>\n      <p class="note">Pizza Friday uses recent demand. Events use guests × pizzas per guest. Type a count to override.</p>\n      <div id="services"></div>\n      <div class="row">\n        <button type="button" class="btn" id="add-svc">Add a service</button>\n      </div>\n      <details class="tweaks">\n        <summary>Yeast, water and timing</summary>\n        <div class="row">\n          <label class="field">Extra for safety (%)<input type="number" id="t-buffer" min="0" max="100" step="5" inputmode="numeric"></label>\n          <label class="field">Mix days before service<input type="number" id="t-lead" min="0" max="5" step="1" inputmode="numeric"></label>\n          <label class="field">Yeast (% of recipe)<input type="number" id="t-yeast" min="10" max="300" step="5" inputmode="numeric"></label>\n          <label class="field">Cold water (% of recipe)<input type="number" id="t-water" min="50" max="150" step="1" inputmode="numeric"></label>\n          <button type="button" class="btn" id="t-reset">Reset to saved settings</button>\n        </div>\n      </details>\n    </article>\n\n    <article class="card">\n      <h2>Dough plan</h2>\n      <p class="note" id="plan-note">Shared mix days are combined. Big days split into even mixer batches.</p>\n      <div id="plan"></div>\n    </article>\n\n    <article class="card">\n      <h2>Pizzas</h2>\n      <p class="note">Tap the pizzas on the menu. The planned dough splits evenly across them.</p>\n      <div class="chips" id="chips"></div>\n      <div class="row">\n        <button type="button" class="btn" id="split">Split evenly again</button>\n        <button type="button" class="btn" id="clear">Clear</button>\n        <span class="seg" role="group" aria-label="Each tap">Each tap\n          <button type="button" class="btn" data-step="1" aria-pressed="false">1</button>\n          <button type="button" class="btn" data-step="5" aria-pressed="true">5</button>\n          <button type="button" class="btn" data-step="10" aria-pressed="false">10</button>\n        </span>\n      </div>\n      <p class="note" id="count-line"></p>\n      <div id="counters"></div>\n    </article>\n\n    <article class="card">\n      <h2>Recent Pizza Fridays</h2>\n      <p class="note" id="hist-note">Demand is sold + comped + could have sold more.</p>\n      <div style="overflow-x:auto"><table class="hist" id="hist"></table></div>\n    </article>\n  </section>\n\n  <section id="page-shop" role="tabpanel" aria-labelledby="tab-shop" class="panel" hidden>\n    <article class="card">\n      <h2>Shopping list</h2>\n      <p class="note" id="shop-line"></p>\n      <div class="row"><button type="button" class="btn quiet" id="uncheck">Uncheck everything</button></div>\n      <div class="list" id="shoplist"></div>\n    </article>\n    <article class="card">\n      <h2>Bring to the commissary</h2>\n      <p class="note">Things to pack. The list stays from week to week; Uncheck everything clears the checkmarks.</p>\n      <div class="list" id="bringlist"></div>\n      <div class="row">\n        <label class="field">Add something to bring<input type="text" id="bring-new" enterkeyhint="done" autocomplete="off" placeholder="e.g. Pizza peels"></label>\n        <button type="button" class="btn" id="bring-add">Add</button>\n      </div>\n    </article>\n  </section>\n\n  <section id="page-prep" role="tabpanel" aria-labelledby="tab-prep" hidden>\n    <article class="card">\n      <h2>Prep list</h2>\n      <p class="note">Day by day for the services on the Plan tab. Amounts split each service\'s share of the pizzas you picked.</p>\n      <div class="row"><button type="button" class="btn quiet" id="prep-uncheck">Uncheck everything</button></div>\n      <div class="list" id="preplist"></div>\n    </article>\n  </section>\n</div>';
+const MARKUP = '<div class="wrap">\n  <header class="top">\n    <h1>Dough planner</h1>\n    <div class="status"><span id="data-status">Loading recipe and menu…</span><button type="button" class="btn quiet" id="refresh" hidden>Refresh from sheets</button><span id="save-status"></span><span id="keep-awake-slot"></span></div>\n    <nav class="tabs" role="tablist" aria-label="Planner pages">\n      <button type="button" role="tab" id="tab-plan" aria-controls="page-plan" aria-selected="true" data-tab="plan">Plan</button>\n      <button type="button" role="tab" id="tab-shop" aria-controls="page-shop" aria-selected="false" data-tab="shop">Shopping list</button>\n      <button type="button" role="tab" id="tab-prep" aria-controls="page-prep" aria-selected="false" data-tab="prep">Prep</button>\n    </nav>\n  </header>\n\n  <p class="ro" id="readonly" hidden>You can look but not change this plan. Ask Jaron to add your account to the staff list.</p>\n\n  <section id="page-plan" role="tabpanel" aria-labelledby="tab-plan" class="panel">\n    <article class="card">\n      <h2>Services</h2>\n      <p class="note">Pizza Friday uses recent demand. Events use guests × pizzas per guest. Type a count to override.</p>\n      <div id="services"></div>\n      <div class="row">\n        <button type="button" class="btn" id="add-svc">Add a service</button>\n      </div>\n      <details class="tweaks">\n        <summary>Yeast, water and timing</summary>\n        <div class="row">\n          <label class="field">Extra for safety (%)<input type="number" id="t-buffer" min="0" max="100" step="5" inputmode="numeric"></label>\n          <label class="field">Mix days before service<input type="number" id="t-lead" min="0" max="5" step="1" inputmode="numeric"></label>\n          <label class="field">Yeast (% of recipe)<input type="number" id="t-yeast" min="10" max="300" step="5" inputmode="numeric"></label>\n          <label class="field">Cold water (% of recipe)<input type="number" id="t-water" min="50" max="150" step="1" inputmode="numeric"></label>\n          <button type="button" class="btn" id="t-reset">Reset to saved settings</button>\n        </div>\n      </details>\n    </article>\n\n    <article class="card">\n      <h2>Dough plan</h2>\n      <p class="note" id="plan-note">Shared mix days are combined. Big days split into even mixer batches.</p>\n      <div id="plan"></div>\n    </article>\n\n    <article class="card">\n      <h2>Pizzas</h2>\n      <p class="note">Tap the pizzas on the menu. The planned dough splits evenly across them.</p>\n      <div class="chips" id="chips"></div>\n      <div class="row">\n        <button type="button" class="btn" id="split">Split evenly again</button>\n        <button type="button" class="btn" id="clear">Clear</button>\n        <span class="seg" role="group" aria-label="Each tap">Each tap\n          <button type="button" class="btn" data-step="1" aria-pressed="false">1</button>\n          <button type="button" class="btn" data-step="5" aria-pressed="true">5</button>\n          <button type="button" class="btn" data-step="10" aria-pressed="false">10</button>\n        </span>\n      </div>\n      <p class="note" id="count-line"></p>\n      <div id="counters"></div>\n    </article>\n\n    <article class="card">\n      <h2>Recent Pizza Fridays</h2>\n      <p class="note" id="hist-note">Demand is sold + comped + could have sold more.</p>\n      <div style="overflow-x:auto"><table class="hist" id="hist"></table></div>\n    </article>\n  </section>\n\n  <section id="page-shop" role="tabpanel" aria-labelledby="tab-shop" class="panel" hidden>\n    <article class="card">\n      <h2>Shopping list</h2>\n      <p class="note" id="shop-line"></p>\n      <div class="row"><button type="button" class="btn quiet" id="uncheck">Uncheck everything</button></div>\n      <div class="list" id="shoplist"></div>\n    </article>\n    <article class="card">\n      <h2>What to bring</h2>\n      <p class="note" id="bring-line">What to pack for the services on the Plan tab. Your own items show only for the kinds of services you have planned; counts follow guests or dough balls.</p>\n      <div class="list" id="bringauto"></div>\n      <div class="list" id="bringlist"></div>\n      <div class="row"><button type="button" class="btn quiet" id="bring-edit" aria-pressed="false">Edit list</button></div>\n      <div class="row" id="bring-form" hidden>\n        <label class="field">Item<input type="text" id="bring-new" enterkeyhint="done" autocomplete="off" placeholder="e.g. Pizza peels"></label>\n        <label class="field">For<select id="bring-for"></select></label>\n        <label class="field">How many<select id="bring-per"><option value="">Just bring it</option><option value="guest">1 per … guests</option><option value="ball">1 per … dough balls</option></select></label>\n        <label class="field" id="bring-every-wrap" hidden>Every<input type="number" id="bring-every" min="1" inputmode="numeric" value="10"></label>\n        <button type="button" class="btn" id="bring-add">Add</button>\n      </div>\n    </article>\n  </section>\n\n  <section id="page-prep" role="tabpanel" aria-labelledby="tab-prep" hidden>\n    <article class="card">\n      <h2>Prep list</h2>\n      <p class="note">Day by day for the services on the Plan tab. Amounts split each service\'s share of the pizzas you picked.</p>\n      <div class="row"><button type="button" class="btn quiet" id="prep-uncheck">Uncheck everything</button></div>\n      <div class="list" id="preplist"></div>\n    </article>\n  </section>\n</div>';
 
 export function mountPlanner(root, deps) {
   root.innerHTML = MARKUP;
@@ -145,7 +145,7 @@ export function mountPlanner(root, deps) {
   const setReadOnly = (ro) => {
     canWrite = !ro;
     $('#readonly').hidden = !ro;
-    root.querySelectorAll('#page-plan input, #page-plan select, #page-plan button, #uncheck, #prep-uncheck, #bring-new, #bring-add').forEach((x) => { x.disabled = ro; });
+    root.querySelectorAll('#page-plan input, #page-plan select, #page-plan button, #uncheck, #prep-uncheck, #bring-new, #bring-add, #bring-for, #bring-per, #bring-every').forEach((x) => { x.disabled = ro; });
     root.querySelectorAll('.item input, .item .rm').forEach((x) => { x.disabled = ro; });
   };
 
@@ -330,37 +330,92 @@ export function mountPlanner(root, deps) {
     REF.nights.forEach((r) => { const tr = el('tr'); [day(r.date), r.dough_made ?? '', r.sold, r.comped, r.more, r.demand].forEach((v) => tr.append(el('td', null, String(v)))); tb.append(tr); });
   };
 
-  /* Bring list: things to pack for the commissary, kept in the plan (PLAN.bring) and checked like the shopping list. */
+  /* Bring list (PLAN.bring): items to pack, each tagged with which services it is for
+     (`for`: all, pf, event = any catered event, or one service type) and an optional
+     count rule (`per`: guest or ball, one per `every`). Items without `for` are for every service.
+     Above them, items that come straight from the plan: dough, sauces and toppings for the picked pizzas. */
+  const BRING_FOR = [['all', 'Every service'], ['pf', 'Pizza Friday'], ['event', 'Any catered event'], ...TYPES.filter(([v]) => v !== 'pf')];
+  const bringForLabel = (v) => (BRING_FOR.find(([k]) => k === (v || 'all')) || BRING_FOR[0])[1];
+  let bringEditing = false;
+  const plannedServices = () => (PLAN ? PLAN.services.filter((s) => s.date) : []);
+  const servicesFor = (f) => plannedServices().filter((s) => !f || f === 'all' || (f === 'event' ? s.type !== 'pf' : s.type === f));
+  const bringCount = (item, svcs) => {
+    const every = Math.max(1, Number(item.every) || 1);
+    if (item.per === 'guest') { const n = svcs.filter((s) => s.type !== 'pf').reduce((a, s) => a + (Number(s.guests) || 0), 0); return n ? Math.ceil(n / every) : null; }
+    if (item.per === 'ball') { const n = svcs.reduce((a, s) => a + ballsFor(s), 0); return n ? Math.ceil(n / every) : null; }
+    return null;
+  };
+  const checkRow = (key, name, sub, amt) => {
+    const lab = el('label', 'item' + (CHECKED.includes(key) ? ' done' : ''));
+    const cb = el('input'); cb.type = 'checkbox'; cb.checked = CHECKED.includes(key); cb.disabled = !canWrite;
+    cb.addEventListener('change', () => {
+      CHECKED = cb.checked ? [...new Set([...CHECKED, key])] : CHECKED.filter((x) => x !== key);
+      lab.classList.toggle('done', cb.checked); saveChecks();
+    });
+    const nm = el('span', 'nm', name);
+    if (sub) nm.append(el('span', 'sub', sub));
+    lab.append(cb, nm);
+    if (amt != null) lab.append(el('span', 'amt', String(amt)));
+    return lab;
+  };
+  const renderBringAuto = () => {
+    const box = $('#bringauto');
+    box.replaceChildren();
+    if (!PLAN || !REF) return;
+    const balls = plannedBalls();
+    if (balls) box.append(checkRow('bring|auto|dough', 'Dough', 'For ' + plannedServices().map((s) => TYPE_SHORT[s.type] + ' ' + rel(s.date)).join(' + '), balls.toLocaleString('en-US') + ' balls'));
+    const picked = new Set(PLAN.picked);
+    const rows = pizzaRows().filter((r) => picked.has(r.pizza));
+    [...new Set(rows.map((r) => r.sauce).filter(Boolean))].sort().forEach((sauce) => box.append(checkRow('bring|auto|sauce|' + norm(sauce), sauce, 'Sauce for the picked pizzas')));
+    const toppings = [...new Set(rows.filter((r) => !r.sauce).map((r) => r.topping))].sort((a, b) => a.localeCompare(b));
+    if (toppings.length) box.append(checkRow('bring|auto|toppings|' + toppings.length, 'Toppings', toppings.join(', ')));
+  };
   const renderBring = () => {
+    renderBringAuto();
     const box = $('#bringlist');
     box.replaceChildren();
     if (!PLAN) return;
-    if (!PLAN.bring.length) { box.append(el('p', 'empty', 'Nothing on the list yet.')); return; }
+    const editBtn = $('#bring-edit');
+    editBtn.textContent = bringEditing ? 'Done editing' : 'Edit list';
+    editBtn.setAttribute('aria-pressed', String(bringEditing));
+    $('#bring-form').hidden = !bringEditing;
+    if (!PLAN.bring.length) { box.append(el('p', 'empty', bringEditing ? 'Add the gear you pack below.' : 'No gear on the list yet. Tap Edit list to add some.')); return; }
+    let hidden = 0;
     PLAN.bring.forEach((item) => {
-      const key = 'bring|' + item.id;
-      const lab = el('label', 'item' + (CHECKED.includes(key) ? ' done' : ''));
-      const cb = el('input'); cb.type = 'checkbox'; cb.checked = CHECKED.includes(key); cb.disabled = !canWrite;
-      cb.addEventListener('change', () => {
-        CHECKED = cb.checked ? [...new Set([...CHECKED, key])] : CHECKED.filter((x) => x !== key);
-        lab.classList.toggle('done', cb.checked); saveChecks();
-      });
-      const rm = el('button', 'btn quiet rm', 'Remove'); rm.type = 'button'; rm.disabled = !canWrite;
-      rm.setAttribute('aria-label', 'Remove ' + item.name);
-      rm.addEventListener('click', (e) => {
-        e.preventDefault();
-        PLAN.bring = PLAN.bring.filter((x) => x.id !== item.id);
-        CHECKED = CHECKED.filter((x) => x !== key);
-        savePlan(); saveChecks(); renderBring();
-      });
-      lab.append(cb, el('span', 'nm', item.name), rm);
-      box.append(lab);
+      const svcs = servicesFor(item.for);
+      const rule = item.per ? '1 per ' + (Number(item.every) || 1) + (item.per === 'guest' ? ' guests' : ' dough balls') : '';
+      if (bringEditing) {
+        const row = el('div', 'item');
+        const sel = el('select');
+        sel.setAttribute('aria-label', 'Who ' + item.name + ' is for');
+        BRING_FOR.forEach(([v, t]) => { const o = el('option', null, t); o.value = v; if ((item.for || 'all') === v) o.selected = true; sel.append(o); });
+        sel.disabled = !canWrite;
+        sel.addEventListener('change', () => { item.for = sel.value; savePlan(); });
+        const rm = el('button', 'btn quiet rm', 'Remove'); rm.type = 'button'; rm.disabled = !canWrite;
+        rm.setAttribute('aria-label', 'Remove ' + item.name);
+        rm.addEventListener('click', () => {
+          PLAN.bring = PLAN.bring.filter((x) => x.id !== item.id);
+          CHECKED = CHECKED.filter((x) => x !== 'bring|' + item.id);
+          savePlan(); saveChecks(); renderBring();
+        });
+        const nm = el('span', 'nm', item.name);
+        if (rule) nm.append(el('span', 'sub', rule));
+        row.append(nm, sel, rm);
+        box.append(row);
+        return;
+      }
+      if (!svcs.length) { hidden += 1; return; }
+      const sub = item.for && item.for !== 'all' ? bringForLabel(item.for) : '';
+      box.append(checkRow('bring|' + item.id, item.name, sub, bringCount(item, svcs)));
     });
+    if (hidden) box.append(el('p', 'empty', hidden + (hidden === 1 ? ' item is' : ' items are') + ' for services that aren’t planned right now.'));
   };
   const addBring = () => {
     const input = $('#bring-new');
     const name = input.value.trim();
     if (!name || !PLAN || !canWrite) return;
-    PLAN.bring = [...PLAN.bring, {id: uid(), name}];
+    const per = $('#bring-per').value;
+    PLAN.bring = [...PLAN.bring, {id: uid(), name, for: $('#bring-for').value || 'all', per, every: per ? Math.max(1, Number($('#bring-every').value) || 1) : null}];
     input.value = '';
     savePlan(); renderBring();
   };
@@ -549,6 +604,9 @@ export function mountPlanner(root, deps) {
   $('#clear').addEventListener('click', () => { if (!PLAN) return; PLAN.picked = []; PLAN.counts = {}; PLAN.manualCounts = false; savePlan(); renderChips(); renderCounters(); renderShop(); });
   $('#uncheck').addEventListener('click', () => { CHECKED = CHECKED.filter((k) => !k.startsWith('buy|') && !k.startsWith('make|') && !k.startsWith('bring|')); saveChecks(); renderShop(); });
   $('#bring-add').addEventListener('click', addBring);
+  BRING_FOR.forEach(([v, t]) => { const o = el('option', null, t); o.value = v; $('#bring-for').append(o); });
+  $('#bring-per').addEventListener('change', () => { $('#bring-every-wrap').hidden = !$('#bring-per').value; });
+  $('#bring-edit').addEventListener('click', () => { bringEditing = !bringEditing; renderBring(); });
   $('#bring-new').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addBring(); } });
   $('#prep-uncheck').addEventListener('click', () => { CHECKED = CHECKED.filter((k) => !k.startsWith('prep|')); saveChecks(); renderPrep(); });
   root.querySelectorAll('.seg [data-step]').forEach((b) => b.addEventListener('click', () => {
