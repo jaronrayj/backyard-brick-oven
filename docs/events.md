@@ -55,6 +55,24 @@ land under it. That formula column is never written.
 The calendar read is `jj.backyardbrickoven@gmail.com` unless
 `eventSettings/wrapUp` has a `calendarId`.
 
+## Phone notifications
+
+"🔕 Notifications" at the top of `/events` turns notifications on for that
+phone (install the site as an app first; on iPhone, add it to the Home Screen
+and open it from there). Code: `functions/push.js`, the page button
+`src/pages/Events/Notifications.js`, and `public/firebase-messaging-sw.js`.
+
+| Notification | When |
+| --- | --- |
+| New inquiry | As soon as the website form is sent |
+| Dough step (poolish tonight / mix today) | 2 pm, with the reminder email, for booked events |
+| Morning summary | 7 am: today's Google Calendar entries, dough steps and booked events; skipped when there's nothing |
+
+Only the emails in Firestore `eventSettings/notifications` (`emails: [...]`)
+can turn them on; with no list it's `jj.backyardbrickoven@gmail.com` alone.
+Each phone's push token is kept in `pushTokens/` (server only). The morning
+summary reads the same calendar as Wrap-up, so it needs the same sharing.
+
 ## Dough reminder timing
 
 Mix day is the dough planner's "mix days before service" setting (Dough

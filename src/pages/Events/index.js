@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore'
 import { db, signInWithGoogle } from '../../utils/firebase'
 import useEventAdmin from './useEventAdmin'
+import Notifications from './Notifications'
 import { DEFAULT_PRICING, STATUSES, money, newQuote, prettyDate, quoteText, totals } from './quote'
 import {
   DEFAULT_REMINDERS,
@@ -770,7 +771,8 @@ const Events = () => {
     <Shell>
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h1 className="text-3xl font-mono">Events</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap items-start">
+          <Notifications />
           <a href="/events/wrapup" className={btnQuiet}>
             Wrap up
           </a>

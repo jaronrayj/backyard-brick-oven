@@ -149,6 +149,13 @@ const readCalendar = async (token, calendarId, fromISO, toISO) => {
   return (data.items || []).filter((e) => e.status !== "cancelled").map(calendarItem);
 };
 
+// Business calendar entries from..to (YYYY-MM-DD), for the morning summary.
+export const calendarBetween = async (fromISO, toISO) => {
+  const settings = (await getFirestore().doc("eventSettings/wrapUp").get()).data() || {};
+  const calendarId = settings.calendarId || DEFAULT_CALENDAR;
+  return { calendarId, items: await readCalendar(await accessToken(), calendarId, fromISO, toISO) };
+};
+
 const addDays = (iso, n) => {
   const d = new Date(`${iso}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);

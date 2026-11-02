@@ -2,6 +2,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import logger from "firebase-functions/logger";
 import { GMAIL_APP_PASSWORD, GMAIL_USER, sendMail } from "./mail.js";
 import { saveInquiryEvent } from "./events.js";
+import { sendPush } from "./push.js";
 
 // Inquiry notifications go to the business inbox.
 const NOTIFY_TO = "jj.backyardbrickoven@gmail.com";
@@ -183,6 +184,13 @@ export const sendInquiry = onRequest(
       });
 
       await savedToTracker;
+      await sendPush({
+        title: `New inquiry: ${String(body.name).trim()}`,
+        body: [String(body.event_type).trim(), prettyDate, String(body.estimated_guests || "").trim() && `${String(body.estimated_guests).trim()} guests`]
+          .filter(Boolean)
+          .join(" · "),
+        link: "/events",
+      });
       logger.info("Inquiry email sent");
       return res.status(200).json({ ok: true });
     } catch (err) {
@@ -200,3 +208,4 @@ export { importMenuPhoto } from "./menuPhotos.js";
 export { doughReminders } from "./events.js";
 export { wrapUpOptions, submitWrapUp } from "./wrapup.js";
 export { syncTeamClaims, refreshMyAccess } from "./team.js";
+export { registerPush, pushStatus, morningSummary } from "./push.js";
