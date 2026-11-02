@@ -15,11 +15,21 @@ const app = (
   </React.StrictMode>
 );
 
-// react-snap prerenders static HTML at build time. When that markup is
-// present we hydrate it; otherwise we render fresh (normal dev / first load).
-if (rootElement.hasChildNodes()) {
+// react-snap prerenders static HTML for a few public pages at build time and
+// stamps each with its path. Hydrate only that page's own markup: every other
+// route (the team pages) is served the home page's HTML, and hydrating that
+// would keep the home page's wrapper classes, so those render fresh instead.
+const pathOf = (p) => (p || "").replace(/\/$/, "") || "/";
+if (navigator.userAgent === "ReactSnap") {
+  rootElement.setAttribute("data-path", pathOf(window.location.pathname));
+}
+const prerendered =
+  rootElement.hasChildNodes() &&
+  rootElement.getAttribute("data-path") === pathOf(window.location.pathname);
+if (prerendered) {
   ReactDOM.hydrate(app, rootElement);
 } else {
+  rootElement.replaceChildren();
   ReactDOM.render(app, rootElement);
 }
 

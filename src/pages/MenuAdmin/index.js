@@ -6,6 +6,7 @@ import { rtdb, signInWithGoogle } from '../../utils/firebase'
 import useTeamRole from '../../utils/useTeamRole'
 import { sortPizzas } from '../../utils'
 import PhotoEditor from './PhotoEditor'
+import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 
 // Menu manager: the website menu lives in the Realtime Database at `pizzas/`,
 // one entry per pizza: { name, toppings, img, active, special, order }.
@@ -312,31 +313,30 @@ const MenuAdmin = () => {
     setEditing(null)
   }
 
-  if (loading) return <div className="p-8 text-gray-500">Loading…</div>
+  if (loading) return <TeamPage><p className="text-gray-500">Loading…</p></TeamPage>
   if (!isAdmin) {
     return (
-      <div className="max-w-md mx-auto p-8 grid grid-cols-[minmax(0,1fr)] gap-4">
-        <h1 className="text-2xl font-bold">Menu</h1>
+      <TeamPage>
+        <PageHeader title="Menu" />
         <p className="text-gray-600">
           {user ? `${user.email} isn't an admin on the team list yet.` : 'Sign in with Google to edit the menu.'}
         </p>
         {!user && (
-          <button type="button" onClick={signInWithGoogle} className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-4 py-2 rounded-lg">
+          <button type="button" onClick={signInWithGoogle} className={ui.btnPrimary}>
             Sign in with Google
           </button>
         )}
-      </div>
+      </TeamPage>
     )
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 grid grid-cols-[minmax(0,1fr)] gap-5">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h1 className="text-2xl font-bold">Menu</h1>
-        <button type="button" onClick={() => setEditing('new')} className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-4 py-2 rounded-lg">
-          Add a pizza
+    <TeamPage>
+      <PageHeader title="Menu" sub="The pizzas on the website">
+        <button type="button" onClick={() => setEditing('new')} className={ui.btnPrimary}>
+          + Add a pizza
         </button>
-      </div>
+      </PageHeader>
       {error && <p className="text-sm text-red-700">{error}</p>}
       {pizzas && <MovePhotos list={sorted.filter(([, p]) => isGooglePhoto(p.img))} />}
       {editing === 'new' && (
@@ -393,7 +393,7 @@ const MenuAdmin = () => {
           </section>
         </>
       )}
-    </div>
+    </TeamPage>
   )
 }
 

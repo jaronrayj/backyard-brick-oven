@@ -38,7 +38,7 @@ const refresh = async () => {
 const Message = ({ children }) => (
   <div className="bybo-planner">
     <div className="wrap">
-      <h1>Dough planner</h1>
+      <h1>Planner</h1>
       {children}
     </div>
   </div>

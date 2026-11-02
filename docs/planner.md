@@ -32,9 +32,16 @@ The menu itself comes from the website's own list (Realtime Database
 
 Rules and functions deploy from the repo ([team.md](team.md)).
 
+## Shopping
+
+The Shopping tab builds the list from the picked pizzas and the dough,
+grouped by store section. "Add an item" puts your own things on it
+(`plan.extras`: name and an optional amount), shown first under "Added" and
+kept until you remove them with ✕.
+
 ## What to bring
 
-The Shopping tab's "What to bring" list has two parts. The top comes from the
+The Bring tab's "What to bring" list has two parts. The top comes from the
 plan: dough balls, each sauce the picked pizzas use, and their toppings. Below
 are your own items (`plan.bring`), each tagged with who it's for (every
 service, Pizza Friday, any catered event, or one service type) and optionally
