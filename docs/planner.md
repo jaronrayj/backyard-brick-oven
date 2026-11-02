@@ -21,12 +21,9 @@ amounts, Sauce recipes and Store sections tabs of the pizza selection sheet.
 The menu itself comes from the website's own list (Realtime Database
 `pizzas/`, edited at `/admin/menu`).
 
-**Pizzas.** The Pizzas card groups them: on the website now, added for this
-plan, and older pizzas that are off the website (collapsed). "Add a pizza"
-takes a name and toppings for something not on the website, like an event
-special. It's saved with the plan only (`planner/plan.custom`) and feeds the
-Shopping, Bring and Prep lists like any other pizza; toppings with no saved
-amounts show without quantities.
+**Pizzas.** The Pizzas card lists the pizzas on the website, then older
+pizzas that are off the website (collapsed), so an event can use any pizza
+you've made before. Edit or add pizzas at `/admin/menu`.
 
 ## One-time setup
 

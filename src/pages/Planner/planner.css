@@ -80,9 +80,6 @@
   .bybo-planner .group-title { margin: 0; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
   .bybo-planner details.pick-group summary { cursor: pointer; }
   .bybo-planner details.pick-group[open] summary { margin-bottom: 6px; }
-  .bybo-planner .chip-pair { display: inline-flex; align-items: center; gap: 2px; }
-  .bybo-planner .chip-x { all: unset; cursor: pointer; color: var(--muted); padding: 6px; font-size: 13px; }
-  .bybo-planner .chip-x:hover { color: var(--warn); }
   .bybo-planner .chip { all: unset; cursor: pointer; padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: 14px; background: var(--panel); user-select: none; }
   .bybo-planner .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   .bybo-planner .seg { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
