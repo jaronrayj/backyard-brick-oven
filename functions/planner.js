@@ -68,6 +68,12 @@ const iso = (v) => {
   return m ? `${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}` : null;
 };
 
+const isoDaysBefore = (isoDate, days) => {
+  const d = new Date(`${isoDate}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+};
+
 // Same shape the planner page reads. Keep in sync with src/pages/Planner/planner.js.
 export const buildRef = (v) => {
   const counts = v.counts.slice(1);
@@ -86,7 +92,8 @@ export const buildRef = (v) => {
     })
     .filter((r) => r.event === "Pizza Friday" && r.date && r.sold > 0)
     .sort((a, b) => (a.date < b.date ? 1 : -1))
-    .slice(0, 6)
+    // About a year back, so the planner can show the same week last year.
+    .filter((r, i, all) => i < 6 || r.date >= isoDaysBefore(all[0].date, 400))
     .map((r) => ({
       date: r.date,
       dough_made: r.dough_made,
