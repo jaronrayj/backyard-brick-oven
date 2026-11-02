@@ -52,7 +52,8 @@ date.
 ## Shopping
 
 The Shopping tab builds the list from the picked pizzas and the dough,
-grouped by store section. "Add an item" puts your own things on it
+grouped by store section, with rough store amounts (ounces under a pound,
+then half pounds, rounded up). "Add an item" puts your own things on it
 (`plan.extras`: name and an optional amount), shown first under "Added" and
 kept until you remove them with ✕.
 

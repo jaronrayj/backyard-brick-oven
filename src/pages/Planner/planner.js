@@ -53,8 +53,15 @@ export function mountPlanner(root, deps) {
   const svcWhen = (d) => { const r = rel(d); return day(d) + (r === 'Today' || r === 'Tomorrow' ? ' (' + r.toLowerCase() + ')' : ''); };
 
   const g = (v) => (v >= 100 ? Math.round(v).toLocaleString('en-US') : (Math.round(v * 10) / 10).toLocaleString('en-US')) + ' g';
-  const amount = (v) => (v < 100 ? g(v) : kgLb(v));
-  const kgLb = (v) => (v >= 1000 ? (v / 1000).toFixed(2) + ' kg' : Math.round(v) + ' g') + ' · ' + (v / 453.592).toFixed(1) + ' lb';
+  /* Shopping amounts as rough store sizes, always rounded up: ounces under a pound,
+     then half pounds, then whole pounds from 10 lb. */
+  const shopAmount = (v) => {
+    const oz = v / 28.3495;
+    if (oz < 15) return 'about ' + Math.max(1, Math.ceil(oz)) + ' oz';
+    const lb = oz / 16;
+    if (lb < 10) { const r = Math.ceil(lb * 2) / 2; return 'about ' + (r % 1 ? Math.floor(r) + '½' : r) + ' lb'; }
+    return 'about ' + Math.ceil(lb).toLocaleString('en-US') + ' lb';
+  };
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const uid = () => Math.random().toString(36).slice(2, 9);
   const nextFriday = () => { const n = new Date(); const t = new Date(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate())); t.setUTCDate(t.getUTCDate() + ((5 - t.getUTCDay() + 7) % 7)); return t.toISOString().slice(0, 10); };
@@ -589,7 +596,7 @@ export function mountPlanner(root, deps) {
     });
     const groups = new Map();
     const push = (s, row) => { if (!groups.has(s)) groups.set(s, []); groups.get(s).push(row); };
-    [...buy].sort((a, b) => b[1].grams - a[1].grams).forEach(([k, b]) => push(b.section, [k, amount(b.grams), b.uses.size ? 'for ' + [...b.uses].join(', ') : '']));
+    [...buy].sort((a, b) => b[1].grams - a[1].grams).forEach(([k, b]) => push(b.section, [k, shopAmount(b.grams), b.uses.size ? 'for ' + [...b.uses].join(', ') : '']));
     missing.forEach((k) => push(sectionOf(k), [k, 'No amount set', 'Add it to the Topping amounts tab', true]));
 
     const group = (title, rows, keyPrefix) => {
