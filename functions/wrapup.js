@@ -40,6 +40,17 @@ const google = async (token, url, init = {}) => {
   throw err;
 };
 
+// "404 Not Found" from a failed call, for messages on the page.
+const googleReason = (e) => {
+  const m = /^(\d+) (.*)$/s.exec(String(e.message || ""));
+  if (!m) return String(e.message || e);
+  try {
+    return `${m[1]} ${JSON.parse(m[2]).error.message}`;
+  } catch {
+    return `${m[1]} ${m[2].slice(0, 120)}`;
+  }
+};
+
 const requireAdmin = (request) => requireRole(request, ["admin"], "Only admins can wrap up events.");
 
 // ---------- Sheet ----------
@@ -207,7 +218,7 @@ export const wrapUpOptions = onCall({ invoker: "public" }, async (request) => {
       problems.push(
         e.disabled
           ? "The Google Calendar API is turned off for this Firebase project. Turn it on at https://console.cloud.google.com/apis/library/calendar-json.googleapis.com?project=backyard-brickoven"
-          : `Can't read the calendar ${calendarId}. In Google Calendar, share it with ${sa} ("See all event details").`
+          : `Can't read the calendar ${calendarId}. In Google Calendar, share it with ${sa} ("See all event details"). (Google said: ${googleReason(e)})`
       );
     }
   }
