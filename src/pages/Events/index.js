@@ -12,6 +12,7 @@ import {
 import { db, signInWithGoogle } from '../../utils/firebase'
 import useEventAdmin from './useEventAdmin'
 import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
+import ComboBox from '../../components/ComboBox'
 import { DEFAULT_PRICING, STATUSES, money, newQuote, prettyDate, quoteText, totals } from './quote'
 import {
   DEFAULT_REMINDERS,
@@ -417,12 +418,7 @@ const EventEditor = ({ id, initial, pricing, mixLead, onClose }) => {
           <input className={input} value={event.name} onChange={(e) => set({ name: e.target.value })} />
         </Field>
         <Field label="Event type">
-          <input className={input} list="event-types" value={event.eventType} onChange={(e) => set({ eventType: e.target.value })} />
-          <datalist id="event-types">
-            {EVENT_TYPES.map((t) => (
-              <option key={t} value={t} />
-            ))}
-          </datalist>
+          <ComboBox className={input} value={event.eventType} onChange={(v) => set({ eventType: v })} options={EVENT_TYPES} placeholder="Pick or type" />
         </Field>
         <Field label="Email">
           <input className={input} type="email" value={event.email} onChange={(e) => set({ email: e.target.value })} />
