@@ -7,6 +7,7 @@
  * deps.store     - {doc(path) -> {set(data), onSnapshot(next, error)}} over Firestore
  *                  (paths: 'ref/snapshot', 'plan/current', 'plan/checks')
  * deps.canWrite  - whether this person may change the plan
+ * deps.pizzas    - (onChange) => unsubscribe; the website's pizzas, live
  * deps.isAdmin   - shows "Refresh now" (under Yeast, water and timing)
  * deps.refresh   - async () => re-read the Google Sheets on the server
  * deps.calendar  - async () => { items: [{id, title, date, time, location, notes}], problem? }, upcoming calendar entries
@@ -24,6 +25,7 @@ export function mountPlanner(root, deps) {
 
   /* ---------- State ---------- */
   let REF = null;      /* shared copy of sheet data */
+  let MENU = null;     /* live website pizzas (deps.pizzas), on and off the menu */
   let PLAN = null;     /* shared plan */
   let CHECKED = [];    /* shared shopping checkmarks */
   let db = null, canWrite = true, step = 5;
@@ -98,7 +100,7 @@ export function mountPlanner(root, deps) {
   const plannedBalls = () => (PLAN ? PLAN.services.filter((s) => s.date).reduce((t, s) => t + ballsFor(s), 0) : 0);
 
   /* Website pizzas: on the menu now, and older ones that are off the website. */
-  const allPizzas = () => (REF ? REF.menu : []).map((p) => ({...p, active: p.active !== false}));
+  const allPizzas = () => MENU || (REF ? REF.menu : []).map((p) => ({...p, active: p.active !== false}));
 
   /* Ingredients per pizza, sauces broken down by their batch recipe. */
   const pizzaRows = () => {
@@ -799,6 +801,16 @@ export function mountPlanner(root, deps) {
   }));
   if (deps.calendar) {
     deps.calendar().then((d) => { CAL = d || {items: []}; if (!busy()) renderAll(); else renderCal(); }).catch(() => { CAL = {items: [], problem: "Couldn't read the calendar right now."}; renderCal(); });
+  }
+  /* The pizza list straight from the website menu, so menu edits and older pizzas show right away. */
+  if (deps.pizzas) {
+    unsubs.push(deps.pizzas((val) => {
+      MENU = Object.values(val || {})
+        .filter((p) => p && p.name)
+        .sort((a, b) => (a.order ?? 1e9) - (b.order ?? 1e9) || String(a.name).localeCompare(String(b.name)))
+        .map((p) => ({name: String(p.name).trim(), toppings: String(p.toppings || ''), active: !!p.active}));
+      if (!busy()) renderAll();
+    }));
   }
   if (deps.isAdmin && deps.refresh) {
     $('#refresh').hidden = false;

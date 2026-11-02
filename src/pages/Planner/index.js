@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { doc, onSnapshot, setDoc } from 'firebase/firestore'
 import { getFunctions, httpsCallable } from 'firebase/functions'
-import { db, signInWithGoogle } from '../../utils/firebase'
+import { onValue, ref as rtdbRef } from 'firebase/database'
+import { db, rtdb, signInWithGoogle } from '../../utils/firebase'
 import useTeamRole from '../../utils/useTeamRole'
 import { mountPlanner } from './planner'
 import KeepAwake from '../../components/KeepAwake'
@@ -35,6 +36,9 @@ const refresh = async () => {
   await call()
 }
 
+// The website's pizzas (on and off the menu), live from the Realtime Database.
+const pizzas = (next) => onValue(rtdbRef(rtdb, 'pizzas'), (snap) => next(snap.val()), () => {})
+
 // Upcoming entries on the business calendar, for "From your calendar".
 const calendar = async () => (await httpsCallable(getFunctions(), 'plannerCalendar')()).data
 
@@ -56,7 +60,7 @@ const Planner = () => {
 
   useEffect(() => {
     if ((access !== 'admin' && access !== 'staff') || !rootRef.current) return undefined
-    const unmount = mountPlanner(rootRef.current, { store, canWrite: true, isAdmin: access === 'admin', refresh, calendar })
+    const unmount = mountPlanner(rootRef.current, { store, canWrite: true, isAdmin: access === 'admin', refresh, calendar, pizzas })
     setAwakeSlot(rootRef.current.querySelector('#keep-awake-slot'))
     return () => {
       setAwakeSlot(null)
