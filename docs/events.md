@@ -52,7 +52,8 @@ It writes the first empty row by column A rather than appending, because the
 year formula in the last column runs far below the data and an append would
 land under it. That formula column is never written.
 
-The calendar read is `jj.backyardbrickoven@gmail.com` unless
+The calendar read is the "pizza events" calendar (owned by
+`jj.backyardbrickoven@gmail.com`; ID in `functions/wrapup.js`) unless
 `eventSettings/wrapUp` has a `calendarId`.
 
 ## Phone notifications
@@ -87,7 +88,7 @@ planner's Dough tab. Pricing only sets who gets the emails.
 2. **Wrap-up access.** Open `/events/wrapup` as an admin; it lists anything
    still missing, with the service account email to use:
    - Share the money tracker sheet with that email as **Editor**.
-   - In Google Calendar, share the business calendar with that email:
+   - In Google Calendar, share the "pizza events" calendar with that email:
      "See all event details".
    - Turn on the Google Calendar API for the project if the page says it's off.
    Then turn off "Accepting responses" on the money tracker Google Form.
