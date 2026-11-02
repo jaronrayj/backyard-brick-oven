@@ -2,6 +2,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import logger from "firebase-functions/logger";
 import nodemailer from "nodemailer";
+import { saveInquiryEvent } from "./events.js";
 
 // Gmail App Password, stored in Google Secret Manager (not in code).
 // Set with: firebase functions:secrets:set GMAIL_APP_PASSWORD
@@ -102,6 +103,9 @@ export const sendInquiry = onRequest(
         .json({ error: `Missing required field(s): ${missing.join(", ")}` });
     }
 
+    // Also add it to the event tracker (/events). Never throws; runs alongside the email.
+    const savedToTracker = saveInquiryEvent(body);
+
     // Parse the event date once for weekday formatting + calendar link.
     const eventDate = parseEventDate(body.event_date);
     const prettyDate = eventDate
@@ -193,10 +197,12 @@ export const sendInquiry = onRequest(
         html: htmlBody,
       });
 
+      await savedToTracker;
       logger.info("Inquiry email sent");
       return res.status(200).json({ ok: true });
     } catch (err) {
       logger.error("Failed to send inquiry email", err);
+      await savedToTracker;
       return res
         .status(500)
         .json({ error: "Failed to send. Please try again or text us." });
@@ -206,3 +212,4 @@ export const sendInquiry = onRequest(
 
 export { refreshPlannerData, refreshPlannerHourly } from "./planner.js";
 export { importMenuPhoto } from "./menuPhotos.js";
+export { doughReminders } from "./events.js";

@@ -9,9 +9,11 @@ import { auth, db, rtdb } from './firebase'
 //   menu    - Realtime Database `menuAdmins/{email with '.' -> ','}` is true
 //   planner - email is in Firestore `plannerAccess/team` admins or staff
 //   admin   - email is in `plannerAccess/team` admins (business dashboard)
+//   events  - same admins list (event tracker and quotes)
 export const TEAM_TOOLS = [
   { key: 'menu', name: 'Menu manager', href: '/admin/menu', blurb: 'Edit the pizzas and photos on the website.' },
   { key: 'planner', name: 'Dough planner', href: '/planner', blurb: 'Plan dough, shopping and prep for upcoming services.' },
+  { key: 'events', name: 'Events and quotes', href: '/events', blurb: 'Inquiries, quotes, bookings, weather and dough reminders.' },
   {
     key: 'admin',
     name: 'Business dashboard',
@@ -27,7 +29,7 @@ const useTeamAccess = () => {
 
   useEffect(() => {
     if (!user || !user.email) {
-      setAccess(user === null ? { menu: false, planner: false, admin: false } : null)
+      setAccess(user === null ? { menu: false, planner: false, admin: false, events: false } : null)
       return undefined
     }
     let cancelled = false
@@ -42,9 +44,9 @@ const useTeamAccess = () => {
         const data = snap.data() || {}
         const list = (key) => (data[key] || []).map((e) => String(e).toLowerCase())
         const admin = list('admins').includes(email)
-        return { planner: admin || list('staff').includes(email), admin }
+        return { planner: admin || list('staff').includes(email), admin, events: admin }
       })
-      .catch(() => ({ planner: false, admin: false }))
+      .catch(() => ({ planner: false, admin: false, events: false }))
     setAccess(null)
     Promise.all([menu, planner]).then(([m, p]) => {
       if (!cancelled) setAccess({ menu: m, ...p })

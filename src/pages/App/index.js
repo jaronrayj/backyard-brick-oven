@@ -11,6 +11,7 @@ import Inquiries from '../Inquiries'
 import MenuAdmin from '../MenuAdmin'
 import Planner from '../Planner'
 import Team from '../Team'
+import Events from '../Events'
 
 export const isSiteReadyForOrders = true
 
@@ -31,6 +32,7 @@ const App = () => {
             <Route exact path="/admin/menu" element={<MenuAdmin />} />
             <Route exact path="/planner" element={<Planner />} />
             <Route exact path="/team" element={<Team />} />
+            <Route exact path="/events" element={<Events />} />
           </Routes>
         </Router>
       </div>
