@@ -60,4 +60,14 @@ The menu itself comes from the website's own list (Realtime Database
    three sheets with (view only). Share them, then tap refresh again.
    The hourly refresh keeps it current after that.
 
+## What to bring
+
+The Shopping tab's "What to bring" list has two parts. The top comes from the
+plan: dough balls, each sauce the picked pizzas use, and their toppings. Below
+are your own items (`plan.bring`), each tagged with who it's for (every
+service, Pizza Friday, any catered event, or one service type) and optionally
+a count of one per so many guests or dough balls. Only items for the kinds of
+services on the Plan tab show; "Edit list" shows all of them. Older items
+without a tag count as "Every service".
+
 Hosting deploys on merge to `main` as before.

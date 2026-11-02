@@ -62,3 +62,19 @@ describe('schedule', () => {
     expect(weatherFlags({ low: 38, high: 50, rainChance: 60, wind: 5 })).toHaveLength(2)
   })
 })
+
+describe('wrap-up choices', () => {
+  const { buildChoices } = require('./choices')
+  test('tracker events pick up calendar notes on the same date; leftovers come from the calendar', () => {
+    const events = [{ id: 'a', name: 'Bella and Tyler', eventType: 'Wedding', date: '2026-10-09', notes: '', guests: 150 }]
+    const calendar = [
+      { id: 'c1', title: 'Bella wedding', date: '2026-10-09', notes: 'Gate code 1234' },
+      { id: 'c2', title: 'Pizza Friday', date: '2026-10-30', notes: 'Rainy, bring tarp' },
+      { id: 'c3', title: 'Pizza Friday', date: '2026-11-06', notes: '' },
+    ]
+    const out = buildChoices(events, calendar, '2026-11-01')
+    expect(out.map((c) => c.key)).toEqual(['c:c2', 'e:a'])
+    expect(out[0].name).toBe('Pizza Friday')
+    expect(out[1].notes).toEqual(['Gate code 1234'])
+  })
+})

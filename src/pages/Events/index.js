@@ -1,17 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { useAuthState } from 'react-firebase-hooks/auth'
 import {
   addDoc,
   collection,
   deleteDoc,
   doc,
-  getDoc,
   onSnapshot,
   serverTimestamp,
   setDoc,
   updateDoc,
 } from 'firebase/firestore'
-import { auth, db, signInWithGoogle } from '../../utils/firebase'
+import { db, signInWithGoogle } from '../../utils/firebase'
+import useEventAdmin from './useEventAdmin'
 import { DEFAULT_PRICING, STATUSES, money, newQuote, prettyDate, quoteText, totals } from './quote'
 import {
   DEFAULT_REMINDERS,
@@ -714,27 +713,12 @@ const EventRow = ({ event, reminders, onOpen }) => {
 const Shell = ({ children }) => <div className="max-w-3xl mx-auto px-4 py-8 space-y-4 text-left">{children}</div>
 
 const Events = () => {
-  const [user, loading] = useAuthState(auth)
-  const [access, setAccess] = useState(null) // null while checking, true, or 'denied'
+  const { user, loading, access } = useEventAdmin()
   const [events, setEvents] = useState([])
   const [pricing, setPricing] = useState(DEFAULT_PRICING)
   const [reminders, setReminders] = useState(DEFAULT_REMINDERS)
   const [filter, setFilter] = useState('open')
   const [editing, setEditing] = useState(null) // { id, event } | 'settings' | null
-
-  useEffect(() => {
-    if (!user) {
-      setAccess(null)
-      return
-    }
-    const email = (user.email || '').toLowerCase()
-    getDoc(doc(db, 'plannerAccess', 'team'))
-      .then((snap) => {
-        const admins = ((snap.data() || {}).admins || []).map((e) => String(e).toLowerCase())
-        setAccess(admins.includes(email) ? true : 'denied')
-      })
-      .catch(() => setAccess('denied'))
-  }, [user])
 
   useEffect(() => {
     if (access !== true) return undefined
@@ -753,7 +737,7 @@ const Events = () => {
     return ['done', 'lost', 'all'].includes(filter) ? list.reverse() : list
   }, [events, filter])
 
-  if (loading || (user && access === null)) return <Shell><p className="text-gray-500">Loading…</p></Shell>
+  if (loading) return <Shell><p className="text-gray-500">Loading…</p></Shell>
   if (!user) {
     return (
       <Shell>
@@ -794,6 +778,9 @@ const Events = () => {
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h1 className="text-3xl font-mono">Events</h1>
         <div className="flex gap-2">
+          <a href="/events/wrapup" className={btnQuiet}>
+            Wrap up
+          </a>
           <button type="button" className={btnQuiet} onClick={() => setEditing('settings')}>
             Pricing
           </button>
