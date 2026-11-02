@@ -38,7 +38,7 @@ Rules and functions deploy from the repo ([team.md](team.md)).
 
 ## From your calendar
 
-Under Services, "From your calendar" lists the next six weeks of the business
+Under Services, "From your calendar" lists the next two weeks of the business
 calendar (the same one Wrap-up reads; `plannerCalendar` in
 `functions/planner.js`) that aren't planned yet. "Add" makes a normal service
 you can edit: the calendar title becomes its name, "Pizza Friday" in the title

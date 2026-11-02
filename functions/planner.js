@@ -167,10 +167,10 @@ export const refreshPlannerData = onCall({ invoker: "public" }, async (request) 
   }
 });
 
-// Upcoming entries on the business calendar (next 6 weeks), for the planner's
+// Upcoming entries on the business calendar (next 2 weeks), for the planner's
 // "From your calendar" list. Team (admins and staff). A calendar problem comes
 // back as { items: [], problem } so the planner still works without it.
-const CALENDAR_DAYS = 42;
+const CALENDAR_DAYS = 14;
 const utahDate = (d) => d.toLocaleDateString("en-CA", { timeZone: "America/Denver" });
 export const plannerCalendar = onCall({ invoker: "public" }, async (request) => {
   await requireRole(request, ["admin", "staff"], "Only the team can see the calendar.");
