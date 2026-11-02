@@ -12,6 +12,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { getDatabase } from "firebase-admin/database";
 import { accessToken, serviceAccountEmail } from "./google.js";
 import { requireRole } from "./team.js";
+import { calendarBetween } from "./wrapup.js";
 
 if (!getApps().length) initializeApp();
 
@@ -162,6 +163,29 @@ export const refreshPlannerData = onCall({ invoker: "public" }, async (request) 
     if (e instanceof HttpsError) throw e;
     logger.error("Planner refresh failed", e);
     throw new HttpsError("internal", "Couldn't read the sheets right now. Showing the last saved copy.");
+  }
+});
+
+// Upcoming entries on the business calendar (next 6 weeks), for the planner's
+// "From your calendar" list. Team (admins and staff). A calendar problem comes
+// back as { items: [], problem } so the planner still works without it.
+const CALENDAR_DAYS = 42;
+const utahDate = (d) => d.toLocaleDateString("en-CA", { timeZone: "America/Denver" });
+export const plannerCalendar = onCall({ invoker: "public" }, async (request) => {
+  await requireRole(request, ["admin", "staff"], "Only the team can see the calendar.");
+  const now = new Date();
+  const from = utahDate(now);
+  const to = utahDate(new Date(now.getTime() + CALENDAR_DAYS * 86400000));
+  try {
+    const { items } = await calendarBetween(from, to);
+    return {
+      items: items
+        .filter((c) => c.date >= from)
+        .map(({ id, title, date, time, location, notes }) => ({ id, title, date, time, location, notes: notes.slice(0, 500) })),
+    };
+  } catch (e) {
+    logger.error("Planner calendar read failed", e);
+    return { items: [], problem: "Couldn't read the calendar right now." };
   }
 });
 

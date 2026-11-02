@@ -35,6 +35,9 @@ const refresh = async () => {
   await call()
 }
 
+// Upcoming entries on the business calendar, for "From your calendar".
+const calendar = async () => (await httpsCallable(getFunctions(), 'plannerCalendar')()).data
+
 const Message = ({ children }) => (
   <div className="bybo-planner">
     <div className="wrap">
@@ -53,7 +56,7 @@ const Planner = () => {
 
   useEffect(() => {
     if ((access !== 'admin' && access !== 'staff') || !rootRef.current) return undefined
-    const unmount = mountPlanner(rootRef.current, { store, canWrite: true, isAdmin: access === 'admin', refresh })
+    const unmount = mountPlanner(rootRef.current, { store, canWrite: true, isAdmin: access === 'admin', refresh, calendar })
     setAwakeSlot(rootRef.current.querySelector('#keep-awake-slot'))
     return () => {
       setAwakeSlot(null)

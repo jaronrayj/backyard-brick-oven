@@ -46,6 +46,12 @@
   .bybo-planner .svc-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .bybo-planner .svc-head h3 { margin: 0; font-size: 15px; font-weight: 600; }
   .bybo-planner .svc .field input, .bybo-planner .svc .field select { background: var(--panel); }
+  .bybo-planner .cal { display: grid; gap: 8px; }
+  .bybo-planner .cal:empty { display: none; }
+  .bybo-planner .cal-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border: 1px dashed var(--soft-line); border-radius: 10px; background: var(--soft); }
+  .bybo-planner .cal-row .nm { display: grid; min-width: 0; }
+  .bybo-planner .cal-row .sub { font-size: 12px; color: var(--muted); }
+  .bybo-planner .cal-row .row { flex-wrap: nowrap; }
   .bybo-planner .svc .sugg { font-size: 13px; color: var(--muted); }
   .bybo-planner .svc .sugg b { color: var(--fg); font-variant-numeric: tabular-nums; }
   .bybo-planner details.tweaks summary { cursor: pointer; font-size: 13px; color: var(--muted); }

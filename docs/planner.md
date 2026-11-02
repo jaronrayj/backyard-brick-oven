@@ -32,6 +32,19 @@ The menu itself comes from the website's own list (Realtime Database
 
 Rules and functions deploy from the repo ([team.md](team.md)).
 
+## From your calendar
+
+Under Services, "From your calendar" lists the next six weeks of the business
+calendar (the same one Wrap-up reads; `plannerCalendar` in
+`functions/planner.js`) that aren't planned yet. "Add" makes a normal service
+you can edit: the calendar title becomes its name, "Pizza Friday" in the title
+makes it a Pizza Friday, "wedding" a wedding, anything else a party, and the
+guest count comes from "50 people" in the notes or a "-50" at the end of the
+title (else 50). "Skip" hides an entry for good (`plan.calSkipped`). Entries
+with "prep" in the title, and dates that already have a service, aren't
+listed. If a linked entry moves on the calendar, the service offers the new
+date.
+
 ## Shopping
 
 The Shopping tab builds the list from the picked pizzas and the dough,
