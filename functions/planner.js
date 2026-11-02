@@ -153,7 +153,7 @@ const refresh = async () => {
   return { changed: !same };
 };
 
-// "Refresh from sheets" on the planner page. Admins only.
+// "Refresh now" on the planner page (under Yeast, water and timing). Admins only.
 // invoker "public" lets browsers reach it; the admin check below does the gating.
 export const refreshPlannerData = onCall({ invoker: "public" }, async (request) => {
   await requireRole(request, ["admin"], "Only planner admins can refresh from the sheets.");

@@ -12,7 +12,7 @@ sign in with Google; nobody needs access to the Google Sheets.
 | Services, picked pizzas, counts, tweaks | Firestore `planner/plan` |
 | Shopping and prep checkmarks | Firestore `planner/checks` |
 | Who can use it | The team list, admins and staff (see [team.md](team.md)) |
-| Sheet refresh | `functions/planner.js`: `refreshPlannerData` (the admin "Refresh from sheets" button) and `refreshPlannerHourly` |
+| Sheet refresh | `functions/planner.js`: `refreshPlannerData` (the admin "Refresh now" link under "Yeast, water and timing") and `refreshPlannerHourly` |
 
 The function reads only these ranges: dough counts, "could have sold more",
 event name and date from the money tracker (no money columns), plus the dough
@@ -24,8 +24,8 @@ The menu itself comes from the website's own list (Realtime Database
 ## One-time setup
 
 1. **People.** Add them to the team list ([team.md](team.md)).
-2. **Share the sheets.** Open `/planner` as an admin and tap "Refresh from
-   sheets". The first time, it says which service account email to share the
+2. **Share the sheets.** Open `/planner` as an admin, open "Yeast, water
+   and timing" and tap "Refresh now". The first time, it says which service account email to share the
    three sheets with. Share them, then tap refresh again. The hourly refresh
    keeps it current after that. (The money tracker needs Editor access for
    the wrap-up page; the other two can stay view only.)

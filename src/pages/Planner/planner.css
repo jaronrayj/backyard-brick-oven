@@ -56,6 +56,9 @@
   .bybo-planner .svc .sugg b { color: var(--fg); font-variant-numeric: tabular-nums; }
   .bybo-planner details.tweaks summary { cursor: pointer; font-size: 13px; color: var(--muted); }
   .bybo-planner details.tweaks[open] summary { margin-bottom: 8px; }
+  .bybo-planner .sheets-line { margin-top: 10px; }
+  .bybo-planner .linkbtn { background: none; border: 0; padding: 0; font: inherit; color: var(--accent); text-decoration: underline; cursor: pointer; }
+  .bybo-planner .linkbtn:disabled { opacity: .5; cursor: default; }
   .bybo-planner #plan { display: grid; gap: 14px; }
   .bybo-planner .batch { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--soft-line); border-radius: 10px; background: var(--soft); }
   .bybo-planner .batch-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
