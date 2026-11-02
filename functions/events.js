@@ -8,6 +8,7 @@ import logger from "firebase-functions/logger";
 import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { GMAIL_APP_PASSWORD, GMAIL_USER, sendMail } from "./mail.js";
+import { sendPush } from "./push.js";
 
 if (!getApps().length) initializeApp();
 
@@ -173,7 +174,7 @@ export const dueSteps = (event, today, mixLead) => {
   return steps.filter((step) => !((event.remindersSent || {})[step] === event.date));
 };
 
-const STEP_TEXT = {
+export const STEP_TEXT = {
   poolish: "Start the poolish tonight",
   mix: "Mix dough today",
 };
@@ -218,6 +219,14 @@ export const doughReminders = onSchedule(
         : `Dough reminders: ${due.length} events`;
 
     await sendMail({ to, subject, text });
+    for (const { event, steps } of due) {
+      await sendPush({
+        title: `Dough: ${steps.map((s) => STEP_TEXT[s].toLowerCase()).join(" and ")}`,
+        body: `${event.name}, ${pretty(event.date)}${event.guests ? ` · ${event.guests} guests` : ""}`,
+        link: "/planner",
+        tag: `dough-${event.date}-${steps.join("-")}`,
+      });
+    }
 
     // Remember what was sent so a re-run the same day doesn't email twice.
     await Promise.all(
