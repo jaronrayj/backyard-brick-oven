@@ -7,7 +7,22 @@ import { getMessaging, getToken, deleteToken, isSupported } from 'firebase/messa
 // sent: new inquiries, dough steps, and a 7 am summary of the day.
 const callable = (name) => httpsCallable(getFunctions(), name)
 
-const swRegistration = () => navigator.serviceWorker.register('/firebase-messaging-sw.js')
+// Push needs an *active* service worker; right after the first register() it's
+// still installing, so wait for it to finish.
+const swRegistration = async () => {
+  const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+  if (reg.active) return reg
+  const sw = reg.installing || reg.waiting
+  if (sw) {
+    await new Promise((resolve) => {
+      const done = () => sw.state === 'activated' && resolve()
+      sw.addEventListener('statechange', done)
+      done()
+      setTimeout(resolve, 10000)
+    })
+  }
+  return reg
+}
 
 // This device's push token, or null. Only asks for permission when `ask`.
 const deviceToken = async (ask) => {
