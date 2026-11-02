@@ -99,8 +99,9 @@ export const buildRef = (v) => {
     recipe: v.recipe.slice(1).filter((r) => r[0]).map((r) => ({ item: String(r[0]).trim(), amount: num(r[1]) || 0 })),
     settings: v.settings.slice(1).filter((r) => r[0]).map((r) => ({ setting: String(r[0]).trim(), value: num(r[1]) })),
     menu: Object.values(v.pizzas || {})
-      .filter((p) => p && p.active && p.name)
-      .map((p) => ({ name: String(p.name).trim(), toppings: String(p.toppings || ""), active: true })),
+      // Older pizzas (off the website) too, so the planner can pick them for events.
+      .filter((p) => p && p.name)
+      .map((p) => ({ name: String(p.name).trim(), toppings: String(p.toppings || ""), active: !!p.active })),
     amounts: v.amounts
       .slice(1)
       .filter((r) => r[0])

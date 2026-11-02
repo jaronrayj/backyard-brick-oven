@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
+import { useEffect } from 'react'
+import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom'
 
 import MainPage from '../MainPage'
 import Navbar from '../Navbar'
@@ -14,24 +15,27 @@ import { isTeamPath } from '../../utils/useTeamAccess'
 
 export const isSiteReadyForOrders = true
 
-const App = () => {
-  const team = typeof window !== 'undefined' && isTeamPath(window.location.pathname)
+// Team tabs switch pages inside the app (no full reload), so the bars stay put.
+const Shell = () => {
+  const { pathname } = useLocation()
+  const team = isTeamPath(pathname)
+  useEffect(() => {
+    if (!window.location.hash) window.scrollTo(0, 0)
+  }, [pathname])
   return (
     <div className={team ? 'min-h-screen bg-gray-50' : undefined}>
       {team ? <TeamNav /> : <Navbar />}
       <div className="text-center justify-center">
-        <Router>
-          <Routes>
-            <Route exact path="/" element={<MainPage />} />
-            <Route exact path="/order" element={<Order />} />
-            <Route exact path="/inquiries" element={<Inquiries />} />
-            <Route exact path="/admin/menu" element={<MenuAdmin />} />
-            <Route exact path="/planner" element={<Planner />} />
-            <Route exact path="/team" element={<Team />} />
-            <Route exact path="/events" element={<Events />} />
-            <Route exact path="/events/wrapup" element={<WrapUp />} />
-          </Routes>
-        </Router>
+        <Routes>
+          <Route exact path="/" element={<MainPage />} />
+          <Route exact path="/order" element={<Order />} />
+          <Route exact path="/inquiries" element={<Inquiries />} />
+          <Route exact path="/admin/menu" element={<MenuAdmin />} />
+          <Route exact path="/planner" element={<Planner />} />
+          <Route exact path="/team" element={<Team />} />
+          <Route exact path="/events" element={<Events />} />
+          <Route exact path="/events/wrapup" element={<WrapUp />} />
+        </Routes>
       </div>
       {!team && (
         <footer className="text-center py-6 text-xs text-gray-400">
@@ -41,5 +45,11 @@ const App = () => {
     </div>
   )
 }
+
+const App = () => (
+  <Router>
+    <Shell />
+  </Router>
+)
 
 export default App

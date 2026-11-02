@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import {
   BookOpenIcon,
   CalendarIcon,
@@ -29,10 +30,20 @@ const currentKey = (tools, path) =>
     .filter((t) => !t.external && (path === t.href || path.startsWith(`${t.href}/`)))
     .sort((a, b) => b.href.length - a.href.length)[0]?.key
 
-const linkProps = (t) => (t.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})
+// In-app tools use the router (no page reload); the dashboard opens in a new tab.
+export const ToolLink = ({ tool, children, ...rest }) =>
+  tool.external ? (
+    <a href={tool.href} target="_blank" rel="noopener noreferrer" {...rest}>
+      {children}
+    </a>
+  ) : (
+    <Link to={tool.href} {...rest}>
+      {children}
+    </Link>
+  )
 
 const TeamNav = () => {
-  const path = typeof window !== 'undefined' ? window.location.pathname.replace(/\/$/, '') || '/' : '/'
+  const path = useLocation().pathname.replace(/\/$/, '') || '/'
   const { user, role, tools } = useTeamAccess()
   const current = currentKey(tools, path)
   const showTabs = tools.length > 1
@@ -41,17 +52,16 @@ const TeamNav = () => {
     <>
       <header className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center gap-3">
-          <a href={tools[0]?.href || '/team'} className="flex items-center gap-2 shrink-0" aria-label="Team home">
+          <Link to={tools[0]?.href || '/team'} className="flex items-center gap-2 shrink-0" aria-label="Team home">
             <img src={logo} alt="" className="h-8" />
             <span className="font-bold text-gray-900">BYBO Team</span>
-          </a>
+          </Link>
           {showTabs && (
             <nav className="hidden sm:flex items-center gap-1 ml-4" aria-label="Team tools">
               {tools.map((t) => (
-                <a
+                <ToolLink
                   key={t.key}
-                  href={t.href}
-                  {...linkProps(t)}
+                  tool={t}
                   aria-current={current === t.key ? 'page' : undefined}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
                     current === t.key ? 'bg-amber-100 text-amber-900' : 'text-gray-600 hover:bg-gray-100'
@@ -59,7 +69,7 @@ const TeamNav = () => {
                 >
                   {t.name}
                   {t.external && <span aria-hidden="true"> ↗</span>}
-                </a>
+                </ToolLink>
               ))}
             </nav>
           )}
@@ -90,16 +100,15 @@ const TeamNav = () => {
             const Icon = ICONS[t.key] || ClipboardListIcon
             const on = current === t.key
             return (
-              <a
+              <ToolLink
                 key={t.key}
-                href={t.href}
-                {...linkProps(t)}
+                tool={t}
                 aria-current={on ? 'page' : undefined}
                 className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${on ? 'text-amber-700' : 'text-gray-500'}`}
               >
                 <Icon className="h-6 w-6" aria-hidden="true" />
                 {t.name}
-              </a>
+              </ToolLink>
             )
           })}
         </nav>
