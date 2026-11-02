@@ -19,7 +19,7 @@ if (!getApps().length) initializeApp();
 
 const TRACKER = "1osNU39tVU3GrkrgSiR7Mw1kdE6ErDxnu5R3nu0K0izQ"; // money tracker
 const TAB = "Form Responses";
-const DEFAULT_CALENDAR = "jj.backyardbrickoven@gmail.com";
+const DEFAULT_CALENDAR = "9c2393d979144f8e78849fe80c79ccb0c6b45a0c2748dce33725e181a1fdd343@group.calendar.google.com"; // "pizza events" (owned by jj.backyardbrickoven@gmail.com)
 const TZ = "America/Denver";
 const SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets",
