@@ -12,6 +12,8 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import logger from "firebase-functions/logger";
 import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { accessToken as tokenFor, serviceAccountEmail } from "./google.js";
+import { requireRole } from "./team.js";
 
 if (!getApps().length) initializeApp();
 
@@ -19,25 +21,11 @@ const TRACKER = "1osNU39tVU3GrkrgSiR7Mw1kdE6ErDxnu5R3nu0K0izQ"; // money tracker
 const TAB = "Form Responses";
 const DEFAULT_CALENDAR = "jj.backyardbrickoven@gmail.com";
 const TZ = "America/Denver";
-const METADATA = "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default";
 const SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets",
   "https://www.googleapis.com/auth/calendar.readonly",
-].join(",");
-
-const metadata = async (path) => {
-  const res = await fetch(`${METADATA}/${path}`, { headers: { "Metadata-Flavor": "Google" } });
-  if (!res.ok) throw new Error(`metadata ${path}: ${res.status}`);
-  return res;
-};
-const accessToken = async () => (await (await metadata(`token?scopes=${SCOPES}`)).json()).access_token;
-const serviceAccountEmail = async () => {
-  try {
-    return (await (await metadata("email")).text()).trim();
-  } catch (e) {
-    return "this project's Cloud Functions service account";
-  }
-};
+];
+const accessToken = () => tokenFor(SCOPES);
 
 const google = async (token, url, init = {}) => {
   const res = await fetch(url, {
@@ -52,16 +40,7 @@ const google = async (token, url, init = {}) => {
   throw err;
 };
 
-const isAdmin = async (email) => {
-  if (!email) return false;
-  const team = (await getFirestore().doc("plannerAccess/team").get()).data() || {};
-  return (team.admins || []).map((e) => String(e).toLowerCase()).includes(email.toLowerCase());
-};
-const requireAdmin = async (request) => {
-  if (!request.auth?.token?.email_verified || !(await isAdmin(request.auth.token.email))) {
-    throw new HttpsError("permission-denied", "Only admins can wrap up events.");
-  }
-};
+const requireAdmin = (request) => requireRole(request, ["admin"], "Only admins can wrap up events.");
 
 // ---------- Sheet ----------
 

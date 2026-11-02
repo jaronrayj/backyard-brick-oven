@@ -1,17 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { useAuthState } from 'react-firebase-hooks/auth'
 import { ref, onValue, update, remove } from 'firebase/database'
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { getFunctions, httpsCallable } from 'firebase/functions'
-import { auth, rtdb, signInWithGoogle } from '../../utils/firebase'
+import { rtdb, signInWithGoogle } from '../../utils/firebase'
+import useTeamRole from '../../utils/useTeamRole'
 import { sortPizzas } from '../../utils'
 import PhotoEditor from './PhotoEditor'
 
 // Menu manager: the website menu lives in the Realtime Database at `pizzas/`,
 // one entry per pizza: { name, toppings, img, active, special, order }.
 // The homepage shows active pizzas; `special` ones go under "Special of the Week".
-// Only people listed under `menuAdmins/` may edit (the database rules enforce it):
-// each key is a Google account email with every '.' replaced by ',', value true.
+// Only admins on the team list may edit (useTeamRole; the database rules check
+// the matching tag on the sign-in).
 
 // Database keys can't contain . $ # [ ] /
 const keyFor = (name) => name.trim().replace(/[.$#[\]/]/g, '_') || 'pizza'
@@ -273,24 +273,11 @@ const PizzaRow = ({ id, pizza, editing, setEditing, move, canMoveUp, canMoveDown
 }
 
 const MenuAdmin = () => {
-  const [user, loading] = useAuthState(auth)
+  const { user, loading, role } = useTeamRole()
+  const isAdmin = role === 'admin'
   const [pizzas, setPizzas] = useState(null)
   const [editing, setEditing] = useState(null)
   const [error, setError] = useState('')
-  const [isAdmin, setIsAdmin] = useState(null)
-
-  useEffect(() => {
-    if (!user || !user.emailVerified || !user.email) {
-      setIsAdmin(false)
-      return undefined
-    }
-    const key = user.email.toLowerCase().replace(/\./g, ',')
-    return onValue(
-      ref(rtdb, `menuAdmins/${key}`),
-      (snap) => setIsAdmin(snap.val() === true),
-      () => setIsAdmin(false)
-    )
-  }, [user])
 
   useEffect(() => onValue(ref(rtdb, 'pizzas'), (snap) => setPizzas(snap.val() || {})), [])
 
@@ -325,13 +312,13 @@ const MenuAdmin = () => {
     setEditing(null)
   }
 
-  if (loading || (user && isAdmin === null)) return <div className="p-8 text-gray-500">Loading…</div>
+  if (loading) return <div className="p-8 text-gray-500">Loading…</div>
   if (!isAdmin) {
     return (
       <div className="max-w-md mx-auto p-8 grid grid-cols-[minmax(0,1fr)] gap-4">
         <h1 className="text-2xl font-bold">Menu</h1>
         <p className="text-gray-600">
-          {user ? `${user.email} isn't on the menu admin list yet.` : 'Sign in with Google to edit the menu.'}
+          {user ? `${user.email} isn't an admin on the team list yet.` : 'Sign in with Google to edit the menu.'}
         </p>
         {!user && (
           <button type="button" onClick={signInWithGoogle} className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-4 py-2 rounded-lg">

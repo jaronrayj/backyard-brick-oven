@@ -1,5 +1,5 @@
 import { buildLines, DEFAULT_PRICING, newQuote, pickPackage, quoteText, totals } from './quote'
-import { addDays, doughDates, placeCandidates, weatherFlags } from './schedule'
+import { addDays, doughDates, mixLeadFrom, placeCandidates, weatherFlags } from './schedule'
 
 describe('quote', () => {
   test('picks the wedding package by event type, else the catch-all', () => {
@@ -49,7 +49,10 @@ describe('quote', () => {
 
 describe('schedule', () => {
   test('dough dates count back from the event', () => {
-    expect(doughDates('2026-11-14')).toEqual({ poolish: '2026-11-12', mix: '2026-11-13' })
+    expect(doughDates('2026-11-14')).toEqual({ poolish: '2026-11-11', mix: '2026-11-12' })
+    expect(doughDates('2026-11-14', 1)).toEqual({ poolish: '2026-11-12', mix: '2026-11-13' })
+    expect(mixLeadFrom({ settings: [{ setting: 'Mix days before service', value: 1 }] })).toBe(1)
+    expect(mixLeadFrom(null)).toBe(2)
     expect(addDays('2027-01-01', -1)).toBe('2026-12-31')
     expect(doughDates('')).toBeNull()
   })

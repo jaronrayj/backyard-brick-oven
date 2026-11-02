@@ -10,6 +10,8 @@ import logger from "firebase-functions/logger";
 import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getDatabase } from "firebase-admin/database";
+import { accessToken, serviceAccountEmail } from "./google.js";
+import { requireRole } from "./team.js";
 
 if (!getApps().length) initializeApp();
 
@@ -30,26 +32,7 @@ const RANGES = {
   sections: [MENU, "Store sections!A1:C"],
 };
 
-const METADATA = "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default";
-
-const metadata = async (path) => {
-  const res = await fetch(`${METADATA}/${path}`, { headers: { "Metadata-Flavor": "Google" } });
-  if (!res.ok) throw new Error(`metadata ${path}: ${res.status}`);
-  return res;
-};
-
-const accessToken = async () => {
-  const res = await metadata("token?scopes=https://www.googleapis.com/auth/spreadsheets.readonly");
-  return (await res.json()).access_token;
-};
-
-const serviceAccountEmail = async () => {
-  try {
-    return (await (await metadata("email")).text()).trim();
-  } catch (e) {
-    return "this project's Cloud Functions service account";
-  }
-};
+const SHEETS_READ = "https://www.googleapis.com/auth/spreadsheets.readonly";
 
 const readRange = async (token, [spreadsheetId, range]) => {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`;
@@ -141,7 +124,7 @@ export const buildRef = (v) => {
 
 // Read every range, and write planner/ref only when something changed.
 const refresh = async () => {
-  const token = await accessToken();
+  const token = await accessToken(SHEETS_READ);
   const keys = Object.keys(RANGES);
   let answers;
   try {
@@ -169,19 +152,10 @@ const refresh = async () => {
   return { changed: !same };
 };
 
-const isAdmin = async (email) => {
-  if (!email) return false;
-  const team = (await getFirestore().doc("plannerAccess/team").get()).data() || {};
-  return (team.admins || []).map((e) => String(e).toLowerCase()).includes(email.toLowerCase());
-};
-
 // "Refresh from sheets" on the planner page. Admins only.
 // invoker "public" lets browsers reach it; the admin check below does the gating.
 export const refreshPlannerData = onCall({ invoker: "public" }, async (request) => {
-  const email = request.auth?.token?.email;
-  if (!request.auth?.token?.email_verified || !(await isAdmin(email))) {
-    throw new HttpsError("permission-denied", "Only planner admins can refresh from the sheets.");
-  }
+  await requireRole(request, ["admin"], "Only planner admins can refresh from the sheets.");
   try {
     return await refresh();
   } catch (e) {

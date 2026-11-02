@@ -2,11 +2,16 @@
 // Open-Meteo (free, no key). The reminder emails in functions/events.js use the
 // same rules, so keep the two in step.
 
-// Poolish goes in the night before mix day; mix day is the day before the event.
-// Change these on the Events page under "Dough reminders".
+// Mix day comes from the dough planner's "mix days before service" setting
+// (planner/ref, from the Dough calculator sheet); poolish goes in the evening
+// before mix day, as on the planner. Default 2, like the planner.
+export const mixLeadFrom = (ref) => {
+  const row = ((ref && ref.settings) || []).find((x) => String(x.setting || '').toLowerCase() === 'mix days before service')
+  const v = row ? Number(row.value) : NaN
+  return Number.isFinite(v) && v >= 0 ? Math.min(5, v) : 2
+}
+
 export const DEFAULT_REMINDERS = {
-  poolishDaysBefore: 2,
-  mixDaysBefore: 1,
   emails: [], // empty = the business inbox
 }
 
@@ -34,13 +39,8 @@ export const daysUntil = (value, from = todayISO()) => {
 }
 
 // { poolish, mix } dates (YYYY-MM-DD) for an event date.
-export const doughDates = (date, reminders = DEFAULT_REMINDERS) =>
-  parseISO(date)
-    ? {
-        poolish: addDays(date, -Number(reminders.poolishDaysBefore || 0)),
-        mix: addDays(date, -Number(reminders.mixDaysBefore || 0)),
-      }
-    : null
+export const doughDates = (date, mixLead = 2) =>
+  parseISO(date) ? { poolish: addDays(date, -(mixLead + 1)), mix: addDays(date, -mixLead) } : null
 
 // Open-Meteo forecasts reach 16 days ahead.
 export const FORECAST_DAYS = 16

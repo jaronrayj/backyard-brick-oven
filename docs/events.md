@@ -2,8 +2,7 @@
 
 `/events` tracks events from first inquiry to done, builds quotes from your
 pricing, shows the forecast once an event is within 16 days, and emails dough
-reminders for booked events. Admins only (the `admins` list in
-`plannerAccess/team`, same as the business dashboard).
+reminders for booked events. Admins only ([team.md](team.md)).
 
 ## How it fits together
 
@@ -12,7 +11,7 @@ reminders for booked events. Admins only (the `admins` list in
 | Page | `src/pages/Events/` (`index.js` page, `quote.js` quote math, `schedule.js` dough dates and weather) |
 | Events | Firestore `events/{id}` |
 | Pricing (packages, add-ons, travel, tax, deposit, quote note) | Firestore `eventSettings/pricing`, edited under "Pricing" |
-| Dough reminder timing and recipients | Firestore `eventSettings/reminders`, edited under "Pricing" |
+| Dough reminder recipients | Firestore `eventSettings/reminders`, edited under "Pricing" |
 | Website inquiries → events | `functions/events.js` `saveInquiryEvent`, called by `sendInquiry` (status "inquiry") |
 | Dough reminder emails | `functions/events.js` `doughReminders`, daily at 2 pm Utah time |
 | Weather | [Open-Meteo](https://open-meteo.com/) (free, no key). The location is turned into a point when an event is saved; street addresses fall back to the town. |
@@ -34,9 +33,8 @@ charcuterie, travel, tax and deposit are 0 until you set them.
 
 ## Dough reminders
 
-For events marked **Booked**: one email on poolish day (default 2 days before)
-and one on mix day (default 1 day before), with the forecast and a link to the
-planner. Add Pizza Fridays as booked events to get reminders for those too.
+For events marked **Booked**: one email on poolish day and one on mix day
+(timing below), with the forecast and a link to the planner. Add Pizza Fridays as booked events to get reminders for those too.
 
 ## Wrap-up
 
@@ -57,39 +55,25 @@ land under it. That formula column is never written.
 The calendar read is `jj.backyardbrickoven@gmail.com` unless
 `eventSettings/wrapUp` has a `calendarId`.
 
+## Dough reminder timing
+
+Mix day is the dough planner's "mix days before service" setting (Dough
+calculator sheet), and poolish goes in the evening before, the same as the
+planner's Dough tab. Pricing only sets who gets the emails.
+
 ## One-time setup
 
-1. **Firestore rules.** Add inside `match /databases/{database}/documents`,
-   next to the planner rules:
-
-   ```
-   function eventAdmin() {
-     return request.auth != null
-       && request.auth.token.email_verified == true
-       && request.auth.token.email in
-          get(/databases/$(database)/documents/plannerAccess/team).data.admins;
-   }
-   match /events/{id} {
-     allow read, write: if eventAdmin();
-   }
-   match /eventSettings/{doc} {
-     allow read, write: if eventAdmin();
-   }
-   ```
-
-   The Cloud Functions write with admin access and aren't bound by these.
-2. **Deploy the functions.** `firebase deploy --only functions`. This updates
-   `sendInquiry` and adds `doughReminders`, `wrapUpOptions` and `submitWrapUp`
-   (Cloud Scheduler is already on for the planner's hourly refresh).
-3. **Wrap-up access.** Open `/events/wrapup` as an admin; it lists anything
+1. **Deploys.** Functions and the rules in `firestore.rules`,
+   `database.rules.json` and `storage.rules` deploy on merge
+   ([team.md](team.md)).
+2. **Wrap-up access.** Open `/events/wrapup` as an admin; it lists anything
    still missing, with the service account email to use:
-   - Share the money tracker sheet with that email as **Editor** (it was view
-     only for the planner).
+   - Share the money tracker sheet with that email as **Editor**.
    - In Google Calendar, share the business calendar with that email:
      "See all event details".
    - Turn on the Google Calendar API for the project if the page says it's off.
-   Keep the Google Form as a backup or turn off "Accepting responses".
-4. **Set your prices.** Open `/events` → Pricing. Set the tax rate, deposit,
-   and the add-on prices, and check the lead days for poolish and mix.
+   Then turn off "Accepting responses" on the money tracker Google Form.
+3. **Set your prices.** Open `/events` → Pricing: tax rate, deposit, add-on
+   prices, and who gets the dough reminder emails.
 
 Hosting deploys on merge to `main` as before.

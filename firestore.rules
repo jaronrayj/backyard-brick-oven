@@ -1,0 +1,38 @@
+rules_version = '2';
+// Firestore rules. Deployed from this file (firebase.json); edits in the
+// console are overwritten on the next deploy.
+//
+// `team` is a tag on each person's sign-in ("admin" or "staff"), copied by
+// functions/team.js from the one team list, plannerAccess/team.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function role() {
+      return request.auth != null && request.auth.token.email_verified == true
+        ? request.auth.token.get('team', '')
+        : '';
+    }
+    function isAdmin() { return role() == 'admin'; }
+    function onTeam() { return role() == 'admin' || role() == 'staff'; }
+
+    // The team list itself. Pages read it to decide what to show; only the
+    // console (or an admin tool) changes it.
+    match /plannerAccess/{doc} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Dough planner. planner/ref is written by the Cloud Function.
+    match /planner/{doc} {
+      allow read: if onTeam();
+      allow write: if onTeam() && doc in ['plan', 'checks'];
+    }
+
+    // Events, quotes and their settings.
+    match /events/{id} {
+      allow read, write: if isAdmin();
+    }
+    match /eventSettings/{doc} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

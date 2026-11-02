@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useAuthState } from 'react-firebase-hooks/auth'
-import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore'
+import { doc, onSnapshot, setDoc } from 'firebase/firestore'
 import { getFunctions, httpsCallable } from 'firebase/functions'
-import { auth, db, signInWithGoogle } from '../../utils/firebase'
+import { db, signInWithGoogle } from '../../utils/firebase'
+import useTeamRole from '../../utils/useTeamRole'
 import { mountPlanner } from './planner'
 import KeepAwake from '../../components/KeepAwake'
 import './planner.css'
@@ -12,7 +12,7 @@ import './planner.css'
 //   ref    - recipe, menu, toppings, sauces, settings, recent Pizza Fridays (written by the Cloud Function)
 //   plan   - services, picked pizzas, counts, tweaks (staff edit)
 //   checks - shopping and prep checkmarks (staff edit)
-// Who may use it lives in `plannerAccess/team`: { admins: [emails], staff: [emails] }.
+// Who may use it: the team list (useTeamRole), admins and staff.
 const DOCS = { 'ref/snapshot': 'ref', 'plan/current': 'plan', 'plan/checks': 'checks' }
 
 const store = {
@@ -45,30 +45,15 @@ const Message = ({ children }) => (
 )
 
 const Planner = () => {
-  const [user, loading] = useAuthState(auth)
-  const [access, setAccess] = useState(null) // null while checking, 'denied', or { admin }
+  const { user, loading, role } = useTeamRole()
+  // 'loading', 'admin', 'staff' or 'denied'
+  const access = loading || !user ? 'loading' : role || 'denied'
   const rootRef = useRef(null)
   const [awakeSlot, setAwakeSlot] = useState(null)
 
   useEffect(() => {
-    if (!user) {
-      setAccess(null)
-      return
-    }
-    const email = (user.email || '').toLowerCase()
-    getDoc(doc(db, 'plannerAccess', 'team'))
-      .then((snap) => {
-        const data = snap.data() || {}
-        const list = (key) => (data[key] || []).map((e) => String(e).toLowerCase())
-        const admin = list('admins').includes(email)
-        setAccess(admin || list('staff').includes(email) ? { admin } : 'denied')
-      })
-      .catch(() => setAccess('denied'))
-  }, [user])
-
-  useEffect(() => {
-    if (!access || access === 'denied' || !rootRef.current) return undefined
-    const unmount = mountPlanner(rootRef.current, { store, canWrite: true, isAdmin: access.admin, refresh })
+    if ((access !== 'admin' && access !== 'staff') || !rootRef.current) return undefined
+    const unmount = mountPlanner(rootRef.current, { store, canWrite: true, isAdmin: access === 'admin', refresh })
     setAwakeSlot(rootRef.current.querySelector('#keep-awake-slot'))
     return () => {
       setAwakeSlot(null)
@@ -76,7 +61,7 @@ const Planner = () => {
     }
   }, [access])
 
-  if (loading || (user && !access)) {
+  if (loading) {
     return <Message><p className="note">Loading…</p></Message>
   }
   if (!user) {

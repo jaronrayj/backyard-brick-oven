@@ -1,0 +1,15 @@
+rules_version = '2';
+// Storage rules, deployed from this file. Menu photos: anyone can view,
+// admins on the team list can upload (the `team` tag from functions/team.js).
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /pizzas/{file} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.team == 'admin'
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+  }
+}

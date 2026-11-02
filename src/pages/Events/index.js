@@ -17,6 +17,7 @@ import {
   FORECAST_DAYS,
   daysUntil,
   doughDates,
+  mixLeadFrom,
   forecast,
   geocode,
   todayISO,
@@ -118,8 +119,8 @@ const WeatherNote = ({ event, compact }) => {
   )
 }
 
-const DoughNote = ({ event, reminders }) => {
-  const dates = doughDates(event.date, reminders)
+const DoughNote = ({ event, mixLead }) => {
+  const dates = doughDates(event.date, mixLead)
   if (!dates || event.status !== 'booked') return null
   const today = todayISO()
   const tag = (d) => (d === today ? ' (today)' : daysUntil(d) === 1 ? ' (tomorrow)' : '')
@@ -305,7 +306,7 @@ const blankEvent = () => ({
   source: 'manual',
 })
 
-const EventEditor = ({ id, initial, pricing, reminders, onClose }) => {
+const EventEditor = ({ id, initial, pricing, mixLead, onClose }) => {
   const [event, setEvent] = useState(initial)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -462,7 +463,7 @@ const EventEditor = ({ id, initial, pricing, reminders, onClose }) => {
           ) : (
             <p className="text-sm text-gray-500">Save to look up the forecast for this location.</p>
           )}
-          <DoughNote event={event} reminders={reminders} />
+          <DoughNote event={event} mixLead={mixLead} />
         </section>
       )}
 
@@ -506,7 +507,7 @@ const EventEditor = ({ id, initial, pricing, reminders, onClose }) => {
 
 // ---------- Settings ----------
 
-const Settings = ({ pricing, reminders, onClose }) => {
+const Settings = ({ pricing, reminders, mixLead, onClose }) => {
   const [p, setP] = useState(pricing)
   const [r, setR] = useState({ ...reminders, emailsText: (reminders.emails || []).join(', ') })
   const [busy, setBusy] = useState(false)
@@ -540,11 +541,7 @@ const Settings = ({ pricing, reminders, onClose }) => {
         .filter(Boolean)
       await Promise.all([
         setDoc(doc(db, 'eventSettings', 'pricing'), clean),
-        setDoc(doc(db, 'eventSettings', 'reminders'), {
-          poolishDaysBefore: num(r.poolishDaysBefore),
-          mixDaysBefore: num(r.mixDaysBefore),
-          emails,
-        }),
+        setDoc(doc(db, 'eventSettings', 'reminders'), { emails }),
       ])
       onClose()
     } catch (e) {
@@ -638,16 +635,10 @@ const Settings = ({ pricing, reminders, onClose }) => {
       <section className="space-y-2">
         <h3 className="font-semibold">Dough reminders</h3>
         <p className="text-xs text-gray-500">
-          For booked events, an email goes out around 2 pm on poolish day and on mix day, with the forecast.
+          For booked events, an email goes out around 2 pm on poolish day and on mix day, with the forecast. Mix day is{' '}
+          {mixLead} {mixLead === 1 ? 'day' : 'days'} before the event and poolish the evening before, from the dough planner's
+          "mix days before service" setting.
         </p>
-        <div className="grid grid-cols-2 gap-2">
-          <Field label="Start poolish, days before the event">
-            <input className={input} type="number" value={r.poolishDaysBefore} onChange={(e) => setR({ ...r, poolishDaysBefore: e.target.value })} />
-          </Field>
-          <Field label="Mix dough, days before the event">
-            <input className={input} type="number" value={r.mixDaysBefore} onChange={(e) => setR({ ...r, mixDaysBefore: e.target.value })} />
-          </Field>
-        </div>
         <Field label="Send to (blank = the business inbox)">
           <input className={input} value={r.emailsText} placeholder="you@gmail.com, partner@gmail.com" onChange={(e) => setR({ ...r, emailsText: e.target.value })} />
         </Field>
@@ -676,7 +667,7 @@ const FILTERS = [
 
 const byDate = (a, b) => String(a.date || '9999').localeCompare(String(b.date || '9999'))
 
-const EventRow = ({ event, reminders, onOpen }) => {
+const EventRow = ({ event, mixLead, onOpen }) => {
   const t = event.quote ? totals(event.quote) : null
   const days = daysUntil(event.date)
   return (
@@ -701,7 +692,7 @@ const EventRow = ({ event, reminders, onOpen }) => {
           {event.location ? ` · ${event.location}` : ''}
         </p>
         <WeatherNote event={event} compact />
-        <DoughNote event={event} reminders={reminders} />
+        <DoughNote event={event} mixLead={mixLead} />
         {t && <p className="text-sm font-medium">Quote {money(t.total)}</p>}
       </button>
     </li>
@@ -717,6 +708,7 @@ const Events = () => {
   const [events, setEvents] = useState([])
   const [pricing, setPricing] = useState(DEFAULT_PRICING)
   const [reminders, setReminders] = useState(DEFAULT_REMINDERS)
+  const [mixLead, setMixLead] = useState(2)
   const [filter, setFilter] = useState('open')
   const [editing, setEditing] = useState(null) // { id, event } | 'settings' | null
 
@@ -725,6 +717,7 @@ const Events = () => {
     const unsubs = [
       onSnapshot(collection(db, 'events'), (snap) => setEvents(snap.docs.map((d) => ({ id: d.id, ...d.data() })))),
       onSnapshot(doc(db, 'eventSettings', 'pricing'), (snap) => snap.exists() && setPricing({ ...DEFAULT_PRICING, ...snap.data() })),
+      onSnapshot(doc(db, 'planner', 'ref'), (snap) => setMixLead(mixLeadFrom(snap.data())), () => {}),
       onSnapshot(doc(db, 'eventSettings', 'reminders'), (snap) => snap.exists() && setReminders({ ...DEFAULT_REMINDERS, ...snap.data() })),
     ]
     return () => unsubs.forEach((u) => u())
@@ -761,14 +754,14 @@ const Events = () => {
   if (editing === 'settings') {
     return (
       <Shell>
-        <Settings pricing={pricing} reminders={reminders} onClose={() => setEditing(null)} />
+        <Settings pricing={pricing} reminders={reminders} mixLead={mixLead} onClose={() => setEditing(null)} />
       </Shell>
     )
   }
   if (editing) {
     return (
       <Shell>
-        <EventEditor id={editing.id} initial={editing.event} pricing={pricing} reminders={reminders} onClose={() => setEditing(null)} />
+        <EventEditor id={editing.id} initial={editing.event} pricing={pricing} mixLead={mixLead} onClose={() => setEditing(null)} />
       </Shell>
     )
   }
@@ -813,7 +806,7 @@ const Events = () => {
             <EventRow
               key={e.id}
               event={e}
-              reminders={reminders}
+              mixLead={mixLead}
               onOpen={() => setEditing({ id: e.id, event: { ...blankEvent(), ...e } })}
             />
           ))}

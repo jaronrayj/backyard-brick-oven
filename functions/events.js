@@ -1,21 +1,26 @@
 // Event tracker (/events): website inquiries become `events/{id}` documents,
 // and a daily job emails dough reminders (poolish day, mix day) for booked
-// events, with the forecast. The page's date and weather rules live in
-// src/pages/Events/schedule.js; keep the two in step.
+// events, with the forecast. The page's copy of the date and weather rules is
+// src/pages/Events/schedule.js (the site and functions build separately);
+// keep the two in step.
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { defineSecret } from "firebase-functions/params";
 import logger from "firebase-functions/logger";
 import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import nodemailer from "nodemailer";
+import { GMAIL_APP_PASSWORD, GMAIL_USER, sendMail } from "./mail.js";
 
 if (!getApps().length) initializeApp();
 
-const GMAIL_APP_PASSWORD = defineSecret("GMAIL_APP_PASSWORD");
-const GMAIL_USER = "jj.backyardbrickoven@gmail.com";
 const SITE = "https://backyardbrickovenpizza.com";
 const TZ = "America/Denver";
-const DEFAULT_REMINDERS = { poolishDaysBefore: 2, mixDaysBefore: 1, emails: [] };
+// Mix day comes from the dough planner's "mix days before service" setting
+// (Dough calculator sheet, copied into planner/ref); poolish goes in the
+// evening before mix day, as on the planner. Default 2, like the planner.
+export const mixLeadFrom = (ref) => {
+  const row = ((ref && ref.settings) || []).find((x) => String(x.setting || "").toLowerCase() === "mix days before service");
+  const v = row ? Number(row.value) : NaN;
+  return Number.isFinite(v) && v >= 0 ? Math.min(5, v) : 2;
+};
 
 // ---------- Inquiry -> event ----------
 
@@ -159,12 +164,12 @@ const forecastLine = async (geo, date) => {
 
 // ---------- Daily dough reminders ----------
 
-// Which reminders are due today for a booked event: [] or ["poolish"], ["mix"], or both.
-export const dueSteps = (event, today, r) => {
+// Which reminders are due today for a booked event: [] or ["poolish"], ["mix"].
+export const dueSteps = (event, today, mixLead) => {
   const steps = [];
   if (!parseISO(event.date)) return steps;
-  if (addDays(event.date, -Number(r.poolishDaysBefore || 0)) === today) steps.push("poolish");
-  if (addDays(event.date, -Number(r.mixDaysBefore || 0)) === today) steps.push("mix");
+  if (addDays(event.date, -(mixLead + 1)) === today) steps.push("poolish");
+  if (addDays(event.date, -mixLead) === today) steps.push("mix");
   return steps.filter((step) => !((event.remindersSent || {})[step] === event.date));
 };
 
@@ -177,14 +182,14 @@ export const doughReminders = onSchedule(
   { schedule: "0 14 * * *", timeZone: TZ, secrets: [GMAIL_APP_PASSWORD], region: "us-central1" },
   async () => {
     const db = getFirestore();
-    const settings = await db.doc("eventSettings/reminders").get();
-    const r = { ...DEFAULT_REMINDERS, ...(settings.exists ? settings.data() : {}) };
+    const settings = (await db.doc("eventSettings/reminders").get()).data() || {};
+    const mixLead = mixLeadFrom((await db.doc("planner/ref").get()).data());
     const today = todayLocal();
 
     const booked = await db.collection("events").where("status", "==", "booked").get();
     const due = booked.docs
       .map((doc) => ({ doc, event: doc.data() }))
-      .map((x) => ({ ...x, steps: dueSteps(x.event, today, r) }))
+      .map((x) => ({ ...x, steps: dueSteps(x.event, today, mixLead) }))
       .filter((x) => x.steps.length);
     if (!due.length) {
       logger.info("No dough reminders today");
@@ -206,17 +211,13 @@ export const doughReminders = onSchedule(
       );
     }
     const text = `${blocks.join("\n\n")}\n\nDough amounts: ${SITE}/planner\nEvents: ${SITE}/events\n`;
-    const to = (r.emails && r.emails.length ? r.emails : [GMAIL_USER]).join(", ");
+    const to = (settings.emails && settings.emails.length ? settings.emails : [GMAIL_USER]).join(", ");
     const subject =
       due.length === 1
         ? `Dough: ${due[0].steps.map((s) => STEP_TEXT[s].toLowerCase()).join(" and ")} for ${due[0].event.name}`
         : `Dough reminders: ${due.length} events`;
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD.value() },
-    });
-    await transporter.sendMail({ from: `"Backyard Brick Oven" <${GMAIL_USER}>`, to, subject, text });
+    await sendMail({ to, subject, text });
 
     // Remember what was sent so a re-run the same day doesn't email twice.
     await Promise.all(
