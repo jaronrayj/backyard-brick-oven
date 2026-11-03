@@ -473,55 +473,112 @@ export function mountPlanner(root, deps) {
     if (amt != null) lab.append(el('span', 'amt', String(amt)));
     return lab;
   };
-  const renderBringAuto = () => {
-    const box = $('#bringauto');
-    box.replaceChildren();
-    if (!PLAN || !REF) return;
+  /* Where each Bring item is packed from (PLAN.where: {key: 'home' | 'commissary'}), set in Edit list. */
+  const LOCS = [['home', 'At home'], ['commissary', 'At the commissary']];
+  const whereOf = (key) => (PLAN.where || {})[key] || '';
+  const whereSelect = (key, name) => {
+    const sel = el('select', 'where');
+    sel.setAttribute('aria-label', 'Where ' + name + ' comes from');
+    [['', 'Where?'], ...LOCS.map(([v, t]) => [v, t.replace('At the ', '').replace('At ', '')])].forEach(([v, t]) => {
+      const o = el('option', null, t); o.value = v; if (whereOf(key) === v) o.selected = true; sel.append(o);
+    });
+    sel.disabled = !canWrite;
+    sel.addEventListener('change', () => { PLAN.where = {...(PLAN.where || {}), [key]: sel.value}; if (!sel.value) delete PLAN.where[key]; savePlan(); });
+    return sel;
+  };
+  /* Everything to bring, from the plan (dough, sauces, each topping) and your own gear. */
+  const bringEntries = () => {
+    const out = [];
     const balls = plannedBalls();
-    if (balls) box.append(checkRow('bring|auto|dough', 'Dough', 'For ' + plannedServices().map((s) => svcName(s) + ' · ' + day(s.date)).join(' + '), balls.toLocaleString('en-US') + ' balls'));
+    if (balls) out.push({key: 'bring|auto|dough', name: 'Dough', sub: 'For ' + plannedServices().map((s) => svcName(s) + ' · ' + day(s.date)).join(' + '), amt: balls.toLocaleString('en-US') + ' balls'});
     const picked = new Set(PLAN.picked);
     const rows = pizzaRows().filter((r) => picked.has(r.pizza));
-    [...new Set(rows.map((r) => r.sauce).filter(Boolean))].sort().forEach((sauce) => box.append(checkRow('bring|auto|sauce|' + norm(sauce), sauce, 'Sauce for the picked pizzas')));
-    const toppings = [...new Set(rows.filter((r) => !r.sauce).map((r) => r.topping))].sort((a, b) => a.localeCompare(b));
-    if (toppings.length) box.append(checkRow('bring|auto|toppings|' + toppings.length, 'Toppings', toppings.join(', ')));
+    [...new Set(rows.map((r) => r.sauce).filter(Boolean))].sort().forEach((sauce) => out.push({key: 'bring|auto|sauce|' + norm(sauce), name: sauce, sub: 'Sauce for the picked pizzas'}));
+    [...new Set(rows.filter((r) => !r.sauce).map((r) => r.topping))].sort((a, b) => a.localeCompare(b))
+      .forEach((t) => out.push({key: 'bring|auto|top|' + norm(t), name: t, topping: true}));
+    (PLAN.bring || []).forEach((item) => {
+      const svcs = servicesFor(item.for);
+      out.push({key: 'bring|' + item.id, name: item.name, gear: item, hiddenNow: !svcs.length,
+        sub: item.for && item.for !== 'all' ? bringForLabel(item.for) : '', amt: svcs.length ? bringCount(item, svcs) : null});
+    });
+    return out;
   };
+  /* "Toppings" ticks every topping at once, and shows ticked once they all are. */
+  const toppingGroup = (list) => {
+    const keys = list.map((t) => t.key);
+    const all = keys.every((k) => CHECKED.includes(k));
+    const some = keys.some((k) => CHECKED.includes(k));
+    const wrap = el('div', 'group');
+    const lab = el('label', 'item parent' + (all ? ' done' : ''));
+    const cb = el('input'); cb.type = 'checkbox'; cb.checked = all; cb.indeterminate = some && !all; cb.disabled = !canWrite;
+    cb.addEventListener('change', () => {
+      CHECKED = cb.checked ? [...new Set([...CHECKED, ...keys])] : CHECKED.filter((x) => !keys.includes(x));
+      saveChecks(); renderBring();
+    });
+    const nm = el('span', 'nm', 'Toppings');
+    nm.append(el('span', 'sub', keys.filter((k) => CHECKED.includes(k)).length + ' of ' + keys.length + ' packed'));
+    lab.append(cb, nm);
+    const kids = el('div', 'kids');
+    list.forEach((t) => {
+      const row = checkRow(t.key, t.name, '', null);
+      row.querySelector('input').addEventListener('change', () => renderBring());
+      kids.append(row);
+    });
+    wrap.append(lab, kids);
+    return wrap;
+  };
+  const renderBringAuto = () => { $('#bringauto').replaceChildren(); };
   const renderBring = () => {
     renderBringAuto();
     const box = $('#bringlist');
     box.replaceChildren();
-    if (!PLAN) return;
+    if (!PLAN || !REF) return;
     const editBtn = $('#bring-edit');
     editBtn.textContent = bringEditing ? 'Done editing' : 'Edit list';
     editBtn.setAttribute('aria-pressed', String(bringEditing));
     $('#bring-form').hidden = !bringEditing;
-    if (!PLAN.bring.length) { box.append(el('p', 'empty', bringEditing ? 'Add the gear you pack below.' : 'No gear on the list yet. Tap Edit list to add some.')); return; }
-    let hidden = 0;
-    PLAN.bring.forEach((item) => {
-      const svcs = servicesFor(item.for);
-      const rule = item.per ? '1 per ' + (Number(item.every) || 1) + (item.per === 'guest' ? ' guests' : ' dough balls') : '';
-      if (bringEditing) {
+    const entries = bringEntries();
+    if (bringEditing) {
+      box.append(el('p', 'note', 'Pick where each thing is packed from. Your own gear can also be removed or set to only some kinds of services.'));
+      entries.forEach((e) => {
         const row = el('div', 'item');
-        const sel = el('select');
-        sel.setAttribute('aria-label', 'Who ' + item.name + ' is for');
-        BRING_FOR.forEach(([v, t]) => { const o = el('option', null, t); o.value = v; if ((item.for || 'all') === v) o.selected = true; sel.append(o); });
-        sel.disabled = !canWrite;
-        sel.addEventListener('change', () => { item.for = sel.value; savePlan(); });
-        const rm = el('button', 'btn quiet rm', 'Remove'); rm.type = 'button'; rm.disabled = !canWrite;
-        rm.setAttribute('aria-label', 'Remove ' + item.name);
-        rm.addEventListener('click', () => {
-          PLAN.bring = PLAN.bring.filter((x) => x.id !== item.id);
-          CHECKED = CHECKED.filter((x) => x !== 'bring|' + item.id);
-          savePlan(); saveChecks(); renderBring();
-        });
-        const nm = el('span', 'nm', item.name);
-        if (rule) nm.append(el('span', 'sub', rule));
-        row.append(nm, sel, rm);
+        const nm = el('span', 'nm', e.name);
+        const rule = e.gear && e.gear.per ? '1 per ' + (Number(e.gear.every) || 1) + (e.gear.per === 'guest' ? ' guests' : ' dough balls') : '';
+        if (e.topping) nm.append(el('span', 'sub', 'Topping'));
+        else if (rule) nm.append(el('span', 'sub', rule));
+        row.append(nm, whereSelect(e.key, e.name));
+        if (e.gear) {
+          const item = e.gear;
+          const sel = el('select');
+          sel.setAttribute('aria-label', 'Who ' + item.name + ' is for');
+          BRING_FOR.forEach(([v, t]) => { const o = el('option', null, t); o.value = v; if ((item.for || 'all') === v) o.selected = true; sel.append(o); });
+          sel.disabled = !canWrite;
+          sel.addEventListener('change', () => { item.for = sel.value; savePlan(); });
+          const rm = el('button', 'btn quiet rm', 'Remove'); rm.type = 'button'; rm.disabled = !canWrite;
+          rm.setAttribute('aria-label', 'Remove ' + item.name);
+          rm.addEventListener('click', () => {
+            PLAN.bring = PLAN.bring.filter((x) => x.id !== item.id);
+            CHECKED = CHECKED.filter((x) => x !== e.key);
+            savePlan(); saveChecks(); renderBring();
+          });
+          row.append(sel, rm);
+        }
         box.append(row);
-        return;
-      }
-      if (!svcs.length) { hidden += 1; return; }
-      const sub = item.for && item.for !== 'all' ? bringForLabel(item.for) : '';
-      box.append(checkRow('bring|' + item.id, item.name, sub, bringCount(item, svcs)));
+      });
+      if (!entries.length) box.append(el('p', 'empty', 'Add the gear you pack below.'));
+      return;
+    }
+    const shown = entries.filter((e) => !e.hiddenNow);
+    const hidden = entries.length - shown.length;
+    if (!shown.length) { box.append(el('p', 'empty', 'Nothing to bring yet. Plan a service and pick pizzas, or tap Edit list to add gear.')); }
+    [...LOCS, ['', 'Not sorted yet']].forEach(([loc, title]) => {
+      const here = shown.filter((e) => whereOf(e.key) === loc);
+      if (!here.length) return;
+      box.append(el('h3', null, title));
+      if (!loc) box.append(el('p', 'note', 'Tap Edit list to say whether these come from home or the commissary.'));
+      here.filter((e) => !e.topping).forEach((e) => box.append(checkRow(e.key, e.name, e.sub, e.amt)));
+      const tops = here.filter((e) => e.topping);
+      if (tops.length) box.append(toppingGroup(tops));
     });
     if (hidden) box.append(el('p', 'empty', hidden + (hidden === 1 ? ' item is' : ' items are') + ' for services that aren’t planned right now.'));
   };
@@ -807,7 +864,7 @@ export function mountPlanner(root, deps) {
     if (snap.exists && snap.data()._by === TAB && !firstPlan) return;
     if (snap.exists) { const d = JSON.parse(JSON.stringify(snap.data())); delete d._by; delete d._rev; PLAN = d; }
     else if (firstPlan) PLAN = defaultPlan();
-    PLAN.services = PLAN.services || []; PLAN.picked = PLAN.picked || []; PLAN.counts = PLAN.counts || {}; PLAN.tweaks = PLAN.tweaks || {}; PLAN.bring = PLAN.bring || []; PLAN.extras = PLAN.extras || [];
+    PLAN.services = PLAN.services || []; PLAN.picked = PLAN.picked || []; PLAN.counts = PLAN.counts || {}; PLAN.tweaks = PLAN.tweaks || {}; PLAN.bring = PLAN.bring || []; PLAN.extras = PLAN.extras || []; PLAN.where = PLAN.where || {};
     firstPlan = false;
     renderAll();
   }, () => { $('#save-status').textContent = 'The plan couldn\'t load. Reload the page.'; }));

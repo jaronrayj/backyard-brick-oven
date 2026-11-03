@@ -98,6 +98,9 @@
   .bybo-planner .item input { width: 1.25rem; height: 1.25rem; margin: 0; flex: none; accent-color: var(--accent); }
   .bybo-planner .item .nm { flex: 1 1 auto; min-width: 0; }
   .bybo-planner .item .sub { display: block; font-size: 12px; color: var(--muted); }
+  .bybo-planner .group .kids { padding-left: 28px; }
+  .bybo-planner .group .kids .item { padding-block: 8px; }
+  .bybo-planner .item select.where { font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); }
   .bybo-planner .item .amt { font-variant-numeric: tabular-nums; color: var(--muted); text-align: right; white-space: nowrap; }
   .bybo-planner .item.done .nm, .bybo-planner .item.done .amt { text-decoration: line-through; opacity: .5; }
   .bybo-planner .item .missing { color: var(--warn); }
