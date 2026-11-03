@@ -483,7 +483,7 @@ export function mountPlanner(root, deps) {
       const o = el('option', null, t); o.value = v; if (whereOf(key) === v) o.selected = true; sel.append(o);
     });
     sel.disabled = !canWrite;
-    sel.addEventListener('change', () => { PLAN.where = {...(PLAN.where || {}), [key]: sel.value}; if (!sel.value) delete PLAN.where[key]; savePlan(); });
+    sel.addEventListener('change', () => { PLAN.where = {...(PLAN.where || {}), [key]: sel.value}; if (!sel.value) delete PLAN.where[key]; savePlan(); renderBring(); });
     return sel;
   };
   /* Everything to bring, from the plan (dough, sauces, each topping) and your own gear. */
@@ -503,6 +503,24 @@ export function mountPlanner(root, deps) {
     });
     return out;
   };
+  /* Your order for the Bring list (PLAN.bringOrder: keys). New items go to the end of their group. */
+  const ordered = (entries) => {
+    const pos = new Map((PLAN.bringOrder || []).map((k, i) => [k, i]));
+    return entries.map((e, i) => ({e, i})).sort((a, b) => (pos.has(a.e.key) ? pos.get(a.e.key) : 1e6 + a.i) - (pos.has(b.e.key) ? pos.get(b.e.key) : 1e6 + b.i)).map((x) => x.e);
+  };
+  const moveBring = (all, group, key, dir) => {
+    const keys = group.map((e) => e.key);
+    const i = keys.indexOf(key);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= keys.length) return;
+    const full = all.map((e) => e.key);
+    const a = full.indexOf(keys[i]), b = full.indexOf(keys[j]);
+    [full[a], full[b]] = [full[b], full[a]];
+    PLAN.bringOrder = full;
+    savePlan(); renderBring();
+  };
+  const SECTIONS = [...LOCS, ['', 'Not sorted yet']];
+
   /* "Toppings" ticks every topping at once, and shows ticked once they all are. */
   const toppingGroup = (list) => {
     const keys = list.map((t) => t.key);
@@ -537,11 +555,23 @@ export function mountPlanner(root, deps) {
     editBtn.textContent = bringEditing ? 'Done editing' : 'Edit list';
     editBtn.setAttribute('aria-pressed', String(bringEditing));
     $('#bring-form').hidden = !bringEditing;
-    const entries = bringEntries();
+    const entries = ordered(bringEntries());
     if (bringEditing) {
-      box.append(el('p', 'note', 'Pick where each thing is packed from. Your own gear can also be removed or set to only some kinds of services.'));
-      entries.forEach((e) => {
+      box.append(el('p', 'note', 'Pick where each thing is packed from, and use ↑ ↓ to put them in packing order. Your own gear can also be removed or set to only some kinds of services.'));
+      SECTIONS.forEach(([loc, title]) => {
+      const group = entries.filter((e) => whereOf(e.key) === loc);
+      if (!group.length) return;
+      box.append(el('h3', null, title));
+      group.forEach((e, gi) => {
         const row = el('div', 'item');
+        const arrows = el('span', 'move');
+        [['↑', -1, 'Move up'], ['↓', 1, 'Move down']].forEach(([t, dir, label]) => {
+          const b = el('button', 'btn quiet', t); b.type = 'button'; b.setAttribute('aria-label', label + ' ' + e.name);
+          b.disabled = !canWrite || (dir < 0 ? gi === 0 : gi === group.length - 1);
+          b.addEventListener('click', () => moveBring(entries, group, e.key, dir));
+          arrows.append(b);
+        });
+        row.append(arrows);
         const nm = el('span', 'nm', e.name);
         const rule = e.gear && e.gear.per ? '1 per ' + (Number(e.gear.every) || 1) + (e.gear.per === 'guest' ? ' guests' : ' dough balls') : '';
         if (e.topping) nm.append(el('span', 'sub', 'Topping'));
@@ -565,20 +595,24 @@ export function mountPlanner(root, deps) {
         }
         box.append(row);
       });
+      });
       if (!entries.length) box.append(el('p', 'empty', 'Add the gear you pack below.'));
       return;
     }
     const shown = entries.filter((e) => !e.hiddenNow);
     const hidden = entries.length - shown.length;
     if (!shown.length) { box.append(el('p', 'empty', 'Nothing to bring yet. Plan a service and pick pizzas, or tap Edit list to add gear.')); }
-    [...LOCS, ['', 'Not sorted yet']].forEach(([loc, title]) => {
+    SECTIONS.forEach(([loc, title]) => {
       const here = shown.filter((e) => whereOf(e.key) === loc);
       if (!here.length) return;
       box.append(el('h3', null, title));
       if (!loc) box.append(el('p', 'note', 'Tap Edit list to say whether these come from home or the commissary.'));
-      here.filter((e) => !e.topping).forEach((e) => box.append(checkRow(e.key, e.name, e.sub, e.amt)));
       const tops = here.filter((e) => e.topping);
-      if (tops.length) box.append(toppingGroup(tops));
+      let toppingsShown = false;
+      here.forEach((e) => {
+        if (!e.topping) { box.append(checkRow(e.key, e.name, e.sub, e.amt)); return; }
+        if (!toppingsShown) { box.append(toppingGroup(tops)); toppingsShown = true; }
+      });
     });
     if (hidden) box.append(el('p', 'empty', hidden + (hidden === 1 ? ' item is' : ' items are') + ' for services that aren’t planned right now.'));
   };
