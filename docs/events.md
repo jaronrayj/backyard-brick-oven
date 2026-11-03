@@ -11,6 +11,8 @@ reminders for booked events. Admins only ([team.md](team.md)).
 | Page | `src/pages/Events/` (`index.js` page, `quote.js` quote math, `schedule.js` dough dates and weather) |
 | Events | Firestore `events/{id}` |
 | Pricing (packages, add-ons, travel, tax, deposit, quote note) | Firestore `eventSettings/pricing`, edited under "Pricing" |
+| Prices on the public website (packages, add-on range, travel zones) | Firestore `publicSettings/site`, copied from Pricing on every save (anyone can read it) |
+| Next Pizza Fridays on the home page | `functions/planner.js` `upcomingPizzaFridays` (public; dates of "Pizza Friday" calendar entries only) |
 | Dough reminder recipients | Firestore `eventSettings/reminders`, edited under "Pricing" |
 | Website inquiries → events | `functions/events.js` `saveInquiryEvent`, called by `sendInquiry` (status "inquiry") |
 | Dough reminder emails | `functions/events.js` `doughReminders`, daily at 2 pm Utah time |
@@ -26,13 +28,17 @@ Quoted, and a wrap-up moves a booked event to Done.
 
 "Build quote from pricing" picks a package (the first whose "matches" word is
 in the event type, else the last one), charges extra guests over the package,
-adds per-person add-ons, and travel past the free miles. Every line stays
+adds per-person add-ons, and a travel fee by zone (one-way miles from Bountiful; past the last zone it
+warns you to add travel by hand). Every line stays
 editable. "Copy as text" is for email or text messages; "Print / PDF" opens a
 clean page to print or save as PDF.
 
-The starting prices are only placeholders: Wedding and Party at $1,500 for up
-to 100 guests, $15 per extra guest, salad $3 and pasta $5 per person; dessert,
-charcuterie, travel, tax and deposit are 0 until you set them.
+The starting prices are only placeholders: Wedding $1,500 for up to 100
+guests, Party $15 a guest with a 25-guest minimum (a $375 package for 25,
+then $15 each), $15 per extra guest, salad $3 and pasta $5 per person,
+travel by zone; dessert, charcuterie, tax and deposit are 0 until you set
+them. The website shows Parties as "$X per guest" and "N-guest minimum",
+from the Party package's extra-guest price and included guests.
 
 ## Dough reminders
 

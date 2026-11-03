@@ -13,7 +13,7 @@ import { db, signInWithGoogle } from '../../utils/firebase'
 import useEventAdmin from './useEventAdmin'
 import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 import ComboBox from '../../components/ComboBox'
-import { DEFAULT_PRICING, STATUSES, money, newQuote, prettyDate, quoteText, totals } from './quote'
+import { DEFAULT_PRICING, STATUSES, money, newQuote, prettyDate, publicPricing, quoteText, totals, travelZones } from './quote'
 import {
   DEFAULT_REMINDERS,
   FORECAST_DAYS,
@@ -438,7 +438,7 @@ const EventEditor = ({ id, initial, pricing, mixLead, onClose }) => {
         <Field label="Guests">
           <input className={input} type="number" value={event.guests} onChange={(e) => set({ guests: e.target.value })} />
         </Field>
-        <Field label="Miles from the kitchen (for travel)">
+        <Field label="Miles from Bountiful, one way (for travel)">
           <input className={input} type="number" value={event.miles} onChange={(e) => set({ miles: e.target.value })} />
         </Field>
       </section>
@@ -527,7 +527,8 @@ const EventEditor = ({ id, initial, pricing, mixLead, onClose }) => {
 // ---------- Settings ----------
 
 const Settings = ({ pricing, reminders, mixLead, onClose }) => {
-  const [p, setP] = useState(pricing)
+  const [p, setP] = useState(() => ({ ...pricing, travel: { zones: travelZones(pricing) } }))
+  const setZone = (i, patch) => setP({ ...p, travel: { zones: p.travel.zones.map((z, j) => (j === i ? { ...z, ...patch } : z)) } })
   const [r, setR] = useState({ ...reminders, emailsText: (reminders.emails || []).join(', ') })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -550,7 +551,7 @@ const Settings = ({ pricing, reminders, mixLead, onClose }) => {
           extraGuestPrice: num(x.extraGuestPrice),
         })),
         addOns: p.addOns.map((x) => ({ ...x, perPerson: num(x.perPerson) })),
-        travel: { freeMiles: num(p.travel.freeMiles), perMile: num(p.travel.perMile) },
+        travel: { zones: travelZones({ travel: { zones: p.travel.zones.map((z) => ({ upTo: num(z.upTo), fee: num(z.fee) })) } }) },
         taxRate: num(p.taxRate),
         depositPct: num(p.depositPct),
       }
@@ -560,6 +561,7 @@ const Settings = ({ pricing, reminders, mixLead, onClose }) => {
         .filter(Boolean)
       await Promise.all([
         setDoc(doc(db, 'eventSettings', 'pricing'), clean),
+        setDoc(doc(db, 'publicSettings', 'site'), publicPricing(clean)),
         setDoc(doc(db, 'eventSettings', 'reminders'), { emails }),
       ])
       onClose()
@@ -633,13 +635,40 @@ const Settings = ({ pricing, reminders, mixLead, onClose }) => {
         </div>
       </section>
 
+      <section className="space-y-2">
+        <h3 className="font-semibold">Travel zones</h3>
+        <p className="text-xs text-gray-500">One-way miles from Bountiful. Past the last zone, the quote asks you to add travel by hand.</p>
+        {p.travel.zones.map((z, i) => (
+          <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+            <Field label={i === 0 ? 'Up to (miles)' : `${p.travel.zones[i - 1].upTo || '…'} to (miles)`}>
+              <input className={input} type="number" value={z.upTo} onChange={(e) => setZone(i, { upTo: e.target.value })} />
+            </Field>
+            <Field label="Fee ($, 0 = free)">
+              <input className={input} type="number" value={z.fee} onChange={(e) => setZone(i, { fee: e.target.value })} />
+            </Field>
+            <button
+              type="button"
+              aria-label="Remove zone"
+              className="text-gray-400 hover:text-red-700 pb-2"
+              onClick={() => setP({ ...p, travel: { zones: p.travel.zones.filter((_, j) => j !== i) } })}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className={btnQuiet}
+          onClick={() => {
+            const last = p.travel.zones[p.travel.zones.length - 1] || { upTo: 0, fee: 0 }
+            setP({ ...p, travel: { zones: [...p.travel.zones, { upTo: num(last.upTo) + 25, fee: num(last.fee) + 50 }] } })
+          }}
+        >
+          + Zone
+        </button>
+      </section>
+
       <section className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <Field label="Free travel miles">
-          <input className={input} type="number" value={p.travel.freeMiles} onChange={(e) => setP({ ...p, travel: { ...p.travel, freeMiles: e.target.value } })} />
-        </Field>
-        <Field label="$ per mile after">
-          <input className={input} type="number" step="0.01" value={p.travel.perMile} onChange={(e) => setP({ ...p, travel: { ...p.travel, perMile: e.target.value } })} />
-        </Field>
         <Field label="Sales tax (%)">
           <input className={input} type="number" step="0.01" value={p.taxRate} onChange={(e) => setP({ ...p, taxRate: e.target.value })} />
         </Field>

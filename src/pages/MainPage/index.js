@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Helmet } from 'react-helmet-async'
+import { getFunctions, httpsCallable } from 'firebase/functions'
 import pizzaFam from '../../assets/main_cover.jpg'
 import venmoLogo from '../../assets/venmo.png'
 import facebookLogo from '../../assets/facebook.png'
@@ -19,7 +20,24 @@ import actionCrew from '../../assets/action_crew.jpg'
 import actionOvenMountains from '../../assets/action_oven_mountains.jpg'
 import { objectFilter, sortPizzas } from '../../utils'
 
+// "Fri, Nov 13"
+const fridayLabel = (iso, withDay) =>
+  new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', {
+    ...(withDay ? { weekday: 'short' } : {}),
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  })
+
 const MainPage = () => {
+  // Next Pizza Fridays from the business calendar (not fetched while prerendering).
+  const [fridays, setFridays] = useState([])
+  useEffect(() => {
+    if (navigator.userAgent === 'ReactSnap') return
+    httpsCallable(getFunctions(), 'upcomingPizzaFridays')()
+      .then((res) => setFridays((res.data && res.data.dates) || []))
+      .catch(() => {})
+  }, [])
   const [activePizzas, setActivePizzas] = useState({})
   // const [activeToppings, setActiveToppings] = useState({})
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -115,6 +133,14 @@ const MainPage = () => {
                   <span className="font-bold">5pm-7:30pm</span> &middot;{' '}
                   <span className="font-bold">$12 a pie</span>
                 </p>
+                {fridays.length > 0 && (
+                  <p className="mt-2 text-base text-gray-700">
+                    Next up:{' '}
+                    <span className="font-semibold">
+                      {fridays.map((f, i) => fridayLabel(f.date, i === 0)).join(' · ')}
+                    </span>
+                  </p>
+                )}
               </div>
               <p className="mt-4">
                 🔥 Each 10" thin crust pizza is flame cooked in our Gozney dome

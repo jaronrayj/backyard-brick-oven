@@ -1,5 +1,7 @@
 import React from 'react'
 import { Helmet } from 'react-helmet-async'
+import usePublicPricing from '../../utils/usePublicPricing'
+import { travelText } from '../Events/quote'
 import nightPizza from '../../assets/night_pizza.jpg'
 import pizzaParty from '../../assets/pizza_party.jpg'
 import specialSpread from '../../assets/special_touches_spread.jpg'
@@ -46,7 +48,20 @@ const buildPayload = (form) => {
   return payload
 }
 
+const dollars = (v) => `$${Number(v || 0).toLocaleString('en-US')}`
+// "Up to 100 guests, then $15 each"
+const guestsLine = (pkg) =>
+  pkg && pkg.includedGuests
+    ? `Up to ${pkg.includedGuests} guests${pkg.extraGuestPrice ? `, then ${dollars(pkg.extraGuestPrice)} per extra guest` : ''}`
+    : ''
+
 const Inquiries = () => {
+  const prices = usePublicPricing()
+  const { wedding, party, addOnRange, travelZones } = prices
+  const firstZone = travelZones && travelZones[0]
+  const addOnText = addOnRange
+    ? `Add salad or pasta for ${addOnRange[0] === addOnRange[1] ? dollars(addOnRange[0]) : `${dollars(addOnRange[0])}–${addOnRange[1]}`} per guest`
+    : 'Add salad or pasta'
   const [showForm, setShowForm] = React.useState(false)
   const [submitted, setSubmitted] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
@@ -186,15 +201,15 @@ const Inquiries = () => {
                 A brick oven front and center, and a spread guests remember.
               </p>
               <p className="text-3xl font-bold text-gray-900">
-                Starting at $1,500
+                {wedding ? `Starting at ${dollars(wedding.basePrice)}` : 'Quoted to match'}
               </p>
-              <p className="mb-4 text-sm text-gray-600">Up to 100 guests</p>
+              <p className="mb-4 text-sm text-gray-600">{guestsLine(wedding)}</p>
               <ul className="space-y-2 text-gray-700 text-sm flex-1">
                 {[
                   'On-site brick oven, setup, service & cleanup',
                   'Rotating fresh pizzas served buffet-style',
                   'Custom menu built with you',
-                  'Add salad or pasta for $3–5 per guest',
+                  addOnText,
                 ].map((item) => (
                   <li key={item} className="flex items-start">
                     <span className="text-green-600 mr-2 mt-0.5">✓</span>
@@ -210,14 +225,17 @@ const Inquiries = () => {
               <p className="text-gray-700 mb-4 min-h-[3rem]">
                 Buffet-style service with four pizzas in constant rotation.
               </p>
-              <p className="mb-4 text-3xl font-bold text-gray-900">
-                Priced per guest
+              <p className="text-3xl font-bold text-gray-900">
+                {party && party.extraGuestPrice ? `${dollars(party.extraGuestPrice)} per guest` : 'Priced per guest'}
+              </p>
+              <p className="mb-4 text-sm text-gray-600">
+                {party && party.includedGuests ? `${party.includedGuests}-guest minimum` : 'Booked in groups of 10'}
               </p>
               <ul className="space-y-2 text-gray-700 text-sm flex-1">
                 {[
                   'Buffet-style, four pizzas in constant rotation',
                   'Booked in groups of 10 (we round up)',
-                  'Travel included in your quote',
+                  firstZone && !firstZone.fee ? `Free travel within ${firstZone.upTo} miles` : 'Travel spelled out in your quote',
                 ].map((item) => (
                   <li key={item} className="flex items-start">
                     <span className="text-green-600 mr-2 mt-0.5">✓</span>
@@ -251,8 +269,7 @@ const Inquiries = () => {
           <div className="mt-6 rounded-xl p-5 bg-slate-50 border border-slate-200">
             <h4 className="font-bold text-gray-800 mb-1">Travel</h4>
             <p className="text-gray-700 text-sm">
-              Based in Bountiful, happy to travel. A travel fee may apply by
-              distance — always spelled out in your quote.
+              Based in Bountiful, happy to travel. {travelText(travelZones || [])}. Farther than that? Just ask.
             </p>
           </div>
         </div>
@@ -283,16 +300,18 @@ const Inquiries = () => {
         {/* Service area + final CTA, side by side */}
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="bg-white rounded-xl p-6 shadow-md lg:col-span-1 flex flex-col justify-center">
-            <h2 className="text-xl font-bold mb-2">Service Area</h2>
-            <p className="text-gray-700">
-              Based in Bountiful, Utah, and traveling throughout Northern Utah —
-              just ask!
-            </p>
+            <h2 className="text-xl font-bold mb-2">How it works</h2>
+            <ol className="text-gray-700 space-y-1 list-decimal pl-5">
+              <li>Tell us your date, guest count and where.</li>
+              <li>We send a written quote, usually within a day or two.</li>
+              <li>A deposit holds your date. We bring the oven.</li>
+            </ol>
           </div>
           <div className="bg-amber-600 text-white text-center py-8 px-6 rounded-xl shadow-md lg:col-span-2 flex flex-col justify-center">
             <h2 className="text-3xl font-bold mb-3">Let's Get You a Quote</h2>
             <p className="text-lg mb-6">
-              Tell us about your event and we'll take it from there.
+              Based in Bountiful and traveling throughout Northern Utah. Tell us
+              about your event and we'll take it from there.
             </p>
             <button
               onClick={() => openForm()}
@@ -311,7 +330,8 @@ const Inquiries = () => {
             {submitted ? (
               <div className="text-center py-8">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Thanks for reaching out!</h2>
-                <p className="text-gray-600 mb-6">We'll get back to you soon.</p>
+                <p className="text-gray-600 mb-3">We'll reply with a written quote, usually within a day or two.</p>
+                <p className="text-gray-600 mb-6">Your date is held once the deposit is paid.</p>
                 <button
                   onClick={() => { setSubmitted(false); setShowForm(false) }}
                   className="bg-amber-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-700 transition-colors duration-200"
