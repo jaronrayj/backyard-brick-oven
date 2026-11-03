@@ -72,7 +72,8 @@ commissary** (`plan.where`, keyed by item). "Edit list" gives every item,
 including dough, each sauce and each topping, a Home / Commissary picker;
 anything not set yet shows under "Not sorted yet". Toppings are one group with
 a checkbox per topping, and ticking "Toppings" ticks them all at once.
-In Edit list, ↑ ↓ put items in packing order within each section
-(`plan.bringOrder`); the Toppings group sits where its first topping is.
+↑ ↓ on each row put things in packing order within each section
+(`plan.bringOrder`), on the list itself and in Edit list. The Toppings group
+moves as one, and each topping can be moved within it.
 
 Hosting deploys on merge to `main` as before.

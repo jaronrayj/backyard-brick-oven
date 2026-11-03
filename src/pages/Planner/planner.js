@@ -520,9 +520,32 @@ export function mountPlanner(root, deps) {
     savePlan(); renderBring();
   };
   const SECTIONS = [...LOCS, ['', 'Not sorted yet']];
+  /* Move a block of keys (one item, or all the toppings together) past its neighbor block in the same section. */
+  const moveBlock = (all, blocks, index, dir) => {
+    const j = index + dir;
+    if (j < 0 || j >= blocks.length) return;
+    const swapped = blocks.slice(); [swapped[index], swapped[j]] = [swapped[j], swapped[index]];
+    const inSection = new Set(blocks.flat());
+    const full = all.map((e) => e.key);
+    const slots = full.map((k, i) => (inSection.has(k) ? i : -1)).filter((i) => i >= 0);
+    const flat = swapped.flat();
+    slots.forEach((slot, n) => { full[slot] = flat[n]; });
+    PLAN.bringOrder = full;
+    savePlan(); renderBring();
+  };
+  const arrowPair = (name, first, last, onMove) => {
+    const arrows = el('span', 'move');
+    [['↑', -1, 'Move up'], ['↓', 1, 'Move down']].forEach(([t, dir, label]) => {
+      const b = el('button', 'btn quiet', t); b.type = 'button'; b.setAttribute('aria-label', label + ' ' + name);
+      b.disabled = !canWrite || (dir < 0 ? first : last);
+      b.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); onMove(dir); });
+      arrows.append(b);
+    });
+    return arrows;
+  };
 
   /* "Toppings" ticks every topping at once, and shows ticked once they all are. */
-  const toppingGroup = (list) => {
+  const toppingGroup = (list, arrows, everything) => {
     const keys = list.map((t) => t.key);
     const all = keys.every((k) => CHECKED.includes(k));
     const some = keys.some((k) => CHECKED.includes(k));
@@ -536,10 +559,13 @@ export function mountPlanner(root, deps) {
     const nm = el('span', 'nm', 'Toppings');
     nm.append(el('span', 'sub', keys.filter((k) => CHECKED.includes(k)).length + ' of ' + keys.length + ' packed'));
     lab.append(cb, nm);
+    if (arrows) lab.append(arrows);
     const kids = el('div', 'kids');
-    list.forEach((t) => {
+    const blocks = list.map((t) => [t.key]);
+    list.forEach((t, i) => {
       const row = checkRow(t.key, t.name, '', null);
       row.querySelector('input').addEventListener('change', () => renderBring());
+      if (everything) row.append(arrowPair(t.name, i === 0, i === list.length - 1, (dir) => moveBlock(everything, blocks, i, dir)));
       kids.append(row);
     });
     wrap.append(lab, kids);
@@ -600,6 +626,7 @@ export function mountPlanner(root, deps) {
       return;
     }
     const shown = entries.filter((e) => !e.hiddenNow);
+    $('#bring-line').textContent = 'What to pack for the services on the Plan tab, by where it comes from. Use ↑ ↓ to put things in packing order.';
     const hidden = entries.length - shown.length;
     if (!shown.length) { box.append(el('p', 'empty', 'Nothing to bring yet. Plan a service and pick pizzas, or tap Edit list to add gear.')); }
     SECTIONS.forEach(([loc, title]) => {
@@ -608,10 +635,19 @@ export function mountPlanner(root, deps) {
       box.append(el('h3', null, title));
       if (!loc) box.append(el('p', 'note', 'Tap Edit list to say whether these come from home or the commissary.'));
       const tops = here.filter((e) => e.topping);
-      let toppingsShown = false;
+      /* Each item is a block; all the toppings move together as one block. */
+      const units = [];
       here.forEach((e) => {
-        if (!e.topping) { box.append(checkRow(e.key, e.name, e.sub, e.amt)); return; }
-        if (!toppingsShown) { box.append(toppingGroup(tops)); toppingsShown = true; }
+        if (!e.topping) units.push({e});
+        else if (!units.some((u) => u.tops)) units.push({tops});
+      });
+      const blocks = units.map((u) => (u.tops ? u.tops.map((t) => t.key) : [u.e.key]));
+      units.forEach((u, i) => {
+        const arrows = arrowPair(u.tops ? 'Toppings' : u.e.name, i === 0, i === units.length - 1, (dir) => moveBlock(entries, blocks, i, dir));
+        if (u.tops) { box.append(toppingGroup(u.tops, arrows, entries)); return; }
+        const row = checkRow(u.e.key, u.e.name, u.e.sub, u.e.amt);
+        row.append(arrows);
+        box.append(row);
       });
     });
     if (hidden) box.append(el('p', 'empty', hidden + (hidden === 1 ? ' item is' : ' items are') + ' for services that aren’t planned right now.'));
