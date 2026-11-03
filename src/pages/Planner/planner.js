@@ -479,7 +479,7 @@ export function mountPlanner(root, deps) {
   const whereSelect = (key, name) => {
     const sel = el('select', 'where');
     sel.setAttribute('aria-label', 'Where ' + name + ' comes from');
-    [['', 'Where?'], ...LOCS.map(([v, t]) => [v, t.replace('At the ', '').replace('At ', '')])].forEach(([v, t]) => {
+    [['', 'Where?'], ['home', 'Home'], ['commissary', 'Commissary']].forEach(([v, t]) => {
       const o = el('option', null, t); o.value = v; if (whereOf(key) === v) o.selected = true; sel.append(o);
     });
     sel.disabled = !canWrite;
