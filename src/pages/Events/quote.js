@@ -18,7 +18,8 @@ export const STATUSES = [
 export const DEFAULT_PRICING = {
   packages: [
     { key: 'wedding', name: 'Wedding', match: 'wedding', basePrice: 1500, includedGuests: 100, extraGuestPrice: 15 },
-    { key: 'party', name: 'Party / event', match: '', basePrice: 1500, includedGuests: 100, extraGuestPrice: 15 },
+    // Party: the minimum is charged as the package (25 guests × $15), then $15 a guest.
+    { key: 'party', name: 'Party / event', match: '', basePrice: 375, includedGuests: 25, extraGuestPrice: 15 },
   ],
   addOns: [
     { name: 'Salad', perPerson: 3 },

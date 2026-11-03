@@ -226,9 +226,11 @@ const Inquiries = () => {
                 Buffet-style service with four pizzas in constant rotation.
               </p>
               <p className="text-3xl font-bold text-gray-900">
-                {party ? `Starting at ${dollars(party.basePrice)}` : 'Priced per guest'}
+                {party && party.extraGuestPrice ? `${dollars(party.extraGuestPrice)} per guest` : 'Priced per guest'}
               </p>
-              <p className="mb-4 text-sm text-gray-600">{guestsLine(party)}</p>
+              <p className="mb-4 text-sm text-gray-600">
+                {party && party.includedGuests ? `${party.includedGuests}-guest minimum` : 'Booked in groups of 10'}
+              </p>
               <ul className="space-y-2 text-gray-700 text-sm flex-1">
                 {[
                   'Buffet-style, four pizzas in constant rotation',

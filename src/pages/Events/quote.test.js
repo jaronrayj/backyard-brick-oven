@@ -47,6 +47,11 @@ describe('quote', () => {
     expect(travelZones({ travel: { freeMiles: 20, perMile: 2 } })).toEqual(DEFAULT_PRICING.travel.zones)
   })
 
+  test('party: minimum as the package, then per guest', () => {
+    const { lines } = buildLines({ eventType: 'Birthday or family party', guests: 40 }, DEFAULT_PRICING)
+    expect(totals({ lines }).total).toBe(375 + 15 * 15)
+  })
+
   test('quote text has the total', () => {
     const event = { name: 'Sam', eventType: 'Wedding', date: '2027-06-12', guests: 100 }
     const { quote } = newQuote(event, DEFAULT_PRICING)

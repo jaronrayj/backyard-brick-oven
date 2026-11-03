@@ -33,9 +33,12 @@ warns you to add travel by hand). Every line stays
 editable. "Copy as text" is for email or text messages; "Print / PDF" opens a
 clean page to print or save as PDF.
 
-The starting prices are only placeholders: Wedding and Party at $1,500 for up
-to 100 guests, $15 per extra guest, salad $3 and pasta $5 per person; dessert,
-charcuterie, travel, tax and deposit are 0 until you set them.
+The starting prices are only placeholders: Wedding $1,500 for up to 100
+guests, Party $15 a guest with a 25-guest minimum (a $375 package for 25,
+then $15 each), $15 per extra guest, salad $3 and pasta $5 per person,
+travel by zone; dessert, charcuterie, tax and deposit are 0 until you set
+them. The website shows Parties as "$X per guest" and "N-guest minimum",
+from the Party package's extra-guest price and included guests.
 
 ## Dough reminders
 
