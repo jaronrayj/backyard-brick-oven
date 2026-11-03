@@ -54,8 +54,12 @@ const Notifications = ({ className }) => {
         const on = token ? (await callable('pushStatus')({ token })).data.on : false
         if (live) setState(on ? 'on' : 'off')
       } catch (e) {
+        // Usually the API key blocking Firebase Installations / FCM Registration (see docs/events.md).
         console.error(e)
-        if (live) setState('off')
+        if (live) {
+          setState('off')
+          setMessage(`Couldn't check notifications on this device: ${e.message || e}`)
+        }
       }
     })()
     return () => {
