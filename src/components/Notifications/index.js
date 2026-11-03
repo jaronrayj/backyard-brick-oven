@@ -6,7 +6,7 @@ import { BellIcon as BellSolid } from '@heroicons/react/solid'
 
 // The bell in the team bar: turns phone notifications on or off for this
 // device. The server (functions/push.js) decides who may sign up and what is
-// sent: new inquiries, dough steps, and a 7 am summary of the day.
+// sent: new inquiries, dough steps, and a morning summary of the day (times set under Events > Pricing).
 const callable = (name) => httpsCallable(getFunctions(), name)
 
 // Push needs an *active* service worker; right after the first register() it's
@@ -76,7 +76,7 @@ const Notifications = ({ className }) => {
       await callable('registerPush')({ token, on: turnOn })
       if (!turnOn) await deleteToken(getMessaging()).catch(() => {})
       setState(turnOn ? 'on' : 'off')
-      if (turnOn) setMessage("Notifications on. You'll get new inquiries, dough steps, and a 7 am summary.")
+      if (turnOn) setMessage("Notifications on. You'll get new inquiries, dough steps, and a morning summary. Set the times under Events → Pricing.")
     } catch (e) {
       console.error(e)
       setMessage(e.message || "Couldn't change notifications.")

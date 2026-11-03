@@ -8,8 +8,9 @@
 //
 // What gets sent:
 //   - new website inquiries (sendInquiry)
-//   - dough steps for booked events (doughReminders, 2 pm, with the email)
-//   - a 7 am summary of today's calendar and dough steps (morningSummary)
+//   - dough steps for booked events (doughReminders, with the email)
+//   - a morning summary of today's calendar and dough steps (morningSummary)
+// Both times are set under Events > Pricing (eventSettings/reminders).
 import { createHash } from "node:crypto";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
@@ -19,7 +20,7 @@ import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 import { requireRole } from "./team.js";
 import { GMAIL_USER } from "./mail.js";
-import { dueSteps, mixLeadFrom, todayLocal, STEP_TEXT } from "./events.js";
+import { dueSteps, mixLeadFrom, todayLocal, STEP_TEXT, timesFrom, minutesPast } from "./events.js";
 import { calendarBetween } from "./wrapup.js";
 
 if (!getApps().length) initializeApp();
@@ -98,17 +99,23 @@ export const sendPush = async ({ title, body, link = "/events", tag }) => {
   }
 };
 
-// ---------- 7 am summary ----------
+// ---------- Morning summary ----------
 
 const shortDate = (iso) =>
   new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
 
 export const morningSummary = onSchedule(
-  { schedule: "0 7 * * *", timeZone: TZ, region: "us-central1" },
+  { schedule: "*/15 * * * *", timeZone: TZ, region: "us-central1" },
   async () => {
     const db = getFirestore();
-    if (!(await db.collection("pushTokens").limit(1).get()).size) return;
+    const settingsRef = db.doc("eventSettings/reminders");
+    const settings = (await settingsRef.get()).data() || {};
     const today = todayLocal();
+    // Once a day, after the set time; skipped if it's over 3 hours late (no "morning" summary at night).
+    const late = minutesPast(timesFrom(settings).morningTime);
+    if (late < 0 || late > 180 || settings.morningSentOn === today) return;
+    await settingsRef.set({ morningSentOn: today }, { merge: true });
+    if (!(await db.collection("pushTokens").limit(1).get()).size) return;
 
     const lines = [];
     try {

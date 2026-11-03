@@ -179,11 +179,32 @@ export const STEP_TEXT = {
   mix: "Mix dough today",
 };
 
+// ---------- Reminder times ----------
+// Set under Events > Pricing ("eventSettings/reminders": doughTime, morningTime,
+// "HH:MM" Utah time). The jobs run every 15 minutes and act once that time has passed.
+export const DEFAULT_TIMES = { doughTime: "14:00", morningTime: "07:00" };
+const HM = /^([01]\d|2[0-3]):[0-5]\d$/;
+export const timesFrom = (settings = {}) => ({
+  doughTime: HM.test(settings.doughTime || "") ? settings.doughTime : DEFAULT_TIMES.doughTime,
+  morningTime: HM.test(settings.morningTime || "") ? settings.morningTime : DEFAULT_TIMES.morningTime,
+});
+// Utah time right now as "HH:MM".
+export const nowHM = (now = new Date()) =>
+  now.toLocaleTimeString("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false });
+// Minutes from a "HH:MM" time to now (negative before it).
+export const minutesPast = (hm, now = new Date()) => {
+  const [h, m] = nowHM(now).split(":").map(Number);
+  const [th, tm] = hm.split(":").map(Number);
+  return h * 60 + m - (th * 60 + tm);
+};
+
 export const doughReminders = onSchedule(
-  { schedule: "0 14 * * *", timeZone: TZ, secrets: [GMAIL_APP_PASSWORD], region: "us-central1" },
+  { schedule: "*/15 * * * *", timeZone: TZ, secrets: [GMAIL_APP_PASSWORD], region: "us-central1" },
   async () => {
     const db = getFirestore();
     const settings = (await db.doc("eventSettings/reminders").get()).data() || {};
+    // Not yet today's reminder time. Each event remembers which steps were sent, so later runs don't repeat.
+    if (minutesPast(timesFrom(settings).doughTime) < 0) return;
     const mixLead = mixLeadFrom((await db.doc("planner/ref").get()).data());
     const today = todayLocal();
 
@@ -192,10 +213,7 @@ export const doughReminders = onSchedule(
       .map((doc) => ({ doc, event: doc.data() }))
       .map((x) => ({ ...x, steps: dueSteps(x.event, today, mixLead) }))
       .filter((x) => x.steps.length);
-    if (!due.length) {
-      logger.info("No dough reminders today");
-      return;
-    }
+    if (!due.length) return;
 
     const blocks = [];
     for (const { event, steps } of due) {

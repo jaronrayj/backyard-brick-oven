@@ -16,6 +16,8 @@ import ComboBox from '../../components/ComboBox'
 import { DEFAULT_PRICING, STATUSES, money, newQuote, prettyDate, publicPricing, quoteText, totals, travelZones } from './quote'
 import {
   DEFAULT_REMINDERS,
+  TIME_CHOICES,
+  timeLabel,
   FORECAST_DAYS,
   daysUntil,
   doughDates,
@@ -562,7 +564,7 @@ const Settings = ({ pricing, reminders, mixLead, onClose }) => {
       await Promise.all([
         setDoc(doc(db, 'eventSettings', 'pricing'), clean),
         setDoc(doc(db, 'publicSettings', 'site'), publicPricing(clean)),
-        setDoc(doc(db, 'eventSettings', 'reminders'), { emails }),
+        setDoc(doc(db, 'eventSettings', 'reminders'), { emails, doughTime: r.doughTime, morningTime: r.morningTime }, { merge: true }),
       ])
       onClose()
     } catch (e) {
@@ -681,13 +683,35 @@ const Settings = ({ pricing, reminders, mixLead, onClose }) => {
       </Field>
 
       <section className="space-y-2">
-        <h3 className="font-semibold">Dough reminders</h3>
+        <h3 className="font-semibold">Reminders and notifications</h3>
         <p className="text-xs text-gray-500">
-          For booked events, an email goes out around 2 pm on poolish day and on mix day, with the forecast. Mix day is{' '}
+          For booked events, an email and a phone notification go out at {timeLabel(r.doughTime)} on poolish day and on mix
+          day, with the forecast. Mix day is{' '}
           {mixLead} {mixLead === 1 ? 'day' : 'days'} before the event and poolish the evening before, from the dough planner's
           "mix days before service" setting.
         </p>
-        <Field label="Send to (blank = the business inbox)">
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Dough reminders at">
+            <select className={input} value={r.doughTime} onChange={(e) => setR({ ...r, doughTime: e.target.value })}>
+              {TIME_CHOICES.map((t) => (
+                <option key={t.hm} value={t.hm}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Morning summary at (phone)">
+            <select className={input} value={r.morningTime} onChange={(e) => setR({ ...r, morningTime: e.target.value })}>
+              {TIME_CHOICES.map((t) => (
+                <option key={t.hm} value={t.hm}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        <p className="text-xs text-gray-500">Times are Utah time and can be up to 15 minutes late.</p>
+        <Field label="Email dough reminders to (blank = the business inbox)">
           <input className={input} value={r.emailsText} placeholder="you@gmail.com, partner@gmail.com" onChange={(e) => setR({ ...r, emailsText: e.target.value })} />
         </Field>
       </section>
