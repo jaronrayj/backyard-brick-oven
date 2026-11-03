@@ -115,7 +115,9 @@ Events → Report has two tables for the last six months.
   to pricing → opened the quote form → started filling it in → sent it, plus
   how many closed the form after starting it and how many hit an error. Each
   step counts once per visit, so refreshing doesn't inflate it. A browser that
-  has been signed in to a team page is left out (`localStorage` `bybo-team`).
+  is signed in, has been on a team page, or has opened the site once with
+  `?notrack` in the address is left out, in Google Analytics too
+  (`localStorage` `bybo-team`). Nothing is counted until sign-in is known.
   Once about 20 people a month open the inquiries page, the report points out
   the step where most of them stop.
 - **Inquiries and events:** added each month (website inquiries are marked
