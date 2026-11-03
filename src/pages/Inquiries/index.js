@@ -18,7 +18,7 @@ const EVENT_TYPES = [
   'Other',
 ]
 
-const ADD_ONS = ['Salad', 'Pasta', 'Dessert', 'Charcuterie board']
+const ADD_ONS = ['Salad', 'Pasta salad', 'Dessert', 'Charcuterie board']
 
 const todayISO = () => {
   const d = new Date()
@@ -64,8 +64,8 @@ const Inquiries = () => {
   const { wedding, party, addOnRange, travelZones } = prices
   const firstZone = travelZones && travelZones[0]
   const addOnText = addOnRange
-    ? `Add salad or pasta for ${addOnRange[0] === addOnRange[1] ? dollars(addOnRange[0]) : `${dollars(addOnRange[0])}–${addOnRange[1]}`} per guest`
-    : 'Add salad or pasta'
+    ? `Add salad or pasta salad for ${addOnRange[0] === addOnRange[1] ? dollars(addOnRange[0]) : `${dollars(addOnRange[0])}–${addOnRange[1]}`} per guest`
+    : 'Add salad or pasta salad'
   const [showForm, setShowForm] = React.useState(false)
   const [submitted, setSubmitted] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
@@ -488,7 +488,7 @@ const Inquiries = () => {
                       </label>
                     ))}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Salad or pasta adds about $3–5 per guest.</p>
+                  <p className="text-xs text-gray-500 mt-1">{addOnText.replace(/^Add s/, 'S').replace(' for ', ' adds about ')}.</p>
                 </fieldset>
               )}
               <label className="block mb-3">

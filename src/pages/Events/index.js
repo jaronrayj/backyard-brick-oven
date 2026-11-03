@@ -14,7 +14,7 @@ import useEventAdmin from './useEventAdmin'
 import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 import ComboBox from '../../components/ComboBox'
 import Report from './Report'
-import { DEFAULT_PRICING, STATUSES, money, newQuote, prettyDate, publicPricing, quoteText, totals, travelZones } from './quote'
+import { DEFAULT_PRICING, STATUSES, addOnName, money, newQuote, prettyDate, publicPricing, quoteText, totals, travelZones } from './quote'
 import {
   DEFAULT_REMINDERS,
   TIME_CHOICES,
@@ -64,7 +64,7 @@ const PizzaNote = ({ event, plannerRef }) => {
   )
 }
 
-const ADD_ONS = ['Salad', 'Pasta', 'Dessert', 'Charcuterie board']
+const ADD_ONS = ['Salad', 'Pasta salad', 'Dessert', 'Charcuterie board']
 const EVENT_TYPES = [
   'Wedding',
   'Birthday or family party',
@@ -337,7 +337,8 @@ const blankEvent = () => ({
 })
 
 const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => {
-  const [event, setEvent] = useState(initial)
+  // Older events say "Pasta"; show and save them as "Pasta salad".
+  const [event, setEvent] = useState(() => ({ ...initial, addOns: (initial.addOns || []).map(addOnName) }))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -571,7 +572,11 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
 // ---------- Settings ----------
 
 const Settings = ({ pricing, reminders, mixLead, onClose }) => {
-  const [p, setP] = useState(() => ({ ...pricing, travel: { zones: travelZones(pricing) } }))
+  const [p, setP] = useState(() => ({
+    ...pricing,
+    addOns: (pricing.addOns || []).map((a) => ({ ...a, name: addOnName(a.name) })),
+    travel: { zones: travelZones(pricing) },
+  }))
   const setZone = (i, patch) => setP({ ...p, travel: { zones: p.travel.zones.map((z, j) => (j === i ? { ...z, ...patch } : z)) } })
   const [r, setR] = useState({ ...reminders, emailsText: (reminders.emails || []).join(', ') })
   const [busy, setBusy] = useState(false)
