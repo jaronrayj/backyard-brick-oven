@@ -23,7 +23,7 @@ export const DEFAULT_PRICING = {
   ],
   addOns: [
     { name: 'Salad', perPerson: 3 },
-    { name: 'Pasta', perPerson: 5 },
+    { name: 'Pasta salad', perPerson: 5 },
     { name: 'Dessert', perPerson: 0 },
     { name: 'Charcuterie board', perPerson: 0 },
   ],
@@ -57,6 +57,9 @@ export const pickPackage = (pricing, eventType) => {
   return pkgs.find((p) => p.match && type.includes(String(p.match).toLowerCase())) || pkgs[pkgs.length - 1]
 }
 
+// Add-on names that were renamed: older pricing and events still say "Pasta".
+export const addOnName = (name) => (/^\s*pasta\s*$/i.test(String(name || '')) ? 'Pasta salad' : String(name || ''))
+
 // Build quote lines from the event and pricing. Returns { lines, warnings }.
 // A line is { label, qty, price }; its amount is qty * price.
 export const buildLines = (event, pricing) => {
@@ -87,12 +90,13 @@ export const buildLines = (event, pricing) => {
 
   if (!guests) warnings.push('No guest count yet, so per-person add-ons are left out.')
 
-  for (const name of event.addOns || []) {
-    const addOn = (pricing.addOns || []).find((a) => a.name.toLowerCase() === String(name).toLowerCase())
+  for (const raw of event.addOns || []) {
+    const name = addOnName(raw)
+    const addOn = (pricing.addOns || []).find((a) => addOnName(a.name).toLowerCase() === name.toLowerCase())
     if (!addOn || n(addOn.perPerson) <= 0) {
       warnings.push(`${name}: no per-person price set under Pricing.`)
     } else if (guests) {
-      lines.push({ label: `${addOn.name} (per person)`, qty: guests, price: n(addOn.perPerson) })
+      lines.push({ label: `${addOnName(addOn.name)} (per person)`, qty: guests, price: n(addOn.perPerson) })
     }
   }
 
