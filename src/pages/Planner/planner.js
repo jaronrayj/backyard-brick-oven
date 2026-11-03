@@ -587,15 +587,25 @@ export function mountPlanner(root, deps) {
       add('yeast', (per.yeast * balls * (Number(t.yeast) || 100)) / 100 + pool * POOLISH_YEAST_PER_G);
       ['flour', 'salt', 'yeast'].forEach((k) => { if (!from.has(k)) from.set(k, new Set()); from.get(k).add('dough'); });
     }
+    /* F'Zookies come from their own tab (REF.dessert), in store packs, not from the menu toppings. */
+    const zookies = Object.entries(PLAN.counts).filter(([k]) => isDessert(k)).reduce((a, [, v]) => a + (Number(v) || 0), 0);
+    const dessertRows = REF.dessert && zookies ? REF.dessert.items.map((d) => {
+      const packs = (d.share * zookies) / REF.dessert.batch;
+      const buy = Math.max(1, Math.ceil(packs - 0.02));
+      const tenth = Math.round(packs * 10) / 10;
+      const uses = packs < 0.95 ? 'uses about ' + Math.max(1, Math.round(packs * 100)) + '% of it' : 'uses about ' + tenth + (tenth === 1 ? ' pack' : ' packs');
+      return [d.item, buy + (buy === 1 ? ' pack' : ' packs'), uses];
+    }) : [];
     pizzaRows().forEach((r) => {
       const n = PLAN.counts[r.pizza] || 0;
       if (!n) return;
+      if (REF.dessert && isDessert(r.pizza)) return;
       if (r.grams == null) { missing.add(r.topping); return; }
       add(r.topping, r.grams * n);
       if (r.sauce) { if (!from.has(r.topping)) from.set(r.topping, new Set()); from.get(r.topping).add(r.sauce); makes.set(r.sauce, (makes.get(r.sauce) || 0) + r.grams * n); }
     });
     renderExtras(box);
-    if (!totals.size && !missing.size) { box.append(el('p', 'empty', 'Add a service and pick pizzas on the Plan tab to build the rest of the list.')); renderPrep(); return; }
+    if (!totals.size && !missing.size && !dessertRows.length) { box.append(el('p', 'empty', 'Add a service and pick pizzas on the Plan tab to build the rest of the list.')); renderPrep(); return; }
 
     /* Group by store section, in the order sections first appear on the Store sections tab. */
     const sec = new Map();
@@ -636,6 +646,7 @@ export function mountPlanner(root, deps) {
       });
     };
     [...order, ...[...groups.keys()].filter((s) => !order.includes(s) && s !== 'Other'), 'Other'].forEach((s) => group(s, groups.get(s) || [], 'buy'));
+    group('For ' + zookies + " F'Zookies", dessertRows, 'buy|zookie');
     renderPrep();
   };
 

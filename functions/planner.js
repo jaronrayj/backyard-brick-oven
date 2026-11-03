@@ -33,6 +33,16 @@ const RANGES = {
   sections: [MENU, "Store sections!A1:C"],
 };
 
+// F'Zookie shopping, from the money tracker's "f'zookie 50" tab: item names
+// (column A), the share of a store pack one batch uses (column C) and the batch
+// size (G6). The cost columns aren't read. Optional: a missing tab just leaves it out.
+const DESSERT_TAB = "'f''zookie 50'";
+const DESSERT_RANGES = {
+  dessertItems: [TRACKER, `${DESSERT_TAB}!A2:A30`],
+  dessertShare: [TRACKER, `${DESSERT_TAB}!C2:C30`],
+  dessertBatch: [TRACKER, `${DESSERT_TAB}!G6`],
+};
+
 const SHEETS_READ = "https://www.googleapis.com/auth/spreadsheets.readonly";
 
 const readRange = async (token, [spreadsheetId, range]) => {
@@ -128,7 +138,17 @@ export const buildRef = (v) => {
       .filter((r) => r[0] && r[1])
       .map((r) => ({ ingredient: String(r[0]).trim(), section: String(r[1]).trim(), buyAs: String(r[2] || "").trim() })),
     nights,
+    dessert: dessertFrom(v),
   };
+};
+
+// { batch: 45, items: [{ item: "butter", share: 0.25 }, ...] } or null.
+export const dessertFrom = (v) => {
+  const items = (v.dessertItems || [])
+    .map((row, i) => ({ item: String(row[0] || "").trim(), share: (num((v.dessertShare || [])[i]?.[0]) || 0) / 100 }))
+    .filter((x) => x.item && x.share > 0);
+  const batch = num(v.dessertBatch?.[0]?.[0]);
+  return items.length && batch > 0 ? { batch, items } : null;
 };
 
 // Read every range, and write planner/ref only when something changed.
@@ -152,6 +172,12 @@ const refresh = async () => {
   keys.forEach((k, i) => {
     values[k] = answers[i];
   });
+  for (const [k, range] of Object.entries(DESSERT_RANGES)) {
+    values[k] = await readRange(token, range).catch((e) => {
+      logger.warn(`F'Zookie tab not read (${k}): ${e.message}`);
+      return [];
+    });
+  }
   values.pizzas = (await getDatabase().ref("pizzas").get()).val();
   const ref = buildRef(values);
   const docRef = getFirestore().doc("planner/ref");

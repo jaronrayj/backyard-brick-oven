@@ -57,6 +57,14 @@ then half pounds, rounded up). "Add an item" puts your own things on it
 (`plan.extras`: name and an optional amount), shown first under "Added" and
 kept until you remove them with ✕.
 
+**F'Zookies.** Type how many F'Zookies on the Plan tab, and the Shopping tab
+adds a "For N F'Zookies" group from the money tracker's "f'zookie 50" tab:
+each item there (column A) with the share of a store pack one batch uses
+(column C, like 25%) and the batch size (G6, 45). It shows how many packs to
+buy and how much of them you'll use, for example "butter: 1 pack, uses about
+33% of it". Cost columns aren't read. Add a row to that tab and it shows up
+after the next refresh.
+
 ## What to bring
 
 The Bring tab's "What to bring" list has two parts. The top comes from the
