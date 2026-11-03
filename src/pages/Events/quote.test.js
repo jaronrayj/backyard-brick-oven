@@ -52,6 +52,16 @@ describe('quote', () => {
     expect(totals({ lines }).total).toBe(375 + 15 * 15)
   })
 
+  test('a reception package matches on the wedding part', () => {
+    const pricing = {
+      ...DEFAULT_PRICING,
+      packages: [{ key: 'reception', name: 'Reception', match: 'reception', basePrice: 900, includedGuests: 100 }, ...DEFAULT_PRICING.packages],
+    }
+    const at = (weddingPart) => buildLines({ eventType: 'Wedding', weddingPart, guests: 80 }, pricing).lines[0].label
+    expect(at('Reception')).toBe('Reception package (up to 100 guests)')
+    expect(at('Luncheon or dinner')).toBe('Wedding package (up to 100 guests)')
+  })
+
   test('quote text has the total', () => {
     const event = { name: 'Sam', eventType: 'Wedding', date: '2027-06-12', guests: 100 }
     const { quote } = newQuote(event, DEFAULT_PRICING)

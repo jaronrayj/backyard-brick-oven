@@ -11,6 +11,7 @@ const NOTIFY_TO = "jj.backyardbrickoven@gmail.com";
 const FIELDS = [
   ["name", "Name", true],
   ["event_type", "Type of Event", true],
+  ["wedding_part", "Wedding Part", false],
   ["event_for", "Who's It For", true],
   ["event_date", "Event Date", true],
   ["event_location", "Event Location", true],

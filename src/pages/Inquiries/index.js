@@ -30,6 +30,9 @@ const todayISO = () => {
 // Shape the form into the payload the sendInquiry function expects.
 // The live function requires `event_type` and `contact`, so add-ons are folded
 // into the event type and email/phone are joined into `contact`.
+// Keep in sync with WEDDING_PARTS in src/pages/Events/index.js.
+const WEDDING_PARTS = ['Reception', 'Luncheon or dinner', 'Both', 'Not sure yet']
+
 const buildPayload = (form) => {
   const fd = new FormData(form)
   const addOns = fd.getAll('add_ons')
@@ -456,9 +459,23 @@ const Inquiries = () => {
                 </label>
               )}
               {eventType === 'Wedding' && (
-                <p className="mb-3 -mt-1 text-xs text-gray-600">
-                  Weddings start at $1,500 for up to 100 guests.
-                </p>
+                <>
+                  <label className="block mb-3">
+                    <span className="text-sm text-gray-700">Which part of the wedding?</span>
+                    <select name="wedding_part" required defaultValue="" className="w-full mt-1 p-2 rounded border text-gray-800 bg-white">
+                      <option value="" disabled>Choose one</option>
+                      {WEDDING_PARTS.map((part) => (
+                        <option key={part}>{part}</option>
+                      ))}
+                    </select>
+                  </label>
+                  {wedding && (
+                    <p className="mb-3 -mt-1 text-xs text-gray-600">
+                      Weddings start at {dollars(wedding.basePrice)}
+                      {wedding.includedGuests ? ` for up to ${wedding.includedGuests} guests` : ''}.
+                    </p>
+                  )}
+                </>
               )}
               {showAddOns && (
                 <fieldset className="mb-3">

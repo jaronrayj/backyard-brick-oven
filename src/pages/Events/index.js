@@ -37,6 +37,33 @@ import {
 // Admins only: emails in `plannerAccess/team` admins (the Firestore rules enforce it).
 // See docs/events.md.
 
+// Which part of a wedding we're feeding (asked on the inquiry form). Keep in sync with src/pages/Inquiries.
+const WEDDING_PARTS = ['Reception', 'Luncheon or dinner', 'Both', 'Not sure yet']
+const isWedding = (e) => /wedding/i.test(e.eventType || '')
+
+// Rough pizzas for a wedding from the planner's per-guest settings: a reception
+// uses the wedding rate, a luncheon or dinner (or both) the "pizza is the meal" rate.
+const settingFrom = (ref, name, fallback) => {
+  const row = ((ref && ref.settings) || []).find((x) => String(x.setting).toLowerCase() === name)
+  return row && row.value > 0 ? row.value : fallback
+}
+const pizzaEstimate = (event, ref) => {
+  const guests = Number(event.guests) || 0
+  if (!guests || !isWedding(event) || !event.weddingPart) return null
+  const meal = /luncheon|dinner|both/i.test(event.weddingPart)
+  const per = meal ? settingFrom(ref, 'pizzas per guest pizza only', 0.8) : settingFrom(ref, 'pizzas per guest wedding', 0.5)
+  return { per, pizzas: Math.ceil(guests * per), meal }
+}
+const PizzaNote = ({ event, plannerRef }) => {
+  const est = pizzaEstimate(event, plannerRef)
+  if (!est) return null
+  return (
+    <p className="text-sm text-gray-700">
+      About {est.pizzas} pizzas ({est.per} per guest, {est.meal ? 'pizza is the meal' : 'reception'})
+    </p>
+  )
+}
+
 const ADD_ONS = ['Salad', 'Pasta', 'Dessert', 'Charcuterie board']
 const EVENT_TYPES = [
   'Wedding',
@@ -294,6 +321,7 @@ const blankEvent = () => ({
   email: '',
   phone: '',
   eventType: '',
+  weddingPart: '',
   eventFor: '',
   date: '',
   time: '',
@@ -308,7 +336,7 @@ const blankEvent = () => ({
   source: 'manual',
 })
 
-const EventEditor = ({ id, initial, pricing, mixLead, onClose }) => {
+const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => {
   const [event, setEvent] = useState(initial)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -423,6 +451,19 @@ const EventEditor = ({ id, initial, pricing, mixLead, onClose }) => {
         <Field label="Event type">
           <ComboBox className={input} value={event.eventType} onChange={(v) => set({ eventType: v })} options={EVENT_TYPES} placeholder="Pick or type" />
         </Field>
+        {isWedding(event) && (
+          <div>
+            <Field label="Which part of the wedding">
+              <select className={input} value={event.weddingPart || ''} onChange={(e) => set({ weddingPart: e.target.value })}>
+                <option value="">Not asked</option>
+                {WEDDING_PARTS.map((part) => (
+                  <option key={part}>{part}</option>
+                ))}
+              </select>
+            </Field>
+            <PizzaNote event={event} plannerRef={plannerRef} />
+          </div>
+        )}
         <Field label="Email">
           <input className={input} type="email" value={event.email} onChange={(e) => set({ email: e.target.value })} />
         </Field>
@@ -745,7 +786,7 @@ const OPEN_GROUPS = [
 
 const byDate = (a, b) => String(a.date || '9999').localeCompare(String(b.date || '9999'))
 
-const EventRow = ({ event, mixLead, onOpen }) => {
+const EventRow = ({ event, mixLead, plannerRef, onOpen }) => {
   const t = event.quote ? totals(event.quote) : null
   const days = daysUntil(event.date)
   return (
@@ -759,7 +800,7 @@ const EventRow = ({ event, mixLead, onOpen }) => {
           <div>
             <p className="font-semibold">{event.name || 'Unnamed'}</p>
             <p className="text-sm text-gray-600">
-              {[event.eventType, event.guests ? `${event.guests} guests` : ''].filter(Boolean).join(' · ')}
+              {[event.eventType, isWedding(event) ? event.weddingPart : '', event.guests ? `${event.guests} guests` : ''].filter(Boolean).join(' · ')}
             </p>
           </div>
           <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${STATUS_COLORS[event.status] || ''}`}>{statusLabel(event.status)}</span>
@@ -771,6 +812,7 @@ const EventRow = ({ event, mixLead, onOpen }) => {
         </p>
         <WeatherNote event={event} compact />
         <DoughNote event={event} mixLead={mixLead} />
+        <PizzaNote event={event} plannerRef={plannerRef} />
         {t && <p className="text-sm font-medium">Quote {money(t.total)}</p>}
       </button>
     </li>
@@ -787,6 +829,7 @@ const Events = () => {
   const [pricing, setPricing] = useState(DEFAULT_PRICING)
   const [reminders, setReminders] = useState(DEFAULT_REMINDERS)
   const [mixLead, setMixLead] = useState(2)
+  const [plannerRef, setPlannerRef] = useState(null)
   const [filter, setFilter] = useState('open')
   const [editing, setEditing] = useState(null) // { id, event } | 'settings' | null
 
@@ -795,7 +838,14 @@ const Events = () => {
     const unsubs = [
       onSnapshot(collection(db, 'events'), (snap) => setEvents(snap.docs.map((d) => ({ id: d.id, ...d.data() })))),
       onSnapshot(doc(db, 'eventSettings', 'pricing'), (snap) => snap.exists() && setPricing({ ...DEFAULT_PRICING, ...snap.data() })),
-      onSnapshot(doc(db, 'planner', 'ref'), (snap) => setMixLead(mixLeadFrom(snap.data())), () => {}),
+      onSnapshot(
+        doc(db, 'planner', 'ref'),
+        (snap) => {
+          setMixLead(mixLeadFrom(snap.data()))
+          setPlannerRef(snap.data() || null)
+        },
+        () => {}
+      ),
       onSnapshot(doc(db, 'eventSettings', 'reminders'), (snap) => snap.exists() && setReminders({ ...DEFAULT_REMINDERS, ...snap.data() })),
     ]
     return () => unsubs.forEach((u) => u())
@@ -809,7 +859,7 @@ const Events = () => {
   }, [events, filter])
 
   const row = (e) => (
-    <EventRow key={e.id} event={e} mixLead={mixLead} onOpen={() => setEditing({ id: e.id, event: { ...blankEvent(), ...e } })} />
+    <EventRow key={e.id} event={e} mixLead={mixLead} plannerRef={plannerRef} onOpen={() => setEditing({ id: e.id, event: { ...blankEvent(), ...e } })} />
   )
 
   if (loading) return <Shell><p className="text-gray-500">Loading…</p></Shell>
@@ -850,7 +900,7 @@ const Events = () => {
   if (editing) {
     return (
       <Shell>
-        <EventEditor id={editing.id} initial={editing.event} pricing={pricing} mixLead={mixLead} onClose={() => setEditing(null)} />
+        <EventEditor id={editing.id} initial={editing.event} pricing={pricing} mixLead={mixLead} plannerRef={plannerRef} onClose={() => setEditing(null)} />
       </Shell>
     )
   }
