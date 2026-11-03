@@ -52,7 +52,6 @@ describe('quote', () => {
     expect(totals({ lines }).total).toBe(375 + 15 * 15)
   })
 
-<<<<<<< HEAD
   test('a reception package matches on the wedding part', () => {
     const pricing = {
       ...DEFAULT_PRICING,
@@ -61,12 +60,12 @@ describe('quote', () => {
     const at = (weddingPart) => buildLines({ eventType: 'Wedding', weddingPart, guests: 80 }, pricing).lines[0].label
     expect(at('Reception')).toBe('Reception package (up to 100 guests)')
     expect(at('Luncheon or dinner')).toBe('Wedding package (up to 100 guests)')
-=======
+  })
+
   test('old "Pasta" add-ons and pricing still match Pasta salad', () => {
     const pricing = { ...DEFAULT_PRICING, addOns: [{ name: 'Pasta', perPerson: 5 }] }
     const { lines } = buildLines({ eventType: 'Wedding', guests: 10, addOns: ['Pasta'] }, pricing)
     expect(lines).toContainEqual({ label: 'Pasta salad (per person)', qty: 10, price: 5 })
->>>>>>> a800e58 (Say 'Pasta salad' instead of 'Pasta')
   })
 
   test('quote text has the total', () => {

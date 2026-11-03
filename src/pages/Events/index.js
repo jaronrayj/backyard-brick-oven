@@ -13,12 +13,8 @@ import { db, signInWithGoogle } from '../../utils/firebase'
 import useEventAdmin from './useEventAdmin'
 import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 import ComboBox from '../../components/ComboBox'
-<<<<<<< HEAD
 import Report from './Report'
-import { DEFAULT_PRICING, STATUSES, money, newQuote, prettyDate, publicPricing, quoteText, totals, travelZones } from './quote'
-=======
 import { DEFAULT_PRICING, STATUSES, addOnName, money, newQuote, prettyDate, publicPricing, quoteText, totals, travelZones } from './quote'
->>>>>>> a800e58 (Say 'Pasta salad' instead of 'Pasta')
 import {
   DEFAULT_REMINDERS,
   TIME_CHOICES,
@@ -41,7 +37,6 @@ import {
 // Admins only: emails in `plannerAccess/team` admins (the Firestore rules enforce it).
 // See docs/events.md.
 
-<<<<<<< HEAD
 // Which part of a wedding we're feeding (asked on the inquiry form). Keep in sync with src/pages/Inquiries.
 const WEDDING_PARTS = ['Reception', 'Luncheon or dinner', 'Both', 'Not sure yet']
 const isWedding = (e) => /wedding/i.test(e.eventType || '')
@@ -69,10 +64,7 @@ const PizzaNote = ({ event, plannerRef }) => {
   )
 }
 
-const ADD_ONS = ['Salad', 'Pasta', 'Dessert', 'Charcuterie board']
-=======
 const ADD_ONS = ['Salad', 'Pasta salad', 'Dessert', 'Charcuterie board']
->>>>>>> a800e58 (Say 'Pasta salad' instead of 'Pasta')
 const EVENT_TYPES = [
   'Wedding',
   'Birthday or family party',
@@ -344,14 +336,9 @@ const blankEvent = () => ({
   source: 'manual',
 })
 
-<<<<<<< HEAD
 const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => {
-  const [event, setEvent] = useState(initial)
-=======
-const EventEditor = ({ id, initial, pricing, mixLead, onClose }) => {
   // Older events say "Pasta"; show and save them as "Pasta salad".
   const [event, setEvent] = useState(() => ({ ...initial, addOns: (initial.addOns || []).map(addOnName) }))
->>>>>>> a800e58 (Say 'Pasta salad' instead of 'Pasta')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
