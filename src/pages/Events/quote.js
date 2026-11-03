@@ -26,7 +26,14 @@ export const DEFAULT_PRICING = {
     { name: 'Dessert', perPerson: 0 },
     { name: 'Charcuterie board', perPerson: 0 },
   ],
-  travel: { freeMiles: 0, perMile: 0 },
+  // Travel by zone, one-way miles from Bountiful. Past the last zone, quote it by hand.
+  travel: {
+    zones: [
+      { upTo: 25, fee: 0 },
+      { upTo: 50, fee: 50 },
+      { upTo: 75, fee: 100 },
+    ],
+  },
   taxRate: 0, // percent, e.g. 7.25
   depositPct: 0, // percent of total due to book
   footer: 'Includes setup, continuous service and cleanup. Date is held once the deposit is paid.',
@@ -88,13 +95,49 @@ export const buildLines = (event, pricing) => {
     }
   }
 
-  const travel = pricing.travel || {}
-  const billable = n(event.miles) - n(travel.freeMiles)
-  if (billable > 0 && n(travel.perMile) > 0) {
-    lines.push({ label: `Travel (${billable} mi beyond ${n(travel.freeMiles)})`, qty: billable, price: n(travel.perMile) })
+  const miles = n(event.miles)
+  if (miles > 0) {
+    const zones = travelZones(pricing)
+    const i = zones.findIndex((z) => miles <= z.upTo)
+    if (i < 0) {
+      if (zones.length) warnings.push(`${miles} mi is past your last travel zone (${zones[zones.length - 1].upTo} mi). Add travel by hand.`)
+    } else if (zones[i].fee > 0) {
+      lines.push({ label: `Travel (${i ? zones[i - 1].upTo : 0}–${zones[i].upTo} mi)`, qty: 1, price: zones[i].fee })
+    }
   }
 
   return { lines, warnings }
+}
+
+// Travel zones sorted by distance. Old per-mile settings fall back to the default zones.
+export const travelZones = (pricing) => {
+  const zones = (pricing && pricing.travel && pricing.travel.zones) || DEFAULT_PRICING.travel.zones
+  return zones
+    .map((z) => ({ upTo: n(z.upTo), fee: n(z.fee) }))
+    .filter((z) => z.upTo > 0)
+    .sort((a, b) => a.upTo - b.upTo)
+}
+
+// "Free within 25 miles · $50 up to 50 miles · $100 up to 75 miles"
+export const travelText = (zones) =>
+  zones
+    .map((z, i) => (z.fee > 0 ? `$${z.fee.toLocaleString('en-US')} up to ${z.upTo} miles` : i === 0 ? `Free within ${z.upTo} miles` : `Free up to ${z.upTo} miles`))
+    .join(' · ')
+
+// What the public website shows, copied to Firestore `publicSettings/site`
+// whenever pricing is saved (eventSettings itself is admin-only).
+export const publicPricing = (pricing) => {
+  const pkg = (key) => {
+    const p = (pricing.packages || []).find((x) => x.key === key)
+    return p ? { name: p.name, basePrice: n(p.basePrice), includedGuests: n(p.includedGuests), extraGuestPrice: n(p.extraGuestPrice) } : null
+  }
+  const addOnPrices = (pricing.addOns || []).map((a) => n(a.perPerson)).filter((v) => v > 0)
+  return {
+    wedding: pkg('wedding'),
+    party: pkg('party'),
+    addOnRange: addOnPrices.length ? [Math.min(...addOnPrices), Math.max(...addOnPrices)] : null,
+    travelZones: travelZones(pricing),
+  }
 }
 
 const round2 = (v) => Math.round(v * 100) / 100

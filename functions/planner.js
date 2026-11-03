@@ -197,6 +197,30 @@ export const plannerCalendar = onCall({ invoker: "public" }, async (request) => 
   }
 });
 
+// Next few Pizza Fridays for the home page. Public (no sign-in), so it returns
+// only dates and times of entries titled "Pizza Friday", nothing else from the
+// calendar. Cached for 15 minutes per instance.
+let fridaysCache = { at: 0, dates: null };
+export const upcomingPizzaFridays = onCall({ invoker: "public" }, async () => {
+  if (fridaysCache.dates && Date.now() - fridaysCache.at < 15 * 60000) return { dates: fridaysCache.dates };
+  const now = new Date();
+  const from = utahDate(now);
+  const to = utahDate(new Date(now.getTime() + 60 * 86400000));
+  try {
+    const { items } = await calendarBetween(from, to);
+    const dates = items
+      .filter((c) => c.date >= from && /pizza\s*friday/i.test(c.title || "") && !/cancel/i.test(c.title || ""))
+      .sort((a, b) => (a.date < b.date ? -1 : 1))
+      .slice(0, 3)
+      .map(({ date, time }) => ({ date, time: time || "" }));
+    fridaysCache = { at: Date.now(), dates };
+    return { dates };
+  } catch (e) {
+    logger.error("Upcoming Pizza Fridays read failed", e);
+    return { dates: [] };
+  }
+});
+
 // Keep the copy current without anyone tapping refresh.
 export const refreshPlannerHourly = onSchedule(
   { schedule: "every 60 minutes", timeZone: "America/Denver" },

@@ -1,4 +1,4 @@
-import { buildLines, DEFAULT_PRICING, newQuote, pickPackage, quoteText, totals } from './quote'
+import { buildLines, DEFAULT_PRICING, newQuote, pickPackage, quoteText, totals, travelText, travelZones } from './quote'
 import { addDays, doughDates, mixLeadFrom, placeCandidates, weatherFlags } from './schedule'
 
 describe('quote', () => {
@@ -34,10 +34,17 @@ describe('quote', () => {
     expect(t).toEqual({ subtotal: 1000, discount: 100, tax: 65.25, total: 965.25, deposit: 241.31, balance: 723.94 })
   })
 
-  test('travel beyond the free miles', () => {
-    const pricing = { ...DEFAULT_PRICING, travel: { freeMiles: 20, perMile: 2 } }
-    const { lines } = buildLines({ eventType: 'Wedding', guests: 80, miles: 35 }, pricing)
-    expect(lines[lines.length - 1]).toEqual({ label: 'Travel (15 mi beyond 20)', qty: 15, price: 2 })
+  test('travel by zone', () => {
+    const at = (miles) => buildLines({ eventType: 'Wedding', guests: 80, miles }, DEFAULT_PRICING)
+    expect(at(20).lines.some((l) => l.label.startsWith('Travel'))).toBe(false)
+    expect(at(40).lines[at(40).lines.length - 1]).toEqual({ label: 'Travel (25–50 mi)', qty: 1, price: 50 })
+    expect(at(75).lines[at(75).lines.length - 1]).toEqual({ label: 'Travel (50–75 mi)', qty: 1, price: 100 })
+    expect(at(90).warnings.join(' ')).toMatch(/past your last travel zone/)
+  })
+
+  test('travel text and old per-mile settings', () => {
+    expect(travelText(travelZones(DEFAULT_PRICING))).toBe('Free within 25 miles · $50 up to 50 miles · $100 up to 75 miles')
+    expect(travelZones({ travel: { freeMiles: 20, perMile: 2 } })).toEqual(DEFAULT_PRICING.travel.zones)
   })
 
   test('quote text has the total', () => {
