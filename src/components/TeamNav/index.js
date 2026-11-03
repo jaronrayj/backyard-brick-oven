@@ -6,6 +6,7 @@ import {
   ChartBarIcon,
   CheckCircleIcon,
   ClipboardListIcon,
+  GlobeAltIcon,
   LogoutIcon,
 } from '@heroicons/react/outline'
 import logo from '../../assets/BrickovenLogo.png'
@@ -13,7 +14,7 @@ import useTeamAccess from '../../utils/useTeamAccess'
 import { logout } from '../../utils/firebase'
 import Notifications from '../Notifications'
 
-// The team bar on every team page: logo, notifications bell, sign out, and
+// The team bar on every team page: logo, a link to the website, notifications bell, sign out, and
 // one tab per tool. Phones get the tabs along the bottom of the screen;
 // wider screens get them in the bar.
 const ICONS = {
@@ -74,6 +75,14 @@ const TeamNav = () => {
             </nav>
           )}
           <div className="ml-auto flex items-center gap-1">
+            <Link
+              to="/"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100"
+              title="Go to the main website"
+            >
+              <GlobeAltIcon className="h-5 w-5" aria-hidden="true" />
+              <span>Website</span>
+            </Link>
             {role === 'admin' && <Notifications />}
             {user && (
               <button

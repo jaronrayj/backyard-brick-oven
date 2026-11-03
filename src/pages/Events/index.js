@@ -12,6 +12,7 @@ import {
 import { db, signInWithGoogle } from '../../utils/firebase'
 import useEventAdmin from './useEventAdmin'
 import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
+import ComboBox from '../../components/ComboBox'
 import { DEFAULT_PRICING, STATUSES, money, newQuote, prettyDate, quoteText, totals } from './quote'
 import {
   DEFAULT_REMINDERS,
@@ -311,6 +312,21 @@ const EventEditor = ({ id, initial, pricing, mixLead, onClose }) => {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const set = (patch) => setEvent((e) => ({ ...e, ...patch }))
 
+  // Stage buttons save right away on an existing event (the rest waits for Save).
+  const [stageNote, setStageNote] = useState('')
+  const setStage = async (status) => {
+    if (status === event.status) return
+    set({ status })
+    if (!id) return
+    setStageNote('Saving…')
+    try {
+      await updateDoc(doc(db, 'events', id), { status, updatedAt: serverTimestamp() })
+      setStageNote(`Moved to ${statusLabel(status)}`)
+    } catch (e) {
+      setStageNote("Couldn't move it. Check you're signed in as an admin.")
+    }
+  }
+
   const toggleAddOn = (name) =>
     set({ addOns: event.addOns.includes(name) ? event.addOns.filter((a) => a !== name) : [...event.addOns, name] })
 
@@ -376,15 +392,25 @@ const EventEditor = ({ id, initial, pricing, mixLead, onClose }) => {
 
   return (
     <div className={`${ui.card} sm:p-6 space-y-5`}>
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h2 className="text-xl font-bold">{id ? event.name || 'Event' : 'New event'}</h2>
-        <select className={`${input} w-auto`} value={event.status} onChange={(e) => set({ status: e.target.value })}>
+      <h2 className="text-xl font-bold">{id ? event.name || 'Event' : 'New event'}</h2>
+      <div className="space-y-1">
+        <p className="text-xs text-gray-600">Stage{id ? ' (saves when you tap)' : ''}</p>
+        <div className="flex flex-wrap gap-1" role="group" aria-label="Stage">
           {STATUSES.map((s) => (
-            <option key={s.key} value={s.key}>
+            <button
+              key={s.key}
+              type="button"
+              aria-pressed={event.status === s.key}
+              onClick={() => setStage(s.key)}
+              className={`px-3 py-1.5 rounded-full text-sm border ${
+                event.status === s.key ? `${STATUS_COLORS[s.key] || 'bg-gray-900 text-white'} border-transparent font-semibold` : 'bg-white border-gray-300 text-gray-700 hover:border-gray-900'
+              }`}
+            >
               {s.label}
-            </option>
+            </button>
           ))}
-        </select>
+        </div>
+        {stageNote && <p className="text-xs text-gray-500">{stageNote}</p>}
       </div>
 
       <section className="grid sm:grid-cols-2 gap-3">
@@ -392,12 +418,7 @@ const EventEditor = ({ id, initial, pricing, mixLead, onClose }) => {
           <input className={input} value={event.name} onChange={(e) => set({ name: e.target.value })} />
         </Field>
         <Field label="Event type">
-          <input className={input} list="event-types" value={event.eventType} onChange={(e) => set({ eventType: e.target.value })} />
-          <datalist id="event-types">
-            {EVENT_TYPES.map((t) => (
-              <option key={t} value={t} />
-            ))}
-          </datalist>
+          <ComboBox className={input} value={event.eventType} onChange={(v) => set({ eventType: v })} options={EVENT_TYPES} placeholder="Pick or type" />
         </Field>
         <Field label="Email">
           <input className={input} type="email" value={event.email} onChange={(e) => set({ email: e.target.value })} />
@@ -657,10 +678,15 @@ const Settings = ({ pricing, reminders, mixLead, onClose }) => {
 
 // ---------- List ----------
 
+// Two lists: what's still in play (grouped by stage) and what's finished.
 const FILTERS = [
   { key: 'open', label: 'Open', test: (e) => ['inquiry', 'quoted', 'booked'].includes(e.status) },
-  ...STATUSES.map((s) => ({ key: s.key, label: s.label, test: (e) => e.status === s.key })),
-  { key: 'all', label: 'All', test: () => true },
+  { key: 'past', label: 'Done & lost', test: (e) => !['inquiry', 'quoted', 'booked'].includes(e.status) },
+]
+const OPEN_GROUPS = [
+  { key: 'inquiry', title: 'New inquiries', hint: 'Open one to write a quote.' },
+  { key: 'quoted', title: 'Quoted', hint: 'Waiting to hear back.' },
+  { key: 'booked', title: 'Booked', hint: 'Wrap-up marks these done afterward.' },
 ]
 
 const byDate = (a, b) => String(a.date || '9999').localeCompare(String(b.date || '9999'))
@@ -725,8 +751,12 @@ const Events = () => {
   const shown = useMemo(() => {
     const f = FILTERS.find((x) => x.key === filter)
     const list = events.filter(f.test).sort(byDate)
-    return ['done', 'lost', 'all'].includes(filter) ? list.reverse() : list
+    return filter === 'past' ? list.reverse() : list
   }, [events, filter])
+
+  const row = (e) => (
+    <EventRow key={e.id} event={e} mixLead={mixLead} onOpen={() => setEditing({ id: e.id, event: { ...blankEvent(), ...e } })} />
+  )
 
   if (loading) return <Shell><p className="text-gray-500">Loading…</p></Shell>
   if (!user) {
@@ -791,18 +821,27 @@ const Events = () => {
       </div>
 
       {shown.length === 0 ? (
-        <p className={`${ui.card} text-gray-500`}>Nothing here yet. Website inquiries show up here on their own.</p>
+        <p className={`${ui.card} text-gray-500`}>
+          {filter === 'open' ? 'Nothing open. Website inquiries show up here on their own.' : 'Nothing finished yet.'}
+        </p>
+      ) : filter === 'open' ? (
+        OPEN_GROUPS.map((g) => {
+          const list = shown.filter((e) => e.status === g.key)
+          if (!list.length) return null
+          return (
+            <section key={g.key} className="space-y-2">
+              <div className="flex items-baseline justify-between gap-2 pt-2">
+                <h2 className="font-semibold text-gray-900">
+                  {g.title} <span className="text-gray-500 font-normal">{list.length}</span>
+                </h2>
+                <span className="text-xs text-gray-500">{g.hint}</span>
+              </div>
+              <ul className="space-y-3">{list.map(row)}</ul>
+            </section>
+          )
+        })
       ) : (
-        <ul className="space-y-3">
-          {shown.map((e) => (
-            <EventRow
-              key={e.id}
-              event={e}
-              mixLead={mixLead}
-              onOpen={() => setEditing({ id: e.id, event: { ...blankEvent(), ...e } })}
-            />
-          ))}
-        </ul>
+        <ul className="space-y-3">{shown.map(row)}</ul>
       )}
     </Shell>
   )
