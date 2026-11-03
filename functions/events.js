@@ -25,7 +25,7 @@ export const mixLeadFrom = (ref) => {
 
 // ---------- Inquiry -> event ----------
 
-// The inquiry form folds add-ons into the type ("Wedding + Salad, Pasta") and
+// The inquiry form folds add-ons into the type ("Wedding + Salad, Pasta salad") and
 // joins email and phone into `contact` ("a@b.com / 801…").
 export const inquiryToEvent = (body) => {
   const s = (k) => String(body[k] || "").trim();
