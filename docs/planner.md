@@ -75,4 +75,13 @@ a count of one per so many guests or dough balls. Only items for the kinds of
 services on the Plan tab show; "Edit list" shows all of them. Older items
 without a tag count as "Every service".
 
+The list is split by where things are packed from: **At home** and **At the
+commissary** (`plan.where`, keyed by item). "Edit list" gives every item,
+including dough, each sauce and each topping, a Home / Commissary picker;
+anything not set yet shows under "Not sorted yet". Toppings are one group with
+a checkbox per topping, and ticking "Toppings" ticks them all at once.
+↑ ↓ on each row put things in packing order within each section
+(`plan.bringOrder`), on the list itself and in Edit list. The Toppings group
+moves as one, and each topping can be moved within it.
+
 Hosting deploys on merge to `main` as before.
