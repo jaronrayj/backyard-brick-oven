@@ -68,6 +68,7 @@ export const saveInquiryEvent = async (body) => {
       .collection("events")
       .add({
         ...event,
+        source: "website",
         geo: geo ? { ...geo, from: event.location } : null,
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),

@@ -1,6 +1,7 @@
 import React from 'react'
 import { Helmet } from 'react-helmet-async'
 import usePublicPricing from '../../utils/usePublicPricing'
+import { track } from '../../utils/track'
 import { travelText } from '../Events/quote'
 import nightPizza from '../../assets/night_pizza.jpg'
 import pizzaParty from '../../assets/pizza_party.jpg'
@@ -69,15 +70,44 @@ const Inquiries = () => {
   const [eventType, setEventType] = React.useState('')
 
   React.useEffect(() => {
-    const handleEsc = (e) => { if (e.key === 'Escape') setShowForm(false) }
+    const handleEsc = (e) => { if (e.key === 'Escape') closeRef.current() }
     document.addEventListener('keydown', handleEsc)
     return () => document.removeEventListener('keydown', handleEsc)
   }, [])
 
+  // Tracking (utils/track.js): opened, started, sent, or closed after starting.
+  const started = React.useRef(false)
+  const sent = React.useRef(false)
+  const pricingRef = React.useRef(null)
   const openForm = (type = '') => {
     if (type) setEventType(type)
     setShowForm(true)
+    track('quote_open', type ? { event_type: type } : {})
   }
+  const closeForm = () => {
+    if (started.current && !sent.current) track('quote_abandon')
+    started.current = false
+    setShowForm(false)
+  }
+  const closeRef = React.useRef(closeForm)
+  closeRef.current = closeForm
+  const onFormFocus = () => {
+    if (started.current) return
+    started.current = true
+    track('quote_start')
+  }
+  React.useEffect(() => {
+    const node = pricingRef.current
+    if (!node || typeof IntersectionObserver === 'undefined') return undefined
+    const seen = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        track('pricing_seen')
+        seen.disconnect()
+      }
+    })
+    seen.observe(node)
+    return () => seen.disconnect()
+  }, [])
 
   const showAddOns = eventType && eventType !== 'Pizza class'
 
@@ -185,7 +215,7 @@ const Inquiries = () => {
         {/* Pricing */}
         <div className="bg-white rounded-xl p-6 md:p-8 shadow-md">
           <div className="text-center mb-6">
-            <h2 className="text-2xl md:text-3xl font-bold">Pricing</h2>
+            <h2 ref={pricingRef} className="text-2xl md:text-3xl font-bold">Pricing</h2>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -325,7 +355,7 @@ const Inquiries = () => {
       </div>
 
       {/* Quote Modal */}
-      <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 ${showForm ? '' : 'hidden'}`} onClick={() => setShowForm(false)}>
+      <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 ${showForm ? '' : 'hidden'}`} onClick={closeForm}>
           <div className="bg-white rounded-lg p-8 max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             {submitted ? (
               <div className="text-center py-8">
@@ -333,7 +363,7 @@ const Inquiries = () => {
                 <p className="text-gray-600 mb-3">We'll reply with a written quote, usually within a day or two.</p>
                 <p className="text-gray-600 mb-6">Your date is held once the deposit is paid.</p>
                 <button
-                  onClick={() => { setSubmitted(false); setShowForm(false) }}
+                  onClick={() => { setSubmitted(false); sent.current = false; started.current = false; setShowForm(false) }}
                   className="bg-amber-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-700 transition-colors duration-200"
                 >
                   Close
@@ -343,9 +373,10 @@ const Inquiries = () => {
             <>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-800">Get a Quote</h2>
-              <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+              <button onClick={closeForm} aria-label="Close" className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
             </div>
             <form
+              onFocus={onFormFocus}
               onSubmit={async (e) => {
                 e.preventDefault()
                 const form = e.target
@@ -375,8 +406,11 @@ const Inquiries = () => {
                   }
                   form.reset()
                   setEventType('')
+                  sent.current = true
+                  track('quote_submit', eventType ? { event_type: eventType } : {})
                   setSubmitted(true)
                 } catch (err) {
+                  track('quote_error')
                   setError(
                     err.message ||
                       'Could not send right now. Please text us at (801) 872-3439.'
