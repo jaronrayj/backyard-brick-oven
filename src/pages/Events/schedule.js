@@ -13,6 +13,21 @@ export const mixLeadFrom = (ref) => {
 
 export const DEFAULT_REMINDERS = {
   emails: [], // empty = the business inbox
+  doughTime: '14:00', // dough reminder email and phone notification, Utah time
+  morningTime: '07:00', // phone morning summary
+}
+
+// Choices for the reminder times: every 15 minutes from 5 am to 10 pm.
+export const TIME_CHOICES = Array.from({ length: (22 - 5) * 4 + 1 }, (_, i) => {
+  const mins = 5 * 60 + i * 15
+  const hm = `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`
+  return { hm, label: timeLabel(hm) }
+})
+// "14:00" -> "2:00 PM"
+export function timeLabel(hm) {
+  const [h, m] = String(hm || '').split(':').map(Number)
+  if (!Number.isFinite(h)) return ''
+  return `${((h + 11) % 12) + 1}:${String(m || 0).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`
 }
 
 const pad = (v) => String(v).padStart(2, '0')
