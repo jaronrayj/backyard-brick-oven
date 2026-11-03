@@ -44,6 +44,7 @@ export const inquiryToEvent = (body) => {
     email,
     phone,
     eventType: type.trim(),
+    weddingPart: s("wedding_part"),
     addOns: addOnText.split(",").map((a) => a.trim()).filter(Boolean),
     eventFor: s("event_for"),
     date: /^\d{4}-\d{2}-\d{2}$/.test(s("event_date")) ? s("event_date") : "",

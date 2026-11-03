@@ -64,7 +64,8 @@ export const buildLines = (event, pricing) => {
   const warnings = []
   const guests = Math.max(0, Math.round(n(event.guests)))
   const pkg =
-    ((pricing.packages || []).find((p) => p.key === event.packageKey)) || pickPackage(pricing, event.eventType)
+    ((pricing.packages || []).find((p) => p.key === event.packageKey)) ||
+    pickPackage(pricing, [event.eventType, event.weddingPart].filter(Boolean).join(' '))
 
   if (!pkg) {
     warnings.push('No packages set up under Pricing.')

@@ -24,6 +24,14 @@ Move an event with the Stage buttons at the top of its page; on a saved event
 they save as soon as you tap. Saving an inquiry with a new quote moves it to
 Quoted, and a wrap-up moves a booked event to Done.
 
+Wedding inquiries also ask **which part of the wedding**: Reception,
+Luncheon or dinner, Both, or Not sure yet (`weddingPart` on the event, and
+"Wedding Part" in the inquiry email). The event shows a rough pizza count from
+the planner's per-guest settings: a reception uses "pizzas per guest wedding",
+and a luncheon, dinner or both uses "pizzas per guest pizza only". To price them
+differently, add a package whose "matches" word is `reception` or `dinner`
+above the Wedding package.
+
 ## Quotes
 
 "Build quote from pricing" picks a package (the first whose "matches" word is
