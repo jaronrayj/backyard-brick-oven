@@ -13,6 +13,7 @@ import logo from '../../assets/BrickovenLogo.png'
 import useTeamAccess from '../../utils/useTeamAccess'
 import { logout } from '../../utils/firebase'
 import Notifications from '../Notifications'
+import { markTeamBrowser } from '../../utils/track'
 
 // The team bar on every team page: logo, a link to the website, notifications bell, sign out, and
 // one tab per tool. Phones get the tabs along the bottom of the screen;
@@ -48,6 +49,10 @@ const TeamNav = () => {
   const { user, role, tools } = useTeamAccess()
   const current = currentKey(tools, path)
   const showTabs = tools.length > 1
+  // A team member's browser: leave it out of the visitor counts.
+  React.useEffect(() => {
+    if (role) markTeamBrowser()
+  }, [role])
 
   return (
     <>

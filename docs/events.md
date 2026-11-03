@@ -13,6 +13,7 @@ reminders for booked events. Admins only ([team.md](team.md)).
 | Pricing (packages, add-ons, travel, tax, deposit, quote note) | Firestore `eventSettings/pricing`, edited under "Pricing" |
 | Prices on the public website (packages, add-on range, travel zones) | Firestore `publicSettings/site`, copied from Pricing on every save (anyone can read it) |
 | Next Pizza Fridays on the home page | `functions/planner.js` `upcomingPizzaFridays` (public; dates of "Pizza Friday" calendar entries only) |
+| Website visitor counts (Events → Report) | Firestore `siteStats/{YYYY-MM}`, one number per step, added by `functions/stats.js` `countStep`; the page side is `src/utils/track.js` |
 | Dough reminder recipients | Firestore `eventSettings/reminders`, edited under "Pricing" |
 | Website inquiries → events | `functions/events.js` `saveInquiryEvent`, called by `sendInquiry` (status "inquiry") |
 | Dough reminder emails | `functions/events.js` `doughReminders`, daily at 2 pm Utah time |
@@ -105,3 +106,22 @@ planner's Dough tab. Pricing only sets who gets the emails.
    prices, and who gets the dough reminder emails.
 
 Hosting deploys on merge to `main` as before.
+
+## Report
+
+Events → Report has two tables for the last six months.
+
+- **Website visitors:** visited the site → opened the inquiries page → scrolled
+  to pricing → opened the quote form → started filling it in → sent it, plus
+  how many closed the form after starting it and how many hit an error. Each
+  step counts once per visit, so refreshing doesn't inflate it. A browser that
+  has been signed in to a team page is left out (`localStorage` `bybo-team`).
+  Once about 20 people a month open the inquiries page, the report points out
+  the step where most of them stop.
+- **Inquiries and events:** added each month (website inquiries are marked
+  `source: "website"`), and how many of those have since been quoted, booked
+  or lost.
+
+The same steps also go to Google Analytics (property in `src/utils/firebase.js`),
+which adds where visitors came from and what device they used. Nothing personal
+is sent: no names, emails or form answers.

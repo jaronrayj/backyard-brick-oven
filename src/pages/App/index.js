@@ -12,6 +12,7 @@ import Events from '../Events'
 import WrapUp from '../Events/WrapUp'
 import TeamNav from '../../components/TeamNav'
 import { isTeamPath } from '../../utils/useTeamAccess'
+import { startTracking, track } from '../../utils/track'
 
 export const isSiteReadyForOrders = true
 
@@ -22,6 +23,13 @@ const Shell = () => {
   useEffect(() => {
     if (!window.location.hash) window.scrollTo(0, 0)
   }, [pathname])
+  // Visitor tracking on the public pages only (see utils/track.js).
+  useEffect(() => {
+    if (team) return
+    startTracking()
+    track('visit')
+    if (pathname.replace(/\/$/, '') === '/inquiries') track('inquiries_view')
+  }, [pathname, team])
   return (
     <div className={team ? 'min-h-screen bg-gray-50' : undefined}>
       {team ? <TeamNav /> : <Navbar />}

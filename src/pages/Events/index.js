@@ -13,6 +13,7 @@ import { db, signInWithGoogle } from '../../utils/firebase'
 import useEventAdmin from './useEventAdmin'
 import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 import ComboBox from '../../components/ComboBox'
+import Report from './Report'
 import { DEFAULT_PRICING, STATUSES, money, newQuote, prettyDate, publicPricing, quoteText, totals, travelZones } from './quote'
 import {
   DEFAULT_REMINDERS,
@@ -808,6 +809,13 @@ const Events = () => {
     )
   }
 
+  if (editing === 'report') {
+    return (
+      <Shell>
+        <Report events={events} onClose={() => setEditing(null)} />
+      </Shell>
+    )
+  }
   if (editing === 'settings') {
     return (
       <Shell>
@@ -826,6 +834,9 @@ const Events = () => {
   return (
     <Shell>
       <PageHeader title="Events" sub="Inquiries, quotes and bookings">
+        <button type="button" className={btnQuiet} onClick={() => setEditing('report')}>
+          Report
+        </button>
         <button type="button" className={btnQuiet} onClick={() => setEditing('settings')}>
           Pricing
         </button>

@@ -35,6 +35,10 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
     // Prices the public website shows (written by the Events > Pricing page).
+    // Visitor counts (written by the countStep function), for Events > Report.
+    match /siteStats/{month} {
+      allow read: if isAdmin();
+    }
     match /publicSettings/{doc} {
       allow read: if true;
       allow write: if isAdmin();
