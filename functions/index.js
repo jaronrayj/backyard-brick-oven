@@ -209,5 +209,5 @@ export { importMenuPhoto } from "./menuPhotos.js";
 export { doughReminders } from "./events.js";
 export { wrapUpOptions, submitWrapUp } from "./wrapup.js";
 export { syncTeamClaims, refreshMyAccess } from "./team.js";
-export { registerPush, pushStatus, morningSummary } from "./push.js";
+export { registerPush, pushStatus, testPush, morningSummary } from "./push.js";
 export { countStep } from "./stats.js";

@@ -63,6 +63,32 @@ export const pushStatus = onCall({ invoker: "public" }, async (request) => {
   return { on: snap.exists };
 });
 
+// Send a test to just this device: { token } -> { ok, error? }
+export const testPush = onCall({ invoker: "public" }, async (request) => {
+  await requireRole(request, ["admin"], "Only admins can get notifications.");
+  const { token } = request.data || {};
+  if (!token) throw new HttpsError("invalid-argument", "No push token.");
+  try {
+    await getMessaging().send({
+      token,
+      webpush: {
+        notification: {
+          title: "Test from Backyard Brick Oven",
+          body: "Notifications are working on this device.",
+          icon: `${SITE}/icon-192.png`,
+          badge: `${SITE}/badge-96.png`,
+          tag: "test",
+        },
+        fcmOptions: { link: `${SITE}/events` },
+      },
+    });
+    return { ok: true };
+  } catch (err) {
+    logger.warn("Test push failed", err.code, err.message);
+    return { ok: false, error: `${err.code || ""} ${err.message || err}`.trim() };
+  }
+});
+
 // Send one notification to every signed-up phone whose email is still allowed.
 // Never throws: a push problem must not stop the email that goes with it.
 // tag: phones replace an older notification with the same tag.
