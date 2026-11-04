@@ -16,9 +16,6 @@ import ComboBox from '../../components/ComboBox'
 import Report from './Report'
 import { DEFAULT_PRICING, STATUSES, addOnName, money, newQuote, prettyDate, publicPricing, quoteText, totals, travelZones } from './quote'
 import {
-  DEFAULT_REMINDERS,
-  TIME_CHOICES,
-  timeLabel,
   FORECAST_DAYS,
   daysUntil,
   doughDates,
@@ -33,7 +30,7 @@ import {
 // Event tracker: inquiries, quotes and bookings.
 //   events/{id}               one event (website inquiries land here too, status "inquiry")
 //   eventSettings/pricing     packages, add-ons, travel, tax, deposit, quote footer
-//   eventSettings/reminders   dough reminder lead days and who gets the emails
+//   eventSettings/reminders   notification times and reminder emails (edited from the bell, components/Notifications/Times.js)
 // Admins only: emails in `plannerAccess/team` admins (the Firestore rules enforce it).
 // See docs/events.md.
 
@@ -571,14 +568,13 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
 
 // ---------- Settings ----------
 
-const Settings = ({ pricing, reminders, mixLead, onClose }) => {
+const Settings = ({ pricing, onClose }) => {
   const [p, setP] = useState(() => ({
     ...pricing,
     addOns: (pricing.addOns || []).map((a) => ({ ...a, name: addOnName(a.name) })),
     travel: { zones: travelZones(pricing) },
   }))
   const setZone = (i, patch) => setP({ ...p, travel: { zones: p.travel.zones.map((z, j) => (j === i ? { ...z, ...patch } : z)) } })
-  const [r, setR] = useState({ ...reminders, emailsText: (reminders.emails || []).join(', ') })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -604,14 +600,9 @@ const Settings = ({ pricing, reminders, mixLead, onClose }) => {
         taxRate: num(p.taxRate),
         depositPct: num(p.depositPct),
       }
-      const emails = r.emailsText
-        .split(/[\s,]+/)
-        .map((e) => e.trim().toLowerCase())
-        .filter(Boolean)
       await Promise.all([
         setDoc(doc(db, 'eventSettings', 'pricing'), clean),
         setDoc(doc(db, 'publicSettings', 'site'), publicPricing(clean)),
-        setDoc(doc(db, 'eventSettings', 'reminders'), { emails, doughTime: r.doughTime, morningTime: r.morningTime }, { merge: true }),
       ])
       onClose()
     } catch (e) {
@@ -623,7 +614,8 @@ const Settings = ({ pricing, reminders, mixLead, onClose }) => {
 
   return (
     <div className={`${ui.card} sm:p-6 space-y-5`}>
-      <h2 className="text-xl font-bold">Pricing and reminders</h2>
+      <h2 className="text-xl font-bold">Pricing</h2>
+      <p className="text-xs text-gray-500">Notification times and reminder emails are under the bell at the top.</p>
 
       <section className="space-y-2">
         <h3 className="font-semibold">Packages</h3>
@@ -729,39 +721,6 @@ const Settings = ({ pricing, reminders, mixLead, onClose }) => {
         <textarea className={input} rows={2} value={p.footer} onChange={(e) => setP({ ...p, footer: e.target.value })} />
       </Field>
 
-      <section className="space-y-2">
-        <h3 className="font-semibold">Reminders and notifications</h3>
-        <p className="text-xs text-gray-500">
-          For booked events, an email and a phone notification go out at {timeLabel(r.doughTime)} on poolish day and on mix
-          day, with the forecast. Mix day is{' '}
-          {mixLead} {mixLead === 1 ? 'day' : 'days'} before the event and poolish the evening before, from the dough planner's
-          "mix days before service" setting.
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          <Field label="Dough reminders at">
-            <select className={input} value={r.doughTime} onChange={(e) => setR({ ...r, doughTime: e.target.value })}>
-              {TIME_CHOICES.map((t) => (
-                <option key={t.hm} value={t.hm}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Morning summary at (phone)">
-            <select className={input} value={r.morningTime} onChange={(e) => setR({ ...r, morningTime: e.target.value })}>
-              {TIME_CHOICES.map((t) => (
-                <option key={t.hm} value={t.hm}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
-        <p className="text-xs text-gray-500">Times are Utah time and can be up to 15 minutes late.</p>
-        <Field label="Email dough reminders to (blank = the business inbox)">
-          <input className={input} value={r.emailsText} placeholder="you@gmail.com, partner@gmail.com" onChange={(e) => setR({ ...r, emailsText: e.target.value })} />
-        </Field>
-      </section>
 
       {error && <p className="text-sm text-red-700">{error}</p>}
       <div className="flex gap-2 justify-end">
@@ -832,7 +791,6 @@ const Events = () => {
   const { user, loading, access } = useEventAdmin()
   const [events, setEvents] = useState([])
   const [pricing, setPricing] = useState(DEFAULT_PRICING)
-  const [reminders, setReminders] = useState(DEFAULT_REMINDERS)
   const [mixLead, setMixLead] = useState(2)
   const [plannerRef, setPlannerRef] = useState(null)
   const [filter, setFilter] = useState('open')
@@ -851,7 +809,6 @@ const Events = () => {
         },
         () => {}
       ),
-      onSnapshot(doc(db, 'eventSettings', 'reminders'), (snap) => snap.exists() && setReminders({ ...DEFAULT_REMINDERS, ...snap.data() })),
     ]
     return () => unsubs.forEach((u) => u())
   }, [access])
@@ -898,7 +855,7 @@ const Events = () => {
   if (editing === 'settings') {
     return (
       <Shell>
-        <Settings pricing={pricing} reminders={reminders} mixLead={mixLead} onClose={() => setEditing(null)} />
+        <Settings pricing={pricing} onClose={() => setEditing(null)} />
       </Shell>
     )
   }

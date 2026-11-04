@@ -3,10 +3,11 @@ import { getFunctions, httpsCallable } from 'firebase/functions'
 import { getMessaging, getToken, deleteToken, isSupported, onMessage } from 'firebase/messaging'
 import { BellIcon } from '@heroicons/react/outline'
 import { BellIcon as BellSolid } from '@heroicons/react/solid'
+import Times from './Times'
 
 // The bell in the team bar: turns phone notifications on or off for this
 // device. The server (functions/push.js) decides who may sign up and what is
-// sent: new inquiries, dough steps, and a morning summary of the day (times set under Events > Pricing).
+// sent: new inquiries, dough steps, and a morning summary of the day (times set from the bell: Times.js).
 const callable = (name) => httpsCallable(getFunctions(), name)
 
 // Firebase's own default scope for the messaging service worker. The Functions
@@ -105,6 +106,7 @@ const Notifications = ({ className }) => {
   const [message, setMessage] = useState('')
   const [showHelp, setShowHelp] = useState(false)
   const [menu, setMenu] = useState(false)
+  const [times, setTimes] = useState(false)
 
   useEffect(() => {
     let live = true
@@ -227,10 +229,28 @@ const Notifications = ({ className }) => {
           <button type="button" className="w-full text-left px-3 py-2 hover:bg-amber-50 text-gray-800" onClick={() => sendTest(15)}>
             Send a test in 15 seconds
           </button>
+          <button
+            type="button"
+            className="w-full text-left px-3 py-2 hover:bg-amber-50 text-gray-800"
+            onClick={() => {
+              setMenu(false)
+              setTimes(true)
+            }}
+          >
+            Notification times
+          </button>
           <button type="button" className="w-full text-left px-3 py-2 hover:bg-amber-50 text-gray-800" onClick={toggle}>
             Turn off on this device
           </button>
         </div>
+      )}
+      {times && (
+        <Times
+          onClose={(msg) => {
+            setTimes(false)
+            if (msg) setMessage(msg)
+          }}
+        />
       )}
       {note && (
         <div role="status" className="absolute right-0 top-full mt-1 z-30 w-64 rounded-lg bg-gray-900 text-white text-xs p-3 shadow-lg">

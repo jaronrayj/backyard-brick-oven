@@ -10,7 +10,7 @@
 //   - new website inquiries (sendInquiry)
 //   - dough steps for booked events (runDoughReminders, with the email)
 //   - a morning summary of today's calendar and dough steps (runMorningSummary)
-// Both times are set under Events > Pricing (eventSettings/reminders).
+// Both times are set from the bell > Notification times (eventSettings/reminders).
 import { createHash } from "node:crypto";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import logger from "firebase-functions/logger";

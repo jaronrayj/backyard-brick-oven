@@ -212,7 +212,7 @@ export { syncTeamClaims, refreshMyAccess } from "./team.js";
 export { registerPush, pushStatus, testPush } from "./push.js";
 
 // One timer for both timed notifications (Cloud Scheduler gives 3 jobs free;
-// this keeps us at 2). Each checks its own time under Events > Pricing and
+// this keeps us at 2). Each checks its own time (bell > Notification times) and
 // returns quickly when it isn't due. One failing doesn't stop the other.
 export const notificationTimer = onSchedule(
   { schedule: "*/15 * * * *", timeZone: "America/Denver", secrets: [GMAIL_APP_PASSWORD], region: "us-central1" },
