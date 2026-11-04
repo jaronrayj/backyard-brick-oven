@@ -88,6 +88,18 @@ const Notifications = ({ className }) => {
     setState('on')
   }
 
+  // The little message under the bell clears itself: a few seconds for good
+  // news, longer for a problem so there's time to read it.
+  useEffect(() => {
+    if (!message && !showHelp) return undefined
+    const bad = /couldn't|didn't|blocked|can't|no push token/i.test(message)
+    const t = setTimeout(() => {
+      setMessage('')
+      setShowHelp(false)
+    }, message && !bad ? 4000 : 10000)
+    return () => clearTimeout(t)
+  }, [message, showHelp])
+
   const toggle = async () => {
     const turnOn = state !== 'on'
     setMenu(false)
