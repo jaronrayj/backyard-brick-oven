@@ -58,8 +58,31 @@ const showWhileOpen = async () => {
 const isIOSBrowserTab = () =>
   /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.matchMedia('(display-mode: standalone)').matches
 
+// Last known on/off for this device, so the bell shows right away after a
+// reload instead of sitting grayed out while the server is asked.
+const SAVED = 'bybo-push-on'
+const savedState = () => {
+  try {
+    const v = localStorage.getItem(SAVED)
+    return v === 'on' || v === 'off' ? v : 'loading'
+  } catch (e) {
+    return 'loading'
+  }
+}
+const saveState = (v) => {
+  try {
+    if (v === 'on' || v === 'off') localStorage.setItem(SAVED, v)
+  } catch (e) {
+    // private window or blocked storage: the bell just starts gray
+  }
+}
+
 const Notifications = ({ className }) => {
-  const [state, setState] = useState('loading') // loading | off | on | blocked | unsupported | busy
+  const [state, setStateRaw] = useState(savedState)
+  const setState = (v) => {
+    saveState(v)
+    setStateRaw(v)
+  } // loading | off | on | blocked | unsupported | busy
   const [message, setMessage] = useState('')
   const [showHelp, setShowHelp] = useState(false)
   const [menu, setMenu] = useState(false)
@@ -78,7 +101,8 @@ const Notifications = ({ className }) => {
         // Usually the API key blocking Firebase Installations / FCM Registration (see docs/events.md).
         console.error(e)
         if (live) {
-          setState('off')
+          // Keep what the bell last showed; a failed check doesn't mean it's off.
+          setStateRaw((v) => (v === 'loading' ? 'off' : v))
           setMessage(`Couldn't check notifications on this device: ${e.message || e}`)
         }
       }
