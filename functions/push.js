@@ -8,12 +8,11 @@
 //
 // What gets sent:
 //   - new website inquiries (sendInquiry)
-//   - dough steps for booked events (doughReminders, with the email)
-//   - a morning summary of today's calendar and dough steps (morningSummary)
+//   - dough steps for booked events (runDoughReminders, with the email)
+//   - a morning summary of today's calendar and dough steps (runMorningSummary)
 // Both times are set under Events > Pricing (eventSettings/reminders).
 import { createHash } from "node:crypto";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { onSchedule } from "firebase-functions/v2/scheduler";
 import logger from "firebase-functions/logger";
 import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
@@ -130,9 +129,9 @@ export const sendPush = async ({ title, body, link = "/events", tag }) => {
 const shortDate = (iso) =>
   new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
 
-export const morningSummary = onSchedule(
-  { schedule: "*/15 * * * *", timeZone: TZ, region: "us-central1" },
-  async () => {
+// Run every 15 minutes by `notificationTimer` (functions/index.js).
+export const runMorningSummary = async () => {
+  {
     const db = getFirestore();
     const settingsRef = db.doc("eventSettings/reminders");
     const settings = (await settingsRef.get()).data() || {};
@@ -171,4 +170,4 @@ export const morningSummary = onSchedule(
     const sent = await sendPush({ title: `Today · ${shortDate(today)}`, body: lines.join("\n"), link: "/events", tag: "morning" });
     logger.info(`Morning summary sent to ${sent} phone(s)`);
   }
-);
+};

@@ -1,8 +1,9 @@
 import { onRequest } from "firebase-functions/v2/https";
 import logger from "firebase-functions/logger";
 import { GMAIL_APP_PASSWORD, GMAIL_USER, sendMail } from "./mail.js";
-import { saveInquiryEvent } from "./events.js";
-import { sendPush } from "./push.js";
+import { onSchedule } from "firebase-functions/v2/scheduler";
+import { saveInquiryEvent, runDoughReminders } from "./events.js";
+import { sendPush, runMorningSummary } from "./push.js";
 
 // Inquiry notifications go to the business inbox.
 const NOTIFY_TO = "jj.backyardbrickoven@gmail.com";
@@ -206,8 +207,23 @@ export const sendInquiry = onRequest(
 
 export { refreshPlannerData, refreshPlannerHourly, plannerCalendar, upcomingPizzaFridays } from "./planner.js";
 export { importMenuPhoto } from "./menuPhotos.js";
-export { doughReminders } from "./events.js";
 export { wrapUpOptions, submitWrapUp } from "./wrapup.js";
 export { syncTeamClaims, refreshMyAccess } from "./team.js";
-export { registerPush, pushStatus, testPush, morningSummary } from "./push.js";
+export { registerPush, pushStatus, testPush } from "./push.js";
+
+// One timer for both timed notifications (Cloud Scheduler gives 3 jobs free;
+// this keeps us at 2). Each checks its own time under Events > Pricing and
+// returns quickly when it isn't due. One failing doesn't stop the other.
+export const notificationTimer = onSchedule(
+  { schedule: "*/15 * * * *", timeZone: "America/Denver", secrets: [GMAIL_APP_PASSWORD], region: "us-central1" },
+  async () => {
+    for (const [name, run] of [["dough reminders", runDoughReminders], ["morning summary", runMorningSummary]]) {
+      try {
+        await run();
+      } catch (err) {
+        logger.error(`notificationTimer: ${name} failed`, err);
+      }
+    }
+  }
+);
 export { countStep } from "./stats.js";

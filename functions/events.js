@@ -3,11 +3,10 @@
 // events, with the forecast. The page's copy of the date and weather rules is
 // src/pages/Events/schedule.js (the site and functions build separately);
 // keep the two in step.
-import { onSchedule } from "firebase-functions/v2/scheduler";
 import logger from "firebase-functions/logger";
 import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import { GMAIL_APP_PASSWORD, GMAIL_USER, sendMail } from "./mail.js";
+import { GMAIL_USER, sendMail } from "./mail.js";
 import { sendPush } from "./push.js";
 
 if (!getApps().length) initializeApp();
@@ -200,9 +199,9 @@ export const minutesPast = (hm, now = new Date()) => {
   return h * 60 + m - (th * 60 + tm);
 };
 
-export const doughReminders = onSchedule(
-  { schedule: "*/15 * * * *", timeZone: TZ, secrets: [GMAIL_APP_PASSWORD], region: "us-central1" },
-  async () => {
+// Run every 15 minutes by `notificationTimer` (functions/index.js).
+export const runDoughReminders = async () => {
+  {
     const db = getFirestore();
     const settings = (await db.doc("eventSettings/reminders").get()).data() || {};
     // Not yet today's reminder time. Each event remembers which steps were sent, so later runs don't repeat.
@@ -256,4 +255,4 @@ export const doughReminders = onSchedule(
     );
     logger.info(`Sent ${due.length} dough reminder(s) to ${to}`);
   }
-);
+};
