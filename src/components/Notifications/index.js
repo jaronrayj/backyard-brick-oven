@@ -4,6 +4,8 @@ import { getMessaging, getToken, deleteToken, isSupported, onMessage } from 'fir
 import { BellIcon } from '@heroicons/react/outline'
 import { BellIcon as BellSolid } from '@heroicons/react/solid'
 import Times from './Times'
+import { onAuthStateChanged } from 'firebase/auth'
+import { auth } from '../../utils/firebase'
 
 // The bell in the team bar: turns phone notifications on or off for this
 // device. The server (functions/push.js) decides who may sign up and what is
@@ -112,6 +114,14 @@ const Notifications = ({ className }) => {
     let live = true
     ;(async () => {
       try {
+        // The page can open before Firebase restores the sign-in (remembered
+        // role); server calls need it, so wait for it first.
+        await new Promise((resolve) => {
+          const stop = onAuthStateChanged(auth, () => {
+            stop()
+            resolve()
+          })
+        })
         if (!(await isSupported())) return live && setState('unsupported')
         if (Notification.permission === 'denied') return live && setState('blocked')
         const token = await deviceToken(false)
