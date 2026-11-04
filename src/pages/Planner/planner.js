@@ -352,6 +352,15 @@ export function mountPlanner(root, deps) {
     [['#t-buffer', 'buffer'], ['#t-lead', 'lead'], ['#t-yeast', 'yeast'], ['#t-water', 'water']].forEach(([id, k]) => { const i = $(id); if (document.activeElement !== i) i.value = t[k]; });
   };
 
+  /* Dough recipe cards start closed. Which ones are open is remembered on this device, because the plan redraws often. */
+  const RECIPE_KEY = 'bybo-open-recipes';
+  const recipeOpen = new Set((() => { try { return JSON.parse(localStorage.getItem(RECIPE_KEY)) || []; } catch (e) { return []; } })());
+  const setRecipeOpen = (key, open) => {
+    if (recipeOpen.has(key) === open) return;
+    if (open) recipeOpen.add(key); else recipeOpen.delete(key);
+    try { localStorage.setItem(RECIPE_KEY, JSON.stringify([...recipeOpen].slice(-20))); } catch (e) { /* private window: stays open until reload */ }
+  };
+
   const renderPlan = () => {
     const box = $('#plan');
     box.replaceChildren();
@@ -376,17 +385,23 @@ export function mountPlanner(root, deps) {
       sec.append(bh);
       if (hasBread) sec.append(el('p', 'note', 'Bread: weigh out ' + list.filter(isBread).map((s) => loavesFor(s) + ' × ' + loafG(s) + ' g').join(' and ') + (list.some((s) => !isBread(s)) ? ', and the rest into ' + Math.round(per.ball) + ' g balls.' : '.')));
       const steps = el('div', 'steps');
-      const card = (title, when, rows) => {
-        const c = el('div', 'stepcard');
-        c.append(el('h4', null, title), el('div', 'when', when));
+      const card = (key, title, when, rows) => {
+        const c = el('details', 'stepcard');
+        c.open = recipeOpen.has(key);
+        c.addEventListener('toggle', () => setRecipeOpen(key, c.open));
+        const sum = el('summary');
+        const head = el('span', 'step-title');
+        head.append(el('h4', null, title), el('div', 'when', when));
+        sum.append(head);
+        c.append(sum);
         const tb = el('table', 'g');
         rows.forEach(([name, v, sub]) => { const tr = el('tr'); const a = el('td', null, name); if (sub) { a.append(el('div', 'when', sub)); } tr.append(a, el('td', 'n', g(v))); tb.append(tr); });
         c.append(tb); steps.append(c);
       };
-      card(n === 1 ? 'Start poolish' : 'Start poolish: ' + n + ' containers', rel(addDays(mix, -1)) + ', evening' + (n === 1 ? '' : ' · per container'), [
+      card('poolish|' + mix, n === 1 ? 'Start poolish' : 'Start poolish: ' + n + ' containers', rel(addDays(mix, -1)) + ', evening' + (n === 1 ? '' : ' · per container'), [
         ['Water', p / 2], ['Flour', p / 2], ['Yeast', p * POOLISH_YEAST_PER_G]
       ]);
-      card(n === 1 ? 'Mix dough' : 'Mix dough: ' + n + ' batches' + (hasBread ? '' : ' of ' + size), rel(mix) + (n === 1 ? '' : ' · per batch'), [
+      card('mix|' + mix, n === 1 ? 'Mix dough' : 'Mix dough: ' + n + ' batches' + (hasBread ? '' : ' of ' + size), rel(mix) + (n === 1 ? '' : ' · per batch'), [
         ['Cold water', (per['cold water'] * size * (Number(t.water) || 100)) / 100],
         ['Warm water', per['warm water'] * size],
         ['Yeast', (per.yeast * size * (Number(t.yeast) || 100)) / 100],
