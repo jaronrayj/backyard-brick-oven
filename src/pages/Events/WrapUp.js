@@ -206,6 +206,8 @@ const WrapUpForm = ({ headers, choice, today, onDone, onBack }) => {
 }
 
 const Shell = TeamPage
+const OPTIONS_KEY = 'bybo-wrapup-options'
+const todayHere = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' })
 
 const WrapUp = () => {
   const { user, loading, access } = useEventAdmin()
@@ -214,10 +216,25 @@ const WrapUp = () => {
   const [choice, setChoice] = useState(null)
   const [saved, setSaved] = useState(null)
 
+  // Last lists from the server, shown at once while the fresh ones load
+  // (reading the sheets and calendar takes a few seconds).
   useEffect(() => {
     if (access !== true) return
+    try {
+      const last = JSON.parse(localStorage.getItem(OPTIONS_KEY) || 'null')
+      if (last) setData((d) => d || { ...last, today: todayHere() })
+    } catch (e) {
+      /* nothing saved */
+    }
     callable('wrapUpOptions')()
-      .then((res) => setData(res.data))
+      .then((res) => {
+        setData(res.data)
+        try {
+          localStorage.setItem(OPTIONS_KEY, JSON.stringify(res.data))
+        } catch (e) {
+          /* storage full or blocked */
+        }
+      })
       .catch((e) => setLoadError(e.message || "Couldn't load recent events."))
   }, [access])
 

@@ -33,32 +33,64 @@ const syncTag = (user) => {
   return synced.get(user.uid)
 }
 
+// Last role this browser saw, so team pages open at once on the next visit
+// while the list is checked again in the background. Only the page layout
+// trusts it; the data itself is still guarded by the database rules.
+const ROLE_KEY = 'bybo-team-role'
+const remembered = () => {
+  try {
+    return JSON.parse(localStorage.getItem(ROLE_KEY) || 'null')
+  } catch (e) {
+    return null
+  }
+}
+const remember = (uid, email, role) => {
+  try {
+    if (role) localStorage.setItem(ROLE_KEY, JSON.stringify({ uid, email, role }))
+    else localStorage.removeItem(ROLE_KEY)
+  } catch (e) {
+    /* storage blocked: just no head start next time */
+  }
+}
+
 const useTeamRole = () => {
   const [user, authLoading] = useAuthState(auth)
   const [role, setRole] = useState(undefined) // undefined while checking
+  const [cached] = useState(remembered)
 
   useEffect(() => {
     if (!user) {
-      setRole(user === null ? null : undefined)
+      // Still restoring the sign-in: leave the role alone (no off-and-on flash).
+      if (!authLoading) setRole(user === null ? null : undefined)
       return undefined
     }
     let cancelled = false
-    setRole(undefined)
+    const known = cached && cached.uid === user.uid ? cached.role : undefined
+    setRole(known)
     const email = (user.email || '').toLowerCase()
     const fromList = user.emailVerified
       ? getDoc(doc(db, 'plannerAccess', 'team'))
           .then((snap) => listRole(snap.data(), email))
           .catch(() => null)
       : Promise.resolve(null)
-    Promise.all([fromList, syncTag(user)]).then(([r]) => {
+    // Known on this browser: show the page now and sync the sign-in tag in
+    // the background. First time: wait for the tag so the rules see it.
+    const sync = syncTag(user)
+    Promise.all([fromList, known ? null : sync]).then(([r]) => {
+      remember(user.uid, user.email, r)
       if (!cancelled) setRole(r)
     })
     return () => {
       cancelled = true
     }
-  }, [user])
+  }, [user, authLoading, cached])
 
-  return { user, loading: authLoading || (!!user && role === undefined), role: role || null }
+  // Before Firebase has restored the sign-in, a remembered role can stand in.
+  if (authLoading && cached) return { user: { uid: cached.uid, email: cached.email || '', pending: true }, loading: false, role: cached.role }
+  // Right after sign-in restores, before the effect runs, keep the remembered
+  // role so pages don't flash "loading" and set themselves up twice.
+  const now = role === undefined && user && cached && cached.uid === user.uid ? cached.role : role
+  return { user, loading: authLoading || (!!user && now === undefined), role: now || null }
 }
 
 export default useTeamRole
