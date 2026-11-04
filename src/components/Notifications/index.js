@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { getFunctions, httpsCallable } from 'firebase/functions'
-import { getMessaging, getToken, deleteToken, isSupported } from 'firebase/messaging'
+import { getMessaging, getToken, deleteToken, isSupported, onMessage } from 'firebase/messaging'
 import { BellIcon } from '@heroicons/react/outline'
 import { BellIcon as BellSolid } from '@heroicons/react/solid'
 
@@ -36,6 +36,25 @@ const deviceToken = async (ask) => {
   return getToken(getMessaging(), { serviceWorkerRegistration: await swRegistration() })
 }
 
+// With the site open and in front, Firebase hands a notification to the page
+// instead of showing it, so show it here the same way the service worker would.
+let foregroundShown = false
+const showWhileOpen = async () => {
+  if (foregroundShown) return
+  foregroundShown = true
+  const reg = await swRegistration()
+  onMessage(getMessaging(), (payload) => {
+    const n = payload.notification || {}
+    const link = payload.fcmOptions?.link || payload.data?.link
+    reg.showNotification(n.title || 'Backyard Brick Oven', {
+      body: n.body,
+      icon: n.icon || '/favicon-192.png',
+      tag: n.tag,
+      data: { FCM_MSG: { fcmOptions: { link } } },
+    })
+  })
+}
+
 const isIOSBrowserTab = () =>
   /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.matchMedia('(display-mode: standalone)').matches
 
@@ -53,6 +72,7 @@ const Notifications = ({ className }) => {
         if (Notification.permission === 'denied') return live && setState('blocked')
         const token = await deviceToken(false)
         const on = token ? (await callable('pushStatus')({ token })).data.on : false
+        if (on) showWhileOpen().catch(console.error)
         if (live) setState(on ? 'on' : 'off')
       } catch (e) {
         // Usually the API key blocking Firebase Installations / FCM Registration (see docs/events.md).
@@ -114,6 +134,7 @@ const Notifications = ({ className }) => {
       await callable('registerPush')({ token, on: turnOn })
       if (!turnOn) await deleteToken(getMessaging()).catch(() => {})
       setState(turnOn ? 'on' : 'off')
+      if (turnOn) showWhileOpen().catch(console.error)
       if (turnOn) setMessage("Notifications on. You'll get new inquiries, dough steps, and a morning summary. Tap the bell again to send yourself a test.")
     } catch (e) {
       console.error(e)
