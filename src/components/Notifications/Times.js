@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { db } from '../../utils/firebase'
+import { db } from '../../utils/db'
 import { ui } from '../TeamPage'
 import { DEFAULT_REMINDERS, TIME_CHOICES } from '../../pages/Events/schedule'
 
