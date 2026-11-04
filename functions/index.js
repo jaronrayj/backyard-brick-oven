@@ -206,7 +206,7 @@ export const sendInquiry = onRequest(
 );
 
 export { refreshPlannerData, refreshPlannerHourly, plannerCalendar, upcomingPizzaFridays } from "./planner.js";
-export { importMenuPhoto } from "./menuPhotos.js";
+export { importMenuPhoto, menuThumbOnPhoto, makeMenuThumbs } from "./menuPhotos.js";
 export { wrapUpOptions, submitWrapUp } from "./wrapup.js";
 export { syncTeamClaims, refreshMyAccess } from "./team.js";
 export { registerPush, pushStatus, testPush } from "./push.js";

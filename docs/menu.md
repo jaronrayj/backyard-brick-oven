@@ -28,3 +28,12 @@ or `/team` with that Google account. Photo uploads use the same check.
 project, go to Triggers (clock icon) and delete the "importSheet / On change"
 trigger. Otherwise the next edit to that sheet copies the sheet over the menu
 and undoes changes made here (including the order).
+
+## Small copies
+
+Each menu photo gets a 600 px copy in Storage `pizzas/thumbs/` (about 50 KB),
+saved on the pizza as `thumb` (with `thumbOf`, the photo it came from). The
+server makes it whenever a pizza's `img` changes (`menuThumbOnPhoto` in
+`functions/menuPhotos.js`); `makeMenuThumbs` fills in any that are missing.
+The Menu list and the website's menu cards show `thumb`; zooming in on the
+website opens the full photo.
