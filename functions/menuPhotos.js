@@ -7,6 +7,9 @@ import logger from "firebase-functions/logger";
 import { initializeApp, getApps } from "firebase-admin/app";
 import { requireRole } from "./team.js";
 import { getStorage } from "firebase-admin/storage";
+import { getDatabase } from "firebase-admin/database";
+import { onValueWritten } from "firebase-functions/v2/database";
+import sharp from "sharp";
 
 if (!getApps().length) initializeApp();
 
@@ -58,4 +61,75 @@ export const importMenuPhoto = onCall({ invoker: "public", memory: "512MiB" }, a
   });
   const url = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(path)}?alt=media&token=${token}`;
   return { url, bytes: bytes.length };
+});
+
+// ---------- Small copies for lists and menu cards ----------
+//
+// Menu photos are saved around 1000-1200 px (~190 KB). Lists and the public
+// cards show them far smaller, so each photo gets a 600 px copy at
+// pizzas/thumbs/ (~40-60 KB) in `thumb`, with `thumbOf` = the photo it was
+// made from. Made automatically when a pizza's photo changes; `makeMenuThumbs`
+// fills in any that are missing (run once for photos from before).
+const THUMB_WIDTH = 600;
+
+const storagePath = (url) => {
+  const m = /\/o\/([^?]+)/.exec(String(url || ""));
+  return m ? decodeURIComponent(m[1]) : null;
+};
+
+const saveThumb = async (img) => {
+  const bucket = getStorage().bucket();
+  const from = storagePath(img);
+  if (!from || !img.includes(bucket.name)) return null; // only photos in our bucket
+  const [bytes] = await bucket.file(from).download();
+  const small = await sharp(bytes).rotate().resize({ width: THUMB_WIDTH, withoutEnlargement: true }).jpeg({ quality: 72, mozjpeg: true }).toBuffer();
+  const name = from.split("/").pop().replace(/\.[a-z]+$/i, "");
+  const path = `pizzas/thumbs/${name}.jpg`;
+  const token = randomUUID();
+  await bucket.file(path).save(small, {
+    resumable: false,
+    metadata: {
+      contentType: "image/jpeg",
+      cacheControl: "public, max-age=31536000, immutable",
+      metadata: { firebaseStorageDownloadTokens: token },
+    },
+  });
+  return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(path)}?alt=media&token=${token}`;
+};
+
+const thumbFor = async (id, pizza) => {
+  if (!pizza || !pizza.img || pizza.thumbOf === pizza.img) return false;
+  const thumb = await saveThumb(pizza.img);
+  if (!thumb) return false;
+  await getDatabase().ref(`pizzas/${id}`).update({ thumb, thumbOf: pizza.img });
+  return true;
+};
+
+export const menuThumbOnPhoto = onValueWritten(
+  { ref: "/pizzas/{id}/img", region: "us-central1", memory: "512MiB" },
+  async (event) => {
+    const id = event.params.id;
+    const snap = await getDatabase().ref(`pizzas/${id}`).get();
+    try {
+      await thumbFor(id, snap.val());
+    } catch (err) {
+      logger.error(`Thumbnail for ${id} failed`, err);
+    }
+  }
+);
+
+export const makeMenuThumbs = onCall({ invoker: "public", memory: "512MiB", timeoutSeconds: 300 }, async (request) => {
+  await requireRole(request, ["admin"], "Only admins can update menu photos.");
+  const pizzas = (await getDatabase().ref("pizzas").get()).val() || {};
+  let made = 0;
+  const failed = [];
+  for (const [id, pizza] of Object.entries(pizzas)) {
+    try {
+      if (await thumbFor(id, pizza)) made += 1;
+    } catch (err) {
+      logger.error(`Thumbnail for ${id} failed`, err);
+      failed.push(pizza.name || id);
+    }
+  }
+  return { made, failed };
 });

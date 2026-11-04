@@ -29,11 +29,11 @@ const PizzaDisplay = ({ pizza, modalOpen }) => {
       className="bg-white rounded-xl shadow-md overflow-hidden h-full flex flex-col"
     >
       {pizza.img && !modalOpen ? (
-        <Zoom>
+        <Zoom zoomImg={pizza.thumb ? { src: pizza.img, alt: pizza.name } : undefined}>
           <img
             onError={(e) => (e.target.src = 'https://placehold.co/600x400')}
             className="h-64 w-full object-cover"
-            src={pizza.img}
+            src={pizza.thumb || pizza.img}
             alt={pizza.name}
             loading="lazy"
             decoding="async"

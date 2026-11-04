@@ -243,7 +243,7 @@ const PizzaRow = ({ id, pizza, editing, setEditing, move, canMoveUp, canMoveDown
     <li className="px-2 py-1.5 flex gap-2 items-center text-left">
       <button type="button" onClick={() => setEditing(id)} className="flex gap-2 items-center min-w-0 flex-1 text-left" title="Edit">
         {pizza.img ? (
-          <img src={pizza.img} alt="" loading="lazy" className="h-10 w-10 object-cover rounded-md shrink-0" />
+          <img src={pizza.thumb || pizza.img} alt="" loading="lazy" className="h-10 w-10 object-cover rounded-md shrink-0" />
         ) : (
           <span className="h-10 w-10 rounded-md bg-gray-100 shrink-0" />
         )}
