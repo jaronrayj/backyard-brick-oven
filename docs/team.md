@@ -29,3 +29,11 @@ email list inside the Storage rules. Those are gone.
 `.github/workflows/deploy-backend.yml` whenever they or `functions/` change on
 `main`. Edits made in the Firebase console are overwritten by the next deploy,
 so change the files instead.
+
+## Phone app
+
+Only team members are offered "Install app" / "Add to Home Screen" as an app:
+`public/index.html` has no manifest link, and `src/utils/teamApp.js` adds it
+once the team bar sees a signed-in team member. The installed app opens on
+`/planner` (`start_url` in `public/manifest.json`). Visitors never get the
+offer, though any browser can still make a plain home-screen bookmark.

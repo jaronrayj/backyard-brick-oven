@@ -14,6 +14,7 @@ import useTeamAccess from '../../utils/useTeamAccess'
 import { logout } from '../../utils/firebase'
 import Notifications from '../Notifications'
 import { markTeamBrowser } from '../../utils/track'
+import { offerTeamApp } from '../../utils/teamApp'
 
 // The team bar on every team page: logo, a link to the website, notifications bell, sign out, and
 // one tab per tool. Phones get the tabs along the bottom of the screen;
@@ -51,7 +52,10 @@ const TeamNav = () => {
   const showTabs = tools.length > 1
   // A team member's browser: leave it out of the visitor counts.
   React.useEffect(() => {
-    if (role) markTeamBrowser()
+    if (role) {
+      markTeamBrowser()
+      offerTeamApp()
+    }
   }, [role])
 
   return (
