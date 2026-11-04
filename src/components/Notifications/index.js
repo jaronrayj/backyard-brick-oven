@@ -94,7 +94,16 @@ const Notifications = ({ className }) => {
         if (!(await isSupported())) return live && setState('unsupported')
         if (Notification.permission === 'denied') return live && setState('blocked')
         const token = await deviceToken(false)
-        const on = token ? (await callable('pushStatus')({ token })).data.on : false
+        // Turned on here before: re-register this device's current push ID on
+        // every open. Phones get a new ID now and then (reinstall, browser
+        // update), and the server would otherwise still hold the old one.
+        let on = false
+        if (token && savedState() === 'on') {
+          await callable('registerPush')({ token, on: true })
+          on = true
+        } else if (token) {
+          on = (await callable('pushStatus')({ token })).data.on
+        }
         if (on) showWhileOpen().catch(console.error)
         if (live) setState(on ? 'on' : 'off')
       } catch (e) {
