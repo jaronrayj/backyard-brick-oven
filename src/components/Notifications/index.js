@@ -9,10 +9,29 @@ import { BellIcon as BellSolid } from '@heroicons/react/solid'
 // sent: new inquiries, dough steps, and a morning summary of the day (times set under Events > Pricing).
 const callable = (name) => httpsCallable(getFunctions(), name)
 
+// Firebase's own default scope for the messaging service worker. The Functions
+// SDK asks Messaging for a token on every callable, and with no registration
+// given it uses this scope. If ours were elsewhere (it used to be "/"), each
+// side would find the other's token "invalid" and replace it on every page
+// load, so the server never had a working token.
+const SW_SCOPE = '/firebase-cloud-messaging-push-scope'
+
+// The old "/" registration from before: remove it so it can't hold a stray
+// push subscription.
+const dropOldRegistration = async () => {
+  const regs = await navigator.serviceWorker.getRegistrations()
+  await Promise.all(
+    regs
+      .filter((r) => new URL(r.scope).pathname === '/' && /firebase-messaging-sw\.js$/.test((r.active || r.waiting || r.installing || {}).scriptURL || ''))
+      .map((r) => r.unregister())
+  )
+}
+
 // Push needs an *active* service worker; right after the first register() it's
 // still installing, so wait for it to finish.
 const swRegistration = async () => {
-  const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+  dropOldRegistration().catch(() => {})
+  const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: SW_SCOPE })
   if (reg.active) return reg
   const sw = reg.installing || reg.waiting
   if (sw) {
@@ -94,7 +113,16 @@ const Notifications = ({ className }) => {
         if (!(await isSupported())) return live && setState('unsupported')
         if (Notification.permission === 'denied') return live && setState('blocked')
         const token = await deviceToken(false)
-        const on = token ? (await callable('pushStatus')({ token })).data.on : false
+        // Turned on here before: re-register this device's current push ID on
+        // every open. Phones get a new ID now and then (reinstall, browser
+        // update), and the server would otherwise still hold the old one.
+        let on = false
+        if (token && savedState() === 'on') {
+          await callable('registerPush')({ token, on: true })
+          on = true
+        } else if (token) {
+          on = (await callable('pushStatus')({ token })).data.on
+        }
         if (on) showWhileOpen().catch(console.error)
         if (live) setState(on ? 'on' : 'off')
       } catch (e) {
