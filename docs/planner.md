@@ -36,6 +36,15 @@ you've made before. Edit or add pizzas at `/admin/menu`.
 
 Rules and functions deploy from the repo ([team.md](team.md)).
 
+## Bread
+
+A **Bread** service uses the same dough recipe, weighed out as loaves. Type
+the number of loaves; each is 575 g unless you change "Grams per loaf" (or add
+a `bread loaf weight (grams)` setting to the dough calculator). Loaves are
+converted to pizza-ball units from the sheet's ball weight, so they share mix
+days and mixer batches with pizza dough, add flour, salt and yeast to the
+shopping list, and take no share of the toppings.
+
 ## From your calendar
 
 Under Services, "From your calendar" lists the next two weeks of the business
