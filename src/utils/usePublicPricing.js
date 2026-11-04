@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { doc, getDoc } from 'firebase/firestore'
-import { db } from './firebase'
+import { firestoreGet } from './publicData'
 import { DEFAULT_PRICING, publicPricing } from '../pages/Events/quote'
 
 // Prices for the public pages, from Firestore `publicSettings/site` (written
@@ -11,8 +10,8 @@ const usePublicPricing = () => {
   useEffect(() => {
     if (navigator.userAgent === 'ReactSnap') return undefined
     let live = true
-    getDoc(doc(db, 'publicSettings', 'site'))
-      .then((snap) => live && snap.exists() && setPricing((p) => ({ ...p, ...snap.data() })))
+    firestoreGet('publicSettings/site')
+      .then((data) => live && data && setPricing((p) => ({ ...p, ...data })))
       .catch(() => {})
     return () => {
       live = false

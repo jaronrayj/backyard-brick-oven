@@ -42,7 +42,7 @@ const store = (kind) => {
   }
 }
 const prerendering = () => typeof navigator === 'undefined' || navigator.userAgent === 'ReactSnap'
-const isTeamBrowser = () => {
+export const isTeamBrowser = () => {
   if (teamNow) return true
   try {
     return store('localStorage')?.getItem(TEAM_KEY) === '1'

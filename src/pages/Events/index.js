@@ -9,7 +9,8 @@ import {
   setDoc,
   updateDoc,
 } from 'firebase/firestore'
-import { db, signInWithGoogle } from '../../utils/firebase'
+import { signInWithGoogle } from '../../utils/firebase'
+import { db } from '../../utils/db'
 import useEventAdmin from './useEventAdmin'
 import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 import ComboBox from '../../components/ComboBox'

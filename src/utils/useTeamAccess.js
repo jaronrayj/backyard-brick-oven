@@ -17,9 +17,7 @@ export const TEAM_TOOLS = [
   },
 ]
 
-// Team pages get the team bar instead of the website menu.
-export const TEAM_PATHS = ['/team', '/planner', '/events', '/admin']
-export const isTeamPath = (path) => TEAM_PATHS.some((p) => path === p || path.startsWith(`${p}/`))
+export { TEAM_PATHS, isTeamPath } from './teamPaths'
 
 const useTeamAccess = () => {
   const { user, loading, role } = useTeamRole()

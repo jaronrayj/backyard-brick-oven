@@ -6,7 +6,7 @@ import Cropper from 'react-easy-crop'
 // OUTPUT_WIDTH wide. Big phone photos are first scaled to WORKING_EDGE so the
 // canvases stay under mobile Safari's size limit.
 const WORKING_EDGE = 3000
-const OUTPUT_WIDTH = 1200
+const OUTPUT_WIDTH = 1000
 
 // Homepage cards show photos about 4:3 (src/components/PizzaDisplay).
 const SHAPES = [
@@ -25,7 +25,7 @@ const loadImage = (src) =>
 
 const toBlob = (canvas) =>
   new Promise((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not make the image'))), 'image/jpeg', 0.82)
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not make the image'))), 'image/jpeg', 0.76)
   )
 
 // iPhone photos are often HEIC, which only Safari can show. When the browser

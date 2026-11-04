@@ -118,6 +118,8 @@ const MainPage = () => {
           <div className="grid md:grid-cols-2 gap-4">
             <div className="self-center">
               <img
+                loading="lazy"
+                decoding="async"
                 src={pizzaFam}
                 alt="Backyard Brick Oven owners at their mobile pizza topping station with a fired-up brick oven"
                 className="rounded-xl w-full max-h-[28rem] object-cover"

@@ -163,6 +163,8 @@ const Inquiries = () => {
           <div className="bg-white rounded-xl p-6 shadow-md flex flex-col justify-center">
             <h2 className="text-2xl font-bold mb-4 text-center">What We Bring to You</h2>
             <img
+                loading="lazy"
+                decoding="async"
               src={servingCanopy}
               alt="Backyard Brick Oven serving station set up under a canopy at an event"
               className="rounded-lg w-full h-44 object-cover mb-5"
@@ -282,6 +284,8 @@ const Inquiries = () => {
           {/* Special Touches — featured with a real spread photo */}
           <div className="mt-6 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 md:flex">
             <img
+                loading="lazy"
+                decoding="async"
               src={specialSpread}
               alt="Catered spread with panna cotta, charcuterie board, and beet & goat cheese salad"
               className="w-full md:w-1/2 h-64 md:h-auto object-cover"
@@ -311,6 +315,8 @@ const Inquiries = () => {
         <div className="bg-gradient-to-r from-orange-100 to-yellow-100 rounded-xl p-6 md:p-8 shadow-md border-2 border-orange-300">
           <div className="md:flex gap-8 items-center">
             <img
+                loading="lazy"
+                decoding="async"
               src={nightPizza}
               alt="Hands-on pizza class"
               className="rounded-xl md:w-1/2 mb-6 md:mb-0 object-cover max-h-64 w-full"

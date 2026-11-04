@@ -1,18 +1,22 @@
-import { useEffect } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom'
 
 import MainPage from '../MainPage'
 import Navbar from '../Navbar'
 import Order from '../Order'
 import Inquiries from '../Inquiries'
-import MenuAdmin from '../MenuAdmin'
-import Planner from '../Planner'
-import Team from '../Team'
-import Events from '../Events'
-import WrapUp from '../Events/WrapUp'
-import TeamNav from '../../components/TeamNav'
-import { isTeamPath } from '../../utils/useTeamAccess'
+import { isTeamPath } from '../../utils/teamPaths'
 import { startTracking, track } from '../../utils/track'
+
+// Team pages (and the team bar with its notifications code) load only when
+// opened, so the public site doesn't download them, and a change to one of
+// them doesn't make visitors re-download everything.
+const MenuAdmin = lazy(() => import('../MenuAdmin'))
+const Planner = lazy(() => import('../Planner'))
+const Team = lazy(() => import('../Team'))
+const Events = lazy(() => import('../Events'))
+const WrapUp = lazy(() => import('../Events/WrapUp'))
+const TeamNav = lazy(() => import('../../components/TeamNav'))
 
 export const isSiteReadyForOrders = true
 
@@ -32,8 +36,15 @@ const Shell = () => {
   }, [pathname, team])
   return (
     <div className={team ? 'min-h-screen bg-gray-50' : undefined}>
-      {team ? <TeamNav /> : <Navbar />}
+      {team ? (
+        <Suspense fallback={<div className="h-14 bg-white border-b border-gray-200" />}>
+          <TeamNav />
+        </Suspense>
+      ) : (
+        <Navbar />
+      )}
       <div className="text-center justify-center">
+        <Suspense fallback={<p className="py-10 text-sm text-gray-500">Loading…</p>}>
         <Routes>
           <Route exact path="/" element={<MainPage />} />
           <Route exact path="/order" element={<Order />} />
@@ -44,6 +55,7 @@ const Shell = () => {
           <Route exact path="/events" element={<Events />} />
           <Route exact path="/events/wrapup" element={<WrapUp />} />
         </Routes>
+        </Suspense>
       </div>
       {!team && (
         <footer className="text-center py-6 text-xs text-gray-400">
