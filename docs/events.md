@@ -16,7 +16,7 @@ reminders for booked events. Admins only ([team.md](team.md)).
 | Website visitor counts (Events → Report) | Firestore `siteStats/{YYYY-MM}`, one number per step, added by `functions/stats.js` `countStep`; the page side is `src/utils/track.js` |
 | Dough reminder recipients | Firestore `eventSettings/reminders`, edited under "Pricing" |
 | Website inquiries → events | `functions/events.js` `saveInquiryEvent`, called by `sendInquiry` (status "inquiry") |
-| Dough reminder emails | `functions/events.js` `doughReminders`, checks every 15 minutes and sends at the time set under Pricing (default 2 pm Utah time) |
+| Dough reminder emails | `functions/events.js` `runDoughReminders`, run every 15 minutes by `notificationTimer` (which also runs the morning summary), and sends at the time set under Pricing (default 2 pm Utah time) |
 | Weather | [Open-Meteo](https://open-meteo.com/) (free, no key). The location is turned into a point when an event is saved; street addresses fall back to the town. |
 
 Stages: Inquiry → Quoted → Booked → Done, or Lost. The list has two tabs:
