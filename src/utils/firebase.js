@@ -1,9 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp} from "firebase/app";
-import { getDatabase } from "firebase/database";
 // import { getAnalytics } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -21,8 +19,6 @@ export const firebaseConfig = {
 // const analytics = getAnalytics(firebaseApp);
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
-const rtdb = getDatabase(app);
 
 // Team sign-in is Google only. Who can do what is the team list (useTeamRole).
 const googleProvider = new GoogleAuthProvider();
@@ -42,4 +38,6 @@ const logout = () => {
   signOut(auth);
 };
 
-export { auth, db, rtdb, signInWithGoogle, logout };
+// Firestore and the Realtime Database are in ./db (team pages only), so the
+// public pages don't download them.
+export { app, auth, signInWithGoogle, logout };

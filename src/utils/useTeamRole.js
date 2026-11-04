@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { doc, getDoc } from 'firebase/firestore'
 import { getFunctions, httpsCallable } from 'firebase/functions'
-import { auth, db } from './firebase'
+import { auth } from './firebase'
+import { db } from './db'
 
 // The one team list: Firestore `plannerAccess/team` ({ admins: [emails], staff: [emails] }).
 // Admins: menu, planner, events, wrap-up, dashboard link. Staff: planner.

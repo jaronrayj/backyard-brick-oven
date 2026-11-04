@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { collection, getDocs } from 'firebase/firestore'
-import { db } from '../../utils/firebase'
+import { db } from '../../utils/db'
 import { EXTRA, FUNNEL } from '../../utils/track'
 import { ui } from '../../components/TeamPage'
 

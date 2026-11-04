@@ -3,7 +3,9 @@ import { Disclosure } from '@headlessui/react'
 import { MenuIcon, XIcon } from '@heroicons/react/outline'
 import { isSiteReadyForOrders } from '../App/index'
 import logo from '../../assets/BrickovenLogo.png'
-import useTeamAccess from '../../utils/useTeamAccess'
+import { useAuthState } from 'react-firebase-hooks/auth'
+import { auth } from '../../utils/firebase'
+import { isTeamBrowser } from '../../utils/track'
 
 const navigation = [
   { name: 'Home', href: '/' },
@@ -19,8 +21,10 @@ const classNames = (...classes) => {
 const Navbar = () => {
   const currentPath =
     typeof window !== 'undefined' ? window.location.pathname : '/'
-  const { tools } = useTeamAccess()
-  const links = tools.length ? [...navigation, { name: 'Team', href: '/team' }] : navigation
+  // Team link for a signed-in team member (this browser has opened a team page).
+  const [user] = useAuthState(auth)
+  const isTeam = !!user && isTeamBrowser()
+  const links = isTeam ? [...navigation, { name: 'Team', href: '/team' }] : navigation
 
   return (
     <Disclosure as="nav" className="bg-yellow-500">
@@ -91,7 +95,7 @@ const Navbar = () => {
                     >
                       Inquiries
                     </a>
-                    {tools.length > 0 && (
+                    {isTeam && (
                       <a
                         href="/team"
                         className={classNames(
