@@ -87,6 +87,10 @@ and open it from there). Code: `functions/push.js`, the page button
 | Dough step (poolish tonight / mix today) | The dough reminder time (default 2 pm), with the email, for booked events |
 | Morning summary | The morning time (default 7 am): today's Google Calendar entries, dough steps and booked events; skipped when there's nothing |
 
+To check a device, tap the bell once notifications are on and choose **Send a
+test** (`testPush`). It sends only to that device and shows any error FCM
+returns.
+
 Only the emails in Firestore `eventSettings/notifications` (`emails: [...]`)
 can turn them on; with no list it's `jj.backyardbrickoven@gmail.com` alone.
 Each phone's push token is kept in `pushTokens/` (server only). The morning

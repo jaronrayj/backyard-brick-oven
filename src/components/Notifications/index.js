@@ -43,6 +43,7 @@ const Notifications = ({ className }) => {
   const [state, setState] = useState('loading') // loading | off | on | blocked | unsupported | busy
   const [message, setMessage] = useState('')
   const [showHelp, setShowHelp] = useState(false)
+  const [menu, setMenu] = useState(false)
 
   useEffect(() => {
     let live = true
@@ -67,8 +68,29 @@ const Notifications = ({ className }) => {
     }
   }, [])
 
+  const sendTest = async () => {
+    setMenu(false)
+    setState('busy')
+    setMessage('')
+    try {
+      const token = await deviceToken(false)
+      if (!token) throw new Error('This device has no push token. Turn notifications off and on again.')
+      const { data } = await callable('testPush')({ token })
+      setMessage(
+        data.ok
+          ? 'Test sent. It should pop up within a few seconds. If nothing shows, check that this browser or app is allowed to show notifications in your phone or computer settings.'
+          : `The test didn't go through: ${data.error}`,
+      )
+    } catch (e) {
+      console.error(e)
+      setMessage(`Couldn't send a test: ${e.message || e}`)
+    }
+    setState('on')
+  }
+
   const toggle = async () => {
     const turnOn = state !== 'on'
+    setMenu(false)
     setState('busy')
     setMessage('')
     try {
@@ -80,7 +102,7 @@ const Notifications = ({ className }) => {
       await callable('registerPush')({ token, on: turnOn })
       if (!turnOn) await deleteToken(getMessaging()).catch(() => {})
       setState(turnOn ? 'on' : 'off')
-      if (turnOn) setMessage("Notifications on. You'll get new inquiries, dough steps, and a morning summary. Set the times under Events → Pricing.")
+      if (turnOn) setMessage("Notifications on. You'll get new inquiries, dough steps, and a morning summary. Tap the bell again to send yourself a test.")
     } catch (e) {
       console.error(e)
       setMessage(e.message || "Couldn't change notifications.")
@@ -104,13 +126,24 @@ const Notifications = ({ className }) => {
         type="button"
         className={`p-2 rounded-full ${on ? 'text-amber-600' : 'text-gray-500'} hover:bg-gray-100 disabled:opacity-40`}
         disabled={['loading', 'busy'].includes(state)}
-        onClick={() => (help ? setShowHelp((v) => !v) : toggle())}
+        onClick={() => (help ? setShowHelp((v) => !v) : on ? setMenu((v) => !v) : toggle())}
         aria-pressed={on}
-        aria-label={on ? 'Notifications on. Tap to turn off.' : 'Turn on notifications'}
+        aria-expanded={on ? menu : undefined}
+        aria-label={on ? 'Notifications on. Tap for options.' : 'Turn on notifications'}
         title={on ? 'Notifications on' : 'Turn on notifications'}
       >
         <Icon className={`h-6 w-6 ${state === 'busy' ? 'animate-pulse' : ''}`} aria-hidden="true" />
       </button>
+      {menu && on && (
+        <div className="absolute right-0 top-full mt-1 z-30 w-48 rounded-lg bg-white border border-gray-200 shadow-lg py-1 text-sm">
+          <button type="button" className="w-full text-left px-3 py-2 hover:bg-amber-50 text-gray-800" onClick={sendTest}>
+            Send a test
+          </button>
+          <button type="button" className="w-full text-left px-3 py-2 hover:bg-amber-50 text-gray-800" onClick={toggle}>
+            Turn off on this device
+          </button>
+        </div>
+      )}
       {note && (
         <div role="status" className="absolute right-0 top-full mt-1 z-30 w-64 rounded-lg bg-gray-900 text-white text-xs p-3 shadow-lg">
           {note}
