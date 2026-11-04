@@ -58,3 +58,20 @@ test('bread on its own needs no pizzas and uses its own loaf weight', () => {
   expect(root.querySelector('#plan').textContent).toContain('2 × 600 g')
   expect(root.querySelector('.sugg').textContent).toContain('1.20 kg')
 })
+
+test('dough recipes start closed and stay open through a redraw', () => {
+  const root = mount([{ id: 'a', date: '2030-06-07', type: 'pf', balls: 100 }])
+  const cards = () => [...root.querySelectorAll('#plan details.stepcard')]
+  expect(cards().map((c) => c.open)).toEqual([false, false])
+  // What to do and when still shows while closed.
+  expect(cards()[0].querySelector('summary').textContent).toContain('Start poolish')
+
+  cards()[1].open = true
+  cards()[1].dispatchEvent(new Event('toggle'))
+  root.querySelector('#add-svc').click() // adding a service redraws the plan
+  expect(cards().map((c) => c.open)).toEqual([false, true])
+
+  cards()[1].open = false
+  cards()[1].dispatchEvent(new Event('toggle'))
+  expect(JSON.parse(localStorage.getItem('bybo-open-recipes'))).toEqual([])
+})

@@ -67,10 +67,16 @@
   .bybo-planner .batch h3 { margin: 0; font-size: 15px; font-weight: 600; }
   .bybo-planner .pill { font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .bybo-planner .stepcard { background: var(--panel); }
-  .bybo-planner .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 10px; }
+  .bybo-planner .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 10px; align-items: start; }
   .bybo-planner .stepcard { border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: grid; gap: 4px; align-content: start; }
   .bybo-planner .stepcard h4 { margin: 0; font-size: 14px; font-weight: 600; }
   .bybo-planner .stepcard .when { font-size: 12px; color: var(--muted); }
+  .bybo-planner .stepcard summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; cursor: pointer; list-style: none; }
+  .bybo-planner .stepcard summary::-webkit-details-marker { display: none; }
+  .bybo-planner .stepcard summary::after { content: ""; flex: none; width: 8px; height: 8px; margin-right: 4px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); }
+  .bybo-planner .stepcard[open] summary::after { transform: rotate(-135deg); }
+  .bybo-planner .stepcard[open] summary { margin-bottom: 6px; }
+  .bybo-planner .step-title { display: grid; gap: 2px; }
   .bybo-planner table.g { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
   .bybo-planner table.g td { padding: 4px 0; border-bottom: 1px solid var(--line); }
   .bybo-planner table.g tr:last-child td { border-bottom: 0; }
