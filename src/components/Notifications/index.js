@@ -112,14 +112,14 @@ const Notifications = ({ className }) => {
     }
   }, [])
 
-  const sendTest = async () => {
+  const sendTest = async (delay = 0) => {
     setMenu(false)
+    setMessage(delay ? `Lock your phone now. The test is sent in ${delay} seconds.` : '')
     setState('busy')
-    setMessage('')
     try {
       const token = await deviceToken(false)
       if (!token) throw new Error('This device has no push token. Turn notifications off and on again.')
-      const { data } = await callable('testPush')({ token })
+      const { data } = await callable('testPush')({ token, delay })
       setMessage(
         data.ok
           ? 'Test sent. It should pop up within a few seconds. If nothing shows, check that this browser or app is allowed to show notifications in your phone or computer settings.'
@@ -193,8 +193,11 @@ const Notifications = ({ className }) => {
       </button>
       {menu && on && (
         <div className="absolute right-0 top-full mt-1 z-30 w-48 rounded-lg bg-white border border-gray-200 shadow-lg py-1 text-sm">
-          <button type="button" className="w-full text-left px-3 py-2 hover:bg-amber-50 text-gray-800" onClick={sendTest}>
+          <button type="button" className="w-full text-left px-3 py-2 hover:bg-amber-50 text-gray-800" onClick={() => sendTest(0)}>
             Send a test
+          </button>
+          <button type="button" className="w-full text-left px-3 py-2 hover:bg-amber-50 text-gray-800" onClick={() => sendTest(15)}>
+            Send a test in 15 seconds
           </button>
           <button type="button" className="w-full text-left px-3 py-2 hover:bg-amber-50 text-gray-800" onClick={toggle}>
             Turn off on this device

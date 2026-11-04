@@ -33,6 +33,10 @@ const allowedEmails = async () => {
   return list.length ? list : [GMAIL_USER];
 };
 
+// High urgency so a locked Android phone (Doze) shows it now instead of
+// holding it until the screen comes on. TTL: a day; older than that is stale.
+const URGENT = { Urgency: "high", TTL: "86400" };
+
 const tokenId = (token) => createHash("sha256").update(token).digest("hex").slice(0, 40);
 
 // { token, on } from the page. on=false forgets this phone.
@@ -62,15 +66,19 @@ export const pushStatus = onCall({ invoker: "public" }, async (request) => {
   return { on: snap.exists };
 });
 
-// Send a test to just this device: { token } -> { ok, error? }
+// Send a test to just this device: { token, delay? } -> { ok, error? }
+// delay (seconds, up to 30) gives time to lock the phone first.
 export const testPush = onCall({ invoker: "public" }, async (request) => {
   await requireRole(request, ["admin"], "Only admins can get notifications.");
-  const { token } = request.data || {};
+  const { token, delay = 0 } = request.data || {};
   if (!token) throw new HttpsError("invalid-argument", "No push token.");
+  const wait = Math.min(Math.max(Number(delay) || 0, 0), 30);
+  if (wait) await new Promise((r) => setTimeout(r, wait * 1000));
   try {
     await getMessaging().send({
       token,
       webpush: {
+        headers: URGENT,
         notification: {
           title: "Test from Backyard Brick Oven",
           body: "Notifications are working on this device.",
@@ -101,6 +109,7 @@ export const sendPush = async ({ title, body, link = "/events", tag }) => {
     const res = await getMessaging().sendEachForMulticast({
       tokens: docs.map((d) => d.data().token),
       webpush: {
+        headers: URGENT,
         notification: {
           title,
           body,
