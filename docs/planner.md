@@ -48,7 +48,7 @@ shopping list, and take no share of the toppings.
 ## From your calendar
 
 Under Services, "From your calendar" lists the next two weeks of the business
-calendar (the same one Wrap-up reads. Above Services, admins see "To wrap up": the last week's ended events with no wrap-up, with Wrap up and Skip; see docs/events.md; `plannerCalendar` in
+calendar (the same one Wrap-up reads. "Clear finished services" (under Services, once a service's day has passed) removes past services and their old prep checkmarks; upcoming services, picked pizzas, your own items and shopping/bring checks stay. Above Services, admins see "To wrap up": the last week's ended events with no wrap-up, with Wrap up and Skip; see docs/events.md; `plannerCalendar` in
 `functions/planner.js`) that aren't planned yet. "Add" makes a normal service
 you can edit: the calendar title becomes its name, "Pizza Friday" in the title
 makes it a Pizza Friday, "wedding" a wedding, anything else a party, and the
