@@ -86,7 +86,7 @@ and open it from there). Code: `functions/push.js`, the page button
 | New inquiry | As soon as the website form is sent |
 | Dough step (poolish tonight / mix today) | The dough reminder time (default 2 pm), with the email, for booked events |
 | Morning summary | The morning time (default 7 am): today's Google Calendar entries, dough steps and booked events, plus yesterday's events still to wrap up; skipped when there's nothing |
-| Wrap-up reminder | The wrap-up time (default 9 pm) on days with an event or calendar entry that has no wrap-up yet; tapping it opens Wrap-up. The next morning's summary lists anything from yesterday still not wrapped up |
+| Wrap-up reminder | At each event's Google Calendar end time (within 15 minutes) (all-day entries and events without a time: the wrap-up time, default 9 pm), once per event and only if it has no wrap-up yet; tapping it opens Wrap-up. Sent ones are kept in `wrapUpReminders/{date}`. The next morning's summary lists anything from yesterday still not wrapped up |
 
 To check a device, tap the bell once notifications are on and choose **Send a
 test** (`testPush`). It sends only to that device and shows any error FCM

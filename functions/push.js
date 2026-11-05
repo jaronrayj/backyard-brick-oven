@@ -198,24 +198,33 @@ const addDaysISO = (iso, n) => {
   return d.toISOString().slice(0, 10);
 };
 
-// Once a day after the wrap-up time (default 9 pm): today's events and
-// calendar entries that have no wrap-up yet. Run by notificationTimer.
+// After each event ends: at its calendar end time, or at the
+// wrap-up time (default 9 pm) for all-day entries and events without a time.
+// One nudge per event, only while it has no wrap-up. Run by notificationTimer.
+const AFTER_END_MIN = 0;
+
 export const runWrapUpReminder = async () => {
   const db = getFirestore();
-  const settingsRef = db.doc("eventSettings/reminders");
-  const settings = (await settingsRef.get()).data() || {};
+  const settings = (await db.doc("eventSettings/reminders").get()).data() || {};
   const today = todayLocal();
-  const late = minutesPast(timesFrom(settings).wrapUpTime);
-  if (late < 0 || late > 180 || settings.wrapUpSentOn === today) return;
-  await settingsRef.set({ wrapUpSentOn: today }, { merge: true });
+  const sentRef = db.doc(`wrapUpReminders/${today}`);
+  const sent = (await sentRef.get()).data() || {};
   if (!(await db.collection("pushTokens").limit(1).get()).size) return;
-  const left = await notWrappedUp([today]);
-  if (!left.length) return;
-  const sent = await sendPush({
-    title: left.length === 1 ? `Wrap up ${left[0].title}` : `Wrap up ${left.length} events`,
-    body: left.length === 1 ? "Log the night to the money tracker while it's fresh." : left.map((x) => x.title).join(", "),
+
+  const fallback = minutesPast(timesFrom(settings).wrapUpTime) >= 0;
+  const now = Date.now();
+  const due = (await notWrappedUp([today])).filter((x) => {
+    if (sent[x.key]) return false;
+    if (x.endsAt) return now >= new Date(x.endsAt).getTime() + AFTER_END_MIN * 60000;
+    return fallback;
+  });
+  if (!due.length) return;
+  await sentRef.set(Object.fromEntries(due.map((x) => [x.key, true])), { merge: true });
+  const n = await sendPush({
+    title: due.length === 1 ? `Wrap up ${due[0].title}` : `Wrap up ${due.length} events`,
+    body: due.length === 1 ? "Log it to the money tracker while it's fresh." : due.map((x) => x.title).join(", "),
     link: "/events/wrapup",
     tag: "wrapup",
   });
-  logger.info(`Wrap-up reminder sent to ${sent} phone(s)`);
+  logger.info(`Wrap-up reminder (${due.map((x) => x.key).join(", ")}) sent to ${n} phone(s)`);
 };
