@@ -68,7 +68,7 @@ const Times = ({ onClose }) => {
           <label className="block text-gray-700">
             Wrap-up reminder for all-day entries
             {select('wrapUpTime')}
-            <span className="block text-xs text-gray-500">Timed events remind you 30 minutes after they end on the calendar.</span>
+            <span className="block text-xs text-gray-500">Timed events remind you when they end on the calendar.</span>
           </label>
           <label className="block text-gray-700">
             Email dough reminders to

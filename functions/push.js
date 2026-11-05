@@ -198,10 +198,10 @@ const addDaysISO = (iso, n) => {
   return d.toISOString().slice(0, 10);
 };
 
-// After each event ends: 30 minutes after its calendar end time, or at the
+// After each event ends: at its calendar end time, or at the
 // wrap-up time (default 9 pm) for all-day entries and events without a time.
 // One nudge per event, only while it has no wrap-up. Run by notificationTimer.
-const AFTER_END_MIN = 30;
+const AFTER_END_MIN = 0;
 
 export const runWrapUpReminder = async () => {
   const db = getFirestore();
