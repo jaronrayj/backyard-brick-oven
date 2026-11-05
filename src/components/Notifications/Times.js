@@ -66,9 +66,9 @@ const Times = ({ onClose }) => {
             <span className="block text-xs text-gray-500">Poolish and mix days for booked events, with an email too.</span>
           </label>
           <label className="block text-gray-700">
-            Wrap-up reminder
+            Wrap-up reminder for all-day entries
             {select('wrapUpTime')}
-            <span className="block text-xs text-gray-500">On event days, if nothing's been wrapped up yet.</span>
+            <span className="block text-xs text-gray-500">Timed events remind you 30 minutes after they end on the calendar.</span>
           </label>
           <label className="block text-gray-700">
             Email dough reminders to

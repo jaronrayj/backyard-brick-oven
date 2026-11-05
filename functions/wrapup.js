@@ -142,6 +142,7 @@ export const calendarItem = (e) => {
     time,
     location: String(e.location || "").trim(),
     notes: stripHtml(e.description),
+    endsAt: (e.end && e.end.dateTime) || "", // ISO; blank for all-day entries
   };
 };
 
@@ -178,7 +179,8 @@ const wrappedCalendarIds = async (ids) => {
 
 // What still needs a wrap-up on these dates: tracker events (booked or done,
 // no wrapUp yet) and calendar entries on days without a tracker event, with
-// no wrap-up saved. [{date, title}]
+// no wrap-up saved. [{key, date, title, endsAt}]; endsAt is the calendar end
+// time (ISO), from the same-day calendar entries for a tracker event, or "".
 export const notWrappedUp = async (dates) => {
   if (!dates.length) return [];
   const sorted = [...dates].sort();
@@ -191,9 +193,19 @@ export const notWrappedUp = async (dates) => {
   const { items } = await calendarBetween(sorted[0], sorted[sorted.length - 1]);
   const cal = items.filter((c) => dates.includes(c.date) && !eventDays.has(c.date));
   const done = await wrappedCalendarIds(cal.map((c) => c.id));
+  const latestEnd = (date) =>
+    items
+      .filter((c) => c.date === date && c.endsAt)
+      .map((c) => c.endsAt)
+      .sort()
+      .pop() || "";
   return [
-    ...events.filter((e) => !e.wrapUp).map((e) => ({ date: e.date, title: e.name || e.eventType || "Event" })),
-    ...cal.filter((c) => !done.has(String(c.id).replace(/\//g, "_"))).map((c) => ({ date: c.date, title: c.title || "Calendar event" })),
+    ...evSnap.docs
+      .filter((d) => dates.includes(d.data().date) && ["booked", "done"].includes(d.data().status) && !d.data().wrapUp)
+      .map((d) => ({ key: `e:${d.id}`, date: d.data().date, title: d.data().name || d.data().eventType || "Event", endsAt: latestEnd(d.data().date) })),
+    ...cal
+      .filter((c) => !done.has(String(c.id).replace(/\//g, "_")))
+      .map((c) => ({ key: `c:${c.id}`, date: c.date, title: c.title || "Calendar event", endsAt: c.endsAt })),
   ];
 };
 
