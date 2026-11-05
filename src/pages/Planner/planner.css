@@ -53,6 +53,7 @@
   .bybo-planner .cal-row .nm { display: grid; min-width: 0; }
   .bybo-planner .cal-row .sub { font-size: 12px; color: var(--muted); }
   .bybo-planner .cal-row .row { flex-wrap: nowrap; }
+  .bybo-planner h3.missed { color: #b45309; }
   .bybo-planner .svc .sugg { font-size: 13px; color: var(--muted); }
   .bybo-planner .svc .pf-hist { font-size: 13px; color: var(--muted); display: grid; gap: 2px; font-variant-numeric: tabular-nums; }
   .bybo-planner .svc .sugg b { color: var(--fg); font-variant-numeric: tabular-nums; }

@@ -926,14 +926,17 @@ export function mountPlanner(root, deps) {
       });
     });
 
-    /* Days already past are done (or missed): leave them off so the list starts at today. */
+    /* Past days drop off once everything on them is checked. Anything left unchecked stays, under
+       "Missed", until it's checked off or its service is cleared. */
     const today = todayStr();
-    const past = [...days.keys()].filter((d) => d < today).length;
-    if (past) box.append(el('p', 'empty', past === 1 ? 'One earlier prep day is hidden.' : past + ' earlier prep days are hidden.'));
-    [...days.keys()].filter((d) => d >= today).sort().forEach((d) => {
+    const left = (d) => days.get(d).some((x) => !CHECKED.includes('prep|' + d + '|' + x.key));
+    const past = [...days.keys()].filter((d) => d < today);
+    const done = past.filter((d) => !left(d)).length;
+    if (done) box.append(el('p', 'empty', done === 1 ? 'One earlier prep day is done.' : done + ' earlier prep days are done.'));
+    [...days.keys()].filter((d) => d >= today || left(d)).sort().forEach((d) => {
       /* The day's heading names the services its prep is for, so items stay one line. */
       const fors = [...new Set(days.get(d).flatMap((x) => x.notes.join(' + ').split(' + ')).filter(Boolean))];
-      box.append(el('h3', null, rel(d) + (fors.length ? ' — for ' + fors.join(', ') : '')));
+      box.append(el('h3', d < today ? 'missed' : null, (d < today ? 'Missed: ' : '') + rel(d) + (fors.length ? ' — for ' + fors.join(', ') : '')));
       days.get(d).sort((a, b) => a.rank - b.rank || a.title.localeCompare(b.title)).forEach((x) => {
         const key = 'prep|' + d + '|' + x.key;
         const lab = el('label', 'item' + (CHECKED.includes(key) ? ' done' : ''));
@@ -957,14 +960,13 @@ export function mountPlanner(root, deps) {
     try { window.history.replaceState(null, '', '#' + b.dataset.tab); } catch (e) { /* hash is optional */ }
   }));
   if (['#shop', '#bring', '#prep'].includes(window.location.hash)) root.querySelector('.tabs [data-tab="' + window.location.hash.slice(1) + '"]').click();
-  /* Between rounds: drop services whose day has passed, and their old prep checkmarks. Upcoming
-     services, picked pizzas, your own lists, and shopping and bring checkmarks stay. */
+  /* Between rounds: drop services whose day has passed (their prep goes with them). Upcoming
+     services, picked pizzas, your own lists and all checkmarks stay. */
   $('#clear-done').addEventListener('click', () => {
     if (!PLAN || !canWrite) return;
     const today = todayStr();
     PLAN.services = PLAN.services.filter((s) => !s.date || s.date >= today);
-    CHECKED = CHECKED.filter((k) => !(k.startsWith('prep|') && k.split('|')[1] < today));
-    savePlan(); saveChecks(); renderAll(); renderPrep();
+    savePlan(); renderAll(); renderPrep();
   });
   $('#add-svc').addEventListener('click', () => {
     if (!PLAN) return;
@@ -986,7 +988,8 @@ export function mountPlanner(root, deps) {
   $('#bring-per').addEventListener('change', () => { $('#bring-every-wrap').hidden = !$('#bring-per').value; });
   $('#bring-edit').addEventListener('click', () => { bringEditing = !bringEditing; renderBring(); });
   $('#bring-new').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addBring(); } });
-  $('#prep-uncheck').addEventListener('click', () => { CHECKED = CHECKED.filter((k) => !k.startsWith('prep|')); saveChecks(); renderPrep(); });
+  /* Today and later only: unchecking past days would bring them all back as missed. */
+  $('#prep-uncheck').addEventListener('click', () => { const t = todayStr(); CHECKED = CHECKED.filter((k) => !k.startsWith('prep|') || k.split('|')[1] < t); saveChecks(); renderPrep(); });
   root.querySelectorAll('.seg [data-step]').forEach((b) => b.addEventListener('click', () => {
     step = Number(b.dataset.step) || 1;
     root.querySelectorAll('.seg [data-step]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
