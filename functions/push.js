@@ -10,6 +10,7 @@
 //   - new website inquiries (sendInquiry)
 //   - dough steps for booked events (runDoughReminders, with the email)
 //   - a morning summary of today's calendar and dough steps (runMorningSummary)
+//   - an evening nudge to wrap up today's events (runWrapUpReminder)
 // Both times are set from the bell > Notification times (eventSettings/reminders).
 import { createHash } from "node:crypto";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
@@ -20,7 +21,7 @@ import { getMessaging } from "firebase-admin/messaging";
 import { requireRole } from "./team.js";
 import { GMAIL_USER } from "./mail.js";
 import { dueSteps, mixLeadFrom, todayLocal, STEP_TEXT, timesFrom, minutesPast } from "./events.js";
-import { calendarBetween } from "./wrapup.js";
+import { calendarBetween, notWrappedUp } from "./wrapup.js";
 
 if (!getApps().length) initializeApp();
 
@@ -172,6 +173,14 @@ export const runMorningSummary = async () => {
       if (event.date === today) lines.push(`Event today: ${event.name}${event.time ? `, ${event.time}` : ""}`);
     }
 
+    // Yesterday's events that still need a wrap-up.
+    try {
+      const left = await notWrappedUp([addDaysISO(today, -1)]);
+      if (left.length) lines.push(`Still to wrap up: ${left.map((x) => x.title).join(", ")}`);
+    } catch (e) {
+      logger.error("Morning summary: wrap-up check failed", e);
+    }
+
     if (!lines.length) {
       logger.info("Morning summary: nothing today");
       return;
@@ -179,4 +188,34 @@ export const runMorningSummary = async () => {
     const sent = await sendPush({ title: `Today · ${shortDate(today)}`, body: lines.join("\n"), link: "/events", tag: "morning" });
     logger.info(`Morning summary sent to ${sent} phone(s)`);
   }
+};
+
+// ---------- Wrap-up reminder ----------
+
+const addDaysISO = (iso, n) => {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+
+// Once a day after the wrap-up time (default 9 pm): today's events and
+// calendar entries that have no wrap-up yet. Run by notificationTimer.
+export const runWrapUpReminder = async () => {
+  const db = getFirestore();
+  const settingsRef = db.doc("eventSettings/reminders");
+  const settings = (await settingsRef.get()).data() || {};
+  const today = todayLocal();
+  const late = minutesPast(timesFrom(settings).wrapUpTime);
+  if (late < 0 || late > 180 || settings.wrapUpSentOn === today) return;
+  await settingsRef.set({ wrapUpSentOn: today }, { merge: true });
+  if (!(await db.collection("pushTokens").limit(1).get()).size) return;
+  const left = await notWrappedUp([today]);
+  if (!left.length) return;
+  const sent = await sendPush({
+    title: left.length === 1 ? `Wrap up ${left[0].title}` : `Wrap up ${left.length} events`,
+    body: left.length === 1 ? "Log the night to the money tracker while it's fresh." : left.map((x) => x.title).join(", "),
+    link: "/events/wrapup",
+    tag: "wrapup",
+  });
+  logger.info(`Wrap-up reminder sent to ${sent} phone(s)`);
 };

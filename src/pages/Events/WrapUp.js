@@ -83,7 +83,8 @@ const WrapUpForm = ({ headers, choice, today, onDone, onBack }) => {
     setBusy(true)
     setError('')
     try {
-      const res = await callable('submitWrapUp')({ values, eventId: choice.eventId })
+      const calendarEntryId = choice.key.startsWith('c:') ? choice.key.slice(2) : null
+      const res = await callable('submitWrapUp')({ values, eventId: choice.eventId, calendarEntryId })
       onDone(res.data.row)
     } catch (e) {
       setError(e.message || "Couldn't save.")
@@ -323,7 +324,7 @@ const WrapUp = () => {
                     </button>
                   </li>
                 ))}
-                {choices.length === 0 && <li className="text-gray-500">Nothing in the last three weeks.</li>}
+                {choices.length === 0 && <li className="text-gray-500">Nothing in the last week.</li>}
               </ul>
               <div className="flex gap-2 flex-wrap">
                 <button type="button" className={btnQuiet} onClick={() => setChoice(blank('Prep', 'Prep day'))}>

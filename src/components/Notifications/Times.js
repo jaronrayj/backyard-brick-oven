@@ -29,7 +29,7 @@ const Times = ({ onClose }) => {
         .split(/[\s,]+/)
         .map((e) => e.trim().toLowerCase())
         .filter(Boolean)
-      await setDoc(doc(db, 'eventSettings', 'reminders'), { emails, doughTime: r.doughTime, morningTime: r.morningTime }, { merge: true })
+      await setDoc(doc(db, 'eventSettings', 'reminders'), { emails, doughTime: r.doughTime, morningTime: r.morningTime, wrapUpTime: r.wrapUpTime }, { merge: true })
       onClose('Notification times saved.')
     } catch (e) {
       console.error(e)
@@ -64,6 +64,11 @@ const Times = ({ onClose }) => {
             Dough reminders
             {select('doughTime')}
             <span className="block text-xs text-gray-500">Poolish and mix days for booked events, with an email too.</span>
+          </label>
+          <label className="block text-gray-700">
+            Wrap-up reminder
+            {select('wrapUpTime')}
+            <span className="block text-xs text-gray-500">On event days, if nothing's been wrapped up yet.</span>
           </label>
           <label className="block text-gray-700">
             Email dough reminders to

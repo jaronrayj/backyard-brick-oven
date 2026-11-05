@@ -15,6 +15,7 @@ export const DEFAULT_REMINDERS = {
   emails: [], // empty = the business inbox
   doughTime: '14:00', // dough reminder email and phone notification, Utah time
   morningTime: '07:00', // phone morning summary
+  wrapUpTime: '21:00', // phone nudge to wrap up today's events
 }
 
 // Choices for the reminder times: every 15 minutes from 5 am to 10 pm.

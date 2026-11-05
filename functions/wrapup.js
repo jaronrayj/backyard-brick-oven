@@ -167,6 +167,36 @@ export const calendarBetween = async (fromISO, toISO) => {
   return { calendarId, items: await readCalendar(await accessToken(), calendarId, fromISO, toISO) };
 };
 
+// Calendar entry ids that have a wrap-up saved (Firestore wrapUps/{id}).
+const wrappedCalendarIds = async (ids) => {
+  const db = getFirestore();
+  const refs = [...new Set(ids.filter(Boolean))].map((id) => db.doc(`wrapUps/${String(id).replace(/\//g, "_")}`));
+  if (!refs.length) return new Set();
+  const snaps = await db.getAll(...refs);
+  return new Set(snaps.filter((s) => s.exists).map((s) => s.id));
+};
+
+// What still needs a wrap-up on these dates: tracker events (booked or done,
+// no wrapUp yet) and calendar entries on days without a tracker event, with
+// no wrap-up saved. [{date, title}]
+export const notWrappedUp = async (dates) => {
+  if (!dates.length) return [];
+  const sorted = [...dates].sort();
+  const db = getFirestore();
+  const evSnap = await db.collection("events").where("date", ">=", sorted[0]).get();
+  const events = evSnap.docs
+    .map((d) => d.data())
+    .filter((e) => dates.includes(e.date) && ["booked", "done"].includes(e.status));
+  const eventDays = new Set(events.map((e) => e.date));
+  const { items } = await calendarBetween(sorted[0], sorted[sorted.length - 1]);
+  const cal = items.filter((c) => dates.includes(c.date) && !eventDays.has(c.date));
+  const done = await wrappedCalendarIds(cal.map((c) => c.id));
+  return [
+    ...events.filter((e) => !e.wrapUp).map((e) => ({ date: e.date, title: e.name || e.eventType || "Event" })),
+    ...cal.filter((c) => !done.has(String(c.id).replace(/\//g, "_"))).map((c) => ({ date: c.date, title: c.title || "Calendar event" })),
+  ];
+};
+
 const addDays = (iso, n) => {
   const d = new Date(`${iso}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);
@@ -180,8 +210,9 @@ export const wrapUpOptions = onCall({ invoker: "public" }, async (request) => {
   await requireAdmin(request);
   const db = getFirestore();
   const today = localDate(new Date());
-  const from = addDays(today, -21);
-  const to = addDays(today, 1);
+  // The last week, through today.
+  const from = addDays(today, -7);
+  const to = today;
   const settings = (await db.doc("eventSettings/wrapUp").get()).data() || {};
   const calendarId = settings.calendarId || DEFAULT_CALENDAR;
   const sa = await serviceAccountEmail();
@@ -239,6 +270,8 @@ export const wrapUpOptions = onCall({ invoker: "public" }, async (request) => {
       wrappedUp: !!e.wrapUp,
     }));
 
+  const done = await wrappedCalendarIds(calendar.map((c) => c.id));
+  calendar = calendar.map((c) => ({ ...c, wrappedUp: done.has(String(c.id).replace(/\//g, "_")) }));
   return { headers: writableHeaders(headers), calendar, events, calendarId, problems, today };
 });
 
@@ -247,7 +280,7 @@ export const wrapUpOptions = onCall({ invoker: "public" }, async (request) => {
 // last column, so the row is found and filled directly.
 export const submitWrapUp = onCall({ invoker: "public" }, async (request) => {
   await requireAdmin(request);
-  const { values, eventId } = request.data || {};
+  const { values, eventId, calendarEntryId } = request.data || {};
   if (!values || typeof values !== "object") throw new HttpsError("invalid-argument", "Nothing to save.");
   const sa = await serviceAccountEmail();
   try {
@@ -272,6 +305,14 @@ export const submitWrapUp = onCall({ invoker: "public" }, async (request) => {
           updatedAt: FieldValue.serverTimestamp(),
         })
         .catch((e) => logger.error("Couldn't mark the event done", e));
+    }
+    // Calendar-only entries (Pizza Friday, prep days) are remembered here, so
+    // the list and the wrap-up reminder know they're done.
+    if (calendarEntryId && typeof calendarEntryId === "string") {
+      await getFirestore()
+        .doc(`wrapUps/${calendarEntryId.replace(/\//g, "_")}`)
+        .set({ row: rowNum, at: FieldValue.serverTimestamp(), by: request.auth.token.email })
+        .catch((e) => logger.error("Couldn't remember the calendar wrap-up", e));
     }
     return { row: rowNum };
   } catch (e) {
