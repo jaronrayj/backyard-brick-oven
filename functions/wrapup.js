@@ -168,13 +168,15 @@ export const calendarBetween = async (fromISO, toISO) => {
   return { calendarId, items: await readCalendar(await accessToken(), calendarId, fromISO, toISO) };
 };
 
-// Calendar entry ids that have a wrap-up saved (Firestore wrapUps/{id}).
-const wrappedCalendarIds = async (ids) => {
+// Calendar entries with a wrap-up saved or skipped (Firestore wrapUps/{id}):
+// Map of id -> "done" | "skipped".
+const docId = (id) => String(id).replace(/\//g, "_");
+const calendarWrapState = async (ids) => {
   const db = getFirestore();
-  const refs = [...new Set(ids.filter(Boolean))].map((id) => db.doc(`wrapUps/${String(id).replace(/\//g, "_")}`));
-  if (!refs.length) return new Set();
+  const refs = [...new Set(ids.filter(Boolean))].map((id) => db.doc(`wrapUps/${docId(id)}`));
+  if (!refs.length) return new Map();
   const snaps = await db.getAll(...refs);
-  return new Set(snaps.filter((s) => s.exists).map((s) => s.id));
+  return new Map(snaps.filter((s) => s.exists).map((s) => [s.id, s.data().skipped ? "skipped" : "done"]));
 };
 
 // What still needs a wrap-up on these dates: tracker events (booked or done,
@@ -192,7 +194,7 @@ export const notWrappedUp = async (dates) => {
   const eventDays = new Set(events.map((e) => e.date));
   const { items } = await calendarBetween(sorted[0], sorted[sorted.length - 1]);
   const cal = items.filter((c) => dates.includes(c.date) && !eventDays.has(c.date));
-  const done = await wrappedCalendarIds(cal.map((c) => c.id));
+  const state = await calendarWrapState(cal.map((c) => c.id));
   const latestEnd = (date) =>
     items
       .filter((c) => c.date === date && c.endsAt)
@@ -201,10 +203,10 @@ export const notWrappedUp = async (dates) => {
       .pop() || "";
   return [
     ...evSnap.docs
-      .filter((d) => dates.includes(d.data().date) && ["booked", "done"].includes(d.data().status) && !d.data().wrapUp)
+      .filter((d) => dates.includes(d.data().date) && ["booked", "done"].includes(d.data().status) && !d.data().wrapUp && !d.data().wrapUpSkipped)
       .map((d) => ({ key: `e:${d.id}`, date: d.data().date, title: d.data().name || d.data().eventType || "Event", endsAt: latestEnd(d.data().date) })),
     ...cal
-      .filter((c) => !done.has(String(c.id).replace(/\//g, "_")))
+      .filter((c) => !state.has(docId(c.id)))
       .map((c) => ({ key: `c:${c.id}`, date: c.date, title: c.title || "Calendar event", endsAt: c.endsAt })),
   ];
 };
@@ -280,11 +282,67 @@ export const wrapUpOptions = onCall({ invoker: "public" }, async (request) => {
       guests: e.guests || "",
       notes: e.notes || "",
       wrappedUp: !!e.wrapUp,
+      skipped: !!e.wrapUpSkipped,
     }));
 
-  const done = await wrappedCalendarIds(calendar.map((c) => c.id));
-  calendar = calendar.map((c) => ({ ...c, wrappedUp: done.has(String(c.id).replace(/\//g, "_")) }));
+  const state = await calendarWrapState(calendar.map((c) => c.id));
+  calendar = calendar.map((c) => ({
+    ...c,
+    wrappedUp: state.get(docId(c.id)) === "done",
+    skipped: state.get(docId(c.id)) === "skipped",
+  }));
   return { headers: writableHeaders(headers), calendar, events, calendarId, problems, today };
+});
+
+// Calendar entries on the wrap-up's date whose title matches its name.
+export const matchesName = (title, name) => {
+  const t = String(title || "").toLowerCase();
+  const n = String(name || "").trim().toLowerCase();
+  if (!n) return false;
+  if (n === "prep") return /\bprep\b/.test(t);
+  return t.includes(n) || n.includes(t);
+};
+const closeMatchingCalendar = async (values, row, by) => {
+  const date = Object.entries(values).find(([h]) => /date of event/i.test(h))?.[1];
+  const name = Object.entries(values).find(([h]) => /pizza friday or event/i.test(h))?.[1];
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || "")) || !name) return;
+  const { items } = await calendarBetween(date, date);
+  const db = getFirestore();
+  await Promise.all(
+    items
+      .filter((c) => c.date === date && matchesName(c.title, name))
+      .map((c) => db.doc(`wrapUps/${docId(c.id)}`).set({ row, at: FieldValue.serverTimestamp(), by }, { merge: true }))
+  );
+};
+
+// Close out a wrap-up without filling it in: it drops off the list and its
+// reminders stop. key is "e:<tracker event id>" or "c:<calendar entry id>".
+export const skipWrapUp = onCall({ invoker: "public" }, async (request) => {
+  await requireAdmin(request);
+  const key = String((request.data || {}).key || "");
+  const m = /^([ec]):(.+)$/.exec(key);
+  if (!m) throw new HttpsError("invalid-argument", "Nothing to skip.");
+  const db = getFirestore();
+  const mark = { at: FieldValue.serverTimestamp(), by: request.auth.token.email };
+  if (m[1] === "e") {
+    await db.doc(`events/${m[2]}`).update({ wrapUpSkipped: mark });
+  } else {
+    await db.doc(`wrapUps/${docId(m[2])}`).set({ ...mark, skipped: true });
+  }
+  return { ok: true };
+});
+
+// For the planner's "To wrap up": the last week's events with no wrap-up,
+// once they've ended (all-day entries count from that morning). Newest first.
+export const wrapUpsDue = onCall({ invoker: "public" }, async (request) => {
+  await requireAdmin(request);
+  const today = localDate(new Date());
+  const dates = Array.from({ length: 8 }, (_, i) => addDays(today, -i));
+  const now = Date.now();
+  const items = (await notWrappedUp(dates))
+    .filter((x) => x.date < today || !x.endsAt || new Date(x.endsAt).getTime() <= now)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  return { items };
 });
 
 // Write one wrap-up into the next empty row (by column A) of Form Responses.
@@ -322,9 +380,17 @@ export const submitWrapUp = onCall({ invoker: "public" }, async (request) => {
     // the list and the wrap-up reminder know they're done.
     if (calendarEntryId && typeof calendarEntryId === "string") {
       await getFirestore()
-        .doc(`wrapUps/${calendarEntryId.replace(/\//g, "_")}`)
+        .doc(`wrapUps/${docId(calendarEntryId)}`)
         .set({ row: rowNum, at: FieldValue.serverTimestamp(), by: request.auth.token.email })
         .catch((e) => logger.error("Couldn't remember the calendar wrap-up", e));
+    }
+    // A wrap-up started from "Prep day" or "Something else" closes the
+    // calendar entries it matches on that date (a "Prep" wrap-up closes the
+    // day's prep entry), so their reminders stop too.
+    if (!eventId && !calendarEntryId) {
+      await closeMatchingCalendar(values, rowNum, request.auth.token.email).catch((e) =>
+        logger.error("Couldn't match the wrap-up to the calendar", e)
+      );
     }
     return { row: rowNum };
   } catch (e) {
