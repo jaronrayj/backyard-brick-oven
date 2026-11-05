@@ -4,7 +4,6 @@ import {
   BookOpenIcon,
   CalendarIcon,
   ChartBarIcon,
-  CheckCircleIcon,
   ClipboardListIcon,
   GlobeAltIcon,
   LogoutIcon,
@@ -22,12 +21,11 @@ import { offerTeamApp } from '../../utils/teamApp'
 const ICONS = {
   planner: ClipboardListIcon,
   events: CalendarIcon,
-  wrapup: CheckCircleIcon,
   menu: BookOpenIcon,
   admin: ChartBarIcon,
 }
 
-// The tool whose link is the longest match for this path (/events/wrapup is Wrap-up, not Events).
+// The tool whose link is the longest match for this path.
 const currentKey = (tools, path) =>
   tools
     .filter((t) => !t.external && (path === t.href || path.startsWith(`${t.href}/`)))

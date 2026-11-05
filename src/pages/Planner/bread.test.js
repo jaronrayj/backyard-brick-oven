@@ -75,3 +75,32 @@ test('dough recipes start closed and stay open through a redraw', () => {
   cards()[1].dispatchEvent(new Event('toggle'))
   expect(JSON.parse(localStorage.getItem('bybo-open-recipes'))).toEqual([])
 })
+
+test('an older single pizza list becomes each service\'s own pizzas', () => {
+  const root = document.createElement('div')
+  document.body.append(root)
+  const ref = { ...REF, menu: [{ name: 'Marg', toppings: '', active: true }, { name: 'Pep', toppings: '', active: true }] }
+  const plan = {
+    services: [
+      { id: 'a', date: '2030-06-07', type: 'pf', balls: 10 },
+      { id: 'b', date: '2030-06-08', type: 'wedding', name: 'Smith wedding', balls: 21 },
+    ],
+    picked: ['Marg', 'Pep'],
+    counts: { Marg: 15, Pep: 16 },
+    tweaks: { buffer: 0, lead: 1, yeast: 100, water: 100 },
+  }
+  mountPlanner(root, { store: fakeStore({ 'ref/snapshot': ref, 'plan/current': plan, 'plan/checks': { items: [] } }), canWrite: true })
+  const switches = [...root.querySelectorAll('#svc-switch button')]
+  expect(switches.map((b) => b.textContent)).toEqual([expect.stringContaining('Pizza Friday'), expect.stringContaining('Smith wedding')])
+  expect(root.querySelector('#count-line').textContent).toContain('10 pizzas picked · 10 dough balls')
+
+  // The wedding gets its own mix: drop Pep there and the Friday keeps both.
+  switches[1].click()
+  expect(root.querySelector('#count-line').textContent).toContain('Smith wedding: 21 pizzas')
+  ;[...root.querySelectorAll('#chips .chip')].find((c) => c.textContent === 'Pep').click()
+  expect([...root.querySelectorAll('#counters input')].map((i) => i.value)).toEqual(['21'])
+  root.querySelector('#svc-switch button').click()
+  expect([...root.querySelectorAll('#counters input')].map((i) => i.value)).toEqual(['5', '5'])
+  // Shopping adds both services up.
+  expect(root.querySelector('#shop-line').textContent).toContain('31 pizzas')
+})

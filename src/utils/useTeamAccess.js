@@ -3,9 +3,8 @@ import useTeamRole from './useTeamRole'
 // Team tools by role (see useTeamRole for the one list that decides it).
 // Order here is the order of the team tabs.
 export const TEAM_TOOLS = [
-  { key: 'planner', roles: ['admin', 'staff'], name: 'Planner', href: '/planner', blurb: 'Dough, shopping and prep for upcoming services.' },
+  { key: 'planner', roles: ['admin', 'staff'], name: 'Planner', href: '/planner', blurb: 'Dough, shopping, prep and wrap-ups for upcoming services.' },
   { key: 'events', roles: ['admin'], name: 'Events', href: '/events', blurb: 'Inquiries, quotes and bookings.' },
-  { key: 'wrapup', roles: ['admin'], name: 'Wrap-up', href: '/events/wrapup', blurb: 'Log an event or prep day to the money tracker.' },
   { key: 'menu', roles: ['admin'], name: 'Menu', href: '/admin/menu', blurb: 'The pizzas and photos on the website.' },
   {
     key: 'admin',
