@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { signInWithGoogle } from '../../utils/firebase'
 import useEventAdmin from './useEventAdmin'
@@ -216,6 +216,8 @@ const WrapUp = () => {
   const [loadError, setLoadError] = useState('')
   const [choice, setChoice] = useState(null)
   const [saved, setSaved] = useState(null)
+  const [hidden, setHidden] = useState([])
+  const wanted = new URLSearchParams(useLocation().search).get('key')
 
   // Last lists from the server, shown at once while the fresh ones load
   // (reading the sheets and calendar takes a few seconds).
@@ -239,7 +241,29 @@ const WrapUp = () => {
       .catch((e) => setLoadError(e.message || "Couldn't load recent events."))
   }, [access])
 
-  const choices = useMemo(() => (data ? buildChoices(data.events, data.calendar, data.today) : []), [data])
+  const choices = useMemo(
+    () => (data ? buildChoices(data.events, data.calendar, data.today).filter((c) => !c.skipped) : []),
+    [data]
+  )
+  // Opened from the planner's "To wrap up": go straight to that event's form.
+  const [opened, setOpened] = useState(false)
+  useEffect(() => {
+    if (!wanted || opened || !data || !data.headers.length) return
+    const c = choices.find((x) => x.key === wanted)
+    if (c) setChoice(c)
+    setOpened(true)
+  }, [wanted, opened, data, choices])
+
+  // Close one out without a wrap-up: it drops off here and its reminders stop.
+  const skip = async (c) => {
+    setHidden((h) => [...h, c.key])
+    try {
+      await callable('skipWrapUp')({ key: c.key })
+    } catch (e) {
+      setHidden((h) => h.filter((k) => k !== c.key))
+      setLoadError(e.message || "Couldn't skip that one.")
+    }
+  }
 
   if (loading) return <Shell><p className="text-gray-500">Loading…</p></Shell>
   if (!user) {
@@ -304,12 +328,12 @@ const WrapUp = () => {
             <>
               <p className="text-gray-700">Which one are you wrapping up?</p>
               <ul className="space-y-2">
-                {choices.map((c) => (
-                  <li key={c.key}>
+                {choices.filter((c) => !hidden.includes(c.key)).map((c) => (
+                  <li key={c.key} className="flex gap-2 items-stretch">
                     <button
                       type="button"
                       onClick={() => setChoice(c)}
-                      className="w-full text-left bg-white rounded-xl shadow-sm border border-gray-200 hover:border-amber-500 p-4"
+                      className="flex-1 min-w-0 text-left bg-white rounded-xl shadow-sm border border-gray-200 hover:border-amber-500 p-4"
                     >
                       <span className="flex justify-between gap-2">
                         <span className="font-semibold">{c.title}</span>
@@ -322,6 +346,11 @@ const WrapUp = () => {
                         <span className="block text-sm text-gray-500 truncate">{c.notes.join(' · ')}</span>
                       )}
                     </button>
+                    {!c.wrappedUp && (
+                      <button type="button" className={btnQuiet} onClick={() => skip(c)} title="No wrap-up needed; stops its reminders">
+                        Skip
+                      </button>
+                    )}
                   </li>
                 ))}
                 {choices.length === 0 && <li className="text-gray-500">Nothing in the last week.</li>}
