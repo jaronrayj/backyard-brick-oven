@@ -211,7 +211,8 @@ const Bare = ({ children }) => <div className="space-y-4 text-left">{children}</
 const OPTIONS_KEY = 'bybo-wrapup-options'
 const todayHere = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' })
 
-const WrapUp = ({ bare = false, onChange = () => {} }) => {
+// Lives only in the Planner's Wrap up tab (/events/wrapup redirects there).
+const WrapUp = ({ bare = true, onChange = () => {} }) => {
   const Shell = bare ? Bare : TeamPage
   const Header = bare ? () => null : PageHeader
   const { user, loading, access } = useEventAdmin()

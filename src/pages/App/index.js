@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect } from 'react'
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import MainPage from '../MainPage'
 import Navbar from '../Navbar'
@@ -15,7 +15,6 @@ const MenuAdmin = lazy(() => import('../MenuAdmin'))
 const Planner = lazy(() => import('../Planner'))
 const Team = lazy(() => import('../Team'))
 const Events = lazy(() => import('../Events'))
-const WrapUp = lazy(() => import('../Events/WrapUp'))
 const TeamNav = lazy(() => import('../../components/TeamNav'))
 
 export const isSiteReadyForOrders = true
@@ -53,7 +52,7 @@ const Shell = () => {
           <Route exact path="/planner" element={<Planner />} />
           <Route exact path="/team" element={<Team />} />
           <Route exact path="/events" element={<Events />} />
-          <Route exact path="/events/wrapup" element={<WrapUp />} />
+          <Route exact path="/events/wrapup" element={<Navigate replace to="/planner#wrapup" />} />
         </Routes>
         </Suspense>
       </div>

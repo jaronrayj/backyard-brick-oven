@@ -56,7 +56,7 @@ For events marked **Booked**: one email on poolish day and one on mix day
 
 ## Wrap-up
 
-`/events/wrapup` (the "Wrap up" button on Events) replaces the money tracker
+The Planner's **Wrap up** tab (`/planner#wrapup`, admins) replaces the money tracker
 Google Form. It lists the last week from the tracker and from Google
 Calendar: calendar entries on the same date as a tracker event are shown with
 it, and the calendar's event notes appear above the form with "Add to notes".
@@ -86,7 +86,7 @@ and open it from there). Code: `functions/push.js`, the page button
 | New inquiry | As soon as the website form is sent |
 | Dough step (poolish tonight / mix today) | The dough reminder time (default 2 pm), with the email, for booked events |
 | Morning summary | The morning time (default 7 am): today's Google Calendar entries, dough steps and booked events, plus yesterday's events still to wrap up; skipped when there's nothing |
-| Wrap-up reminder | At each event's Google Calendar end time (within 15 minutes) (all-day entries and events without a time: the wrap-up time, default 9 pm), once per event and only if it has no wrap-up yet; tapping it opens the Planner's **Wrap up** tab (admins; `/planner#wrapup`), which is this same page drawn inside the Planner. The tab shows how many of the last week's ended events still need one (`wrapUpsDue`). Sent ones are kept in `wrapUpReminders/{date}`. The next morning's summary lists anything from yesterday still not wrapped up |
+| Wrap-up reminder | At each event's Google Calendar end time (within 15 minutes) (all-day entries and events without a time: the wrap-up time, default 9 pm), once per event and only if it has no wrap-up yet; tapping it opens the Planner's **Wrap up** tab (admins; `/planner#wrapup`), the only place wrap-ups are done (`/events/wrapup` redirects there; the page code is `src/pages/Events/WrapUp.js`). The tab shows how many of the last week's ended events still need one (`wrapUpsDue`). Sent ones are kept in `wrapUpReminders/{date}`. The next morning's summary lists anything from yesterday still not wrapped up |
 
 To check a device, tap the bell once notifications are on and choose **Send a
 test** (`testPush`). It sends only to that device and shows any error FCM
@@ -108,7 +108,7 @@ planner's Dough tab. The bell → Notification times sets when they go out and w
 1. **Deploys.** Functions and the rules in `firestore.rules`,
    `database.rules.json` and `storage.rules` deploy on merge
    ([team.md](team.md)).
-2. **Wrap-up access.** Open `/events/wrapup` as an admin; it lists anything
+2. **Wrap-up access.** Open the Planner's Wrap up tab as an admin; it lists anything
    still missing, with the service account email to use:
    - Share the money tracker sheet with that email as **Editor**.
    - In Google Calendar, share the "pizza events" calendar with that email:
