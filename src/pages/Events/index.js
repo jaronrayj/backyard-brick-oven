@@ -882,14 +882,17 @@ const Events = () => {
         </button>
       </PageHeader>
 
-      <div className="flex flex-wrap gap-1">
+      {/* Same tabs as the Planner: gray underline, amber under the current one. */}
+      <div className="flex gap-1 border-b border-gray-200" role="tablist" aria-label="Events">
         {FILTERS.map((f) => (
           <button
             key={f.key}
             type="button"
+            role="tab"
+            aria-selected={filter === f.key}
             onClick={() => setFilter(f.key)}
-            className={`px-3 py-1 rounded-full text-sm border ${
-              filter === f.key ? 'bg-gray-900 border-gray-900 text-white' : 'bg-white border-gray-300 text-gray-700'
+            className={`px-3.5 py-2.5 -mb-px border-b-2 font-medium ${
+              filter === f.key ? 'border-amber-600 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-900'
             }`}
           >
             {f.label} {counts[f.key] ? <span className="opacity-70">{counts[f.key]}</span> : null}
