@@ -183,11 +183,12 @@ export const STEP_TEXT = {
 // ---------- Reminder times ----------
 // Set from the bell, Notification times ("eventSettings/reminders": doughTime, morningTime,
 // "HH:MM" Utah time). The jobs run every 15 minutes and act once that time has passed.
-export const DEFAULT_TIMES = { doughTime: "14:00", morningTime: "07:00" };
+export const DEFAULT_TIMES = { doughTime: "14:00", morningTime: "07:00", wrapUpTime: "21:00" };
 const HM = /^([01]\d|2[0-3]):[0-5]\d$/;
 export const timesFrom = (settings = {}) => ({
   doughTime: HM.test(settings.doughTime || "") ? settings.doughTime : DEFAULT_TIMES.doughTime,
   morningTime: HM.test(settings.morningTime || "") ? settings.morningTime : DEFAULT_TIMES.morningTime,
+  wrapUpTime: HM.test(settings.wrapUpTime || "") ? settings.wrapUpTime : DEFAULT_TIMES.wrapUpTime,
 });
 // Utah time right now as "HH:MM".
 export const nowHM = (now = new Date()) =>

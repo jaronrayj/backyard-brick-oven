@@ -57,14 +57,14 @@ For events marked **Booked**: one email on poolish day and one on mix day
 ## Wrap-up
 
 `/events/wrapup` (the "Wrap up" button on Events) replaces the money tracker
-Google Form. It lists the last three weeks from the tracker and from Google
+Google Form. It lists the last week from the tracker and from Google
 Calendar: calendar entries on the same date as a tracker event are shown with
 it, and the calendar's event notes appear above the form with "Add to notes".
 Pick one (or "Prep day" / "Something else"), fill in the numbers and hours,
 and it writes the next empty row of the money tracker's "Form Responses" tab,
 the same columns the form filled. The fields follow that tab's header row, so
 a new "Name hours" column shows up as a new field. A tracker event that is
-wrapped up is marked Done.
+wrapped up is marked Done; a calendar-only entry is remembered in Firestore `wrapUps/{calendar id}` (server only), so both show "Wrapped up" and stop the reminder.
 
 It writes the first empty row by column A rather than appending, because the
 year formula in the last column runs far below the data and an append would
@@ -85,7 +85,8 @@ and open it from there). Code: `functions/push.js`, the page button
 | --- | --- |
 | New inquiry | As soon as the website form is sent |
 | Dough step (poolish tonight / mix today) | The dough reminder time (default 2 pm), with the email, for booked events |
-| Morning summary | The morning time (default 7 am): today's Google Calendar entries, dough steps and booked events; skipped when there's nothing |
+| Morning summary | The morning time (default 7 am): today's Google Calendar entries, dough steps and booked events, plus yesterday's events still to wrap up; skipped when there's nothing |
+| Wrap-up reminder | The wrap-up time (default 9 pm) on days with an event or calendar entry that has no wrap-up yet; tapping it opens Wrap-up. The next morning's summary lists anything from yesterday still not wrapped up |
 
 To check a device, tap the bell once notifications are on and choose **Send a
 test** (`testPush`). It sends only to that device and shows any error FCM

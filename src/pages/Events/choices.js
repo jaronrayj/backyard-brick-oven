@@ -29,6 +29,7 @@ export const buildChoices = (events, calendar, today) => {
         title: c.title || 'Calendar event',
         sub: 'From your calendar',
         date: c.date,
+        wrappedUp: !!c.wrappedUp,
         name: /pizza friday/i.test(c.title) ? 'Pizza Friday' : /\bprep\b/i.test(c.title) ? 'Prep' : c.title,
         info: [c.time, c.location].filter(Boolean).join(' · '),
         notes: c.notes ? [c.notes] : [],
