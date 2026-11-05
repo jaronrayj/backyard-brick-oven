@@ -206,11 +206,14 @@ const WrapUpForm = ({ headers, choice, today, onDone, onBack }) => {
   )
 }
 
-const Shell = TeamPage
+// bare: inside the Planner's Wrap up tab, without the page frame and title.
+const Bare = ({ children }) => <div className="space-y-4 text-left">{children}</div>
 const OPTIONS_KEY = 'bybo-wrapup-options'
 const todayHere = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' })
 
-const WrapUp = () => {
+const WrapUp = ({ bare = false, onChange = () => {} }) => {
+  const Shell = bare ? Bare : TeamPage
+  const Header = bare ? () => null : PageHeader
   const { user, loading, access } = useEventAdmin()
   const [data, setData] = useState(null)
   const [loadError, setLoadError] = useState('')
@@ -259,6 +262,7 @@ const WrapUp = () => {
     setHidden((h) => [...h, c.key])
     try {
       await callable('skipWrapUp')({ key: c.key })
+      onChange()
     } catch (e) {
       setHidden((h) => h.filter((k) => k !== c.key))
       setLoadError(e.message || "Couldn't skip that one.")
@@ -269,7 +273,7 @@ const WrapUp = () => {
   if (!user) {
     return (
       <Shell>
-        <PageHeader title="Wrap-up" />
+        <Header title="Wrap-up" />
         <button type="button" className={btnPrimary} onClick={signInWithGoogle}>
           Sign in with Google
         </button>
@@ -279,7 +283,7 @@ const WrapUp = () => {
   if (access === 'denied') {
     return (
       <Shell>
-        <PageHeader title="Wrap-up" />
+        <Header title="Wrap-up" />
         <p className="text-gray-700">{user.email} isn't an admin.</p>
       </Shell>
     )
@@ -288,13 +292,13 @@ const WrapUp = () => {
   if (saved) {
     return (
       <Shell>
-        <PageHeader title="Wrap-up" />
+        <Header title="Wrap-up" />
         <p className="text-gray-800">Saved to the money tracker (row {saved}).</p>
         <div className="flex gap-2">
           <button type="button" className={btnQuiet} onClick={() => { setSaved(null); setChoice(null) }}>
             Wrap up another
           </button>
-          <Link className={btnQuiet} to="/events">Back to events</Link>
+          {!bare && <Link className={btnQuiet} to="/events">Back to events</Link>}
         </div>
       </Shell>
     )
@@ -303,7 +307,13 @@ const WrapUp = () => {
   if (choice && data) {
     return (
       <Shell>
-        <WrapUpForm headers={data.headers} choice={choice} today={data.today} onDone={setSaved} onBack={() => setChoice(null)} />
+        <WrapUpForm
+          headers={data.headers}
+          choice={choice}
+          today={data.today}
+          onDone={(row) => { setSaved(row); onChange() }}
+          onBack={() => setChoice(null)}
+        />
       </Shell>
     )
   }
@@ -312,7 +322,7 @@ const WrapUp = () => {
 
   return (
     <Shell>
-      <PageHeader title="Wrap-up" sub="Log an event or prep day to the money tracker" />
+      <Header title="Wrap-up" sub="Log an event or prep day to the money tracker" />
       {loadError && <p className="text-red-700">{loadError}</p>}
       {!data && !loadError && <p className="text-gray-500">Loading recent events and your calendar…</p>}
       {data && (

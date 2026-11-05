@@ -223,7 +223,7 @@ export const runWrapUpReminder = async () => {
   const n = await sendPush({
     title: due.length === 1 ? `Wrap up ${due[0].title}` : `Wrap up ${due.length} events`,
     body: due.length === 1 ? "Log it to the money tracker while it's fresh." : due.map((x) => x.title).join(", "),
-    link: "/planner",
+    link: "/planner#wrapup",
     tag: "wrapup",
   });
   logger.info(`Wrap-up reminder (${due.map((x) => x.key).join(", ")}) sent to ${n} phone(s)`);

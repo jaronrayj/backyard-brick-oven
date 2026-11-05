@@ -92,6 +92,9 @@
   .bybo-planner .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   .bybo-planner .seg { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
   .bybo-planner .seg .btn { padding: 6px 10px; }
+  .bybo-planner .svc-switch { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+  .bybo-planner .svc-switch .btn[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .bybo-planner .svc-switch .none { color: var(--muted); font-size: 12px; }
   .bybo-planner .seg .btn[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
   .bybo-planner .counter { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; padding-block: 6px; border-bottom: 1px solid var(--line); }
   .bybo-planner .counter:last-child { border-bottom: 0; }

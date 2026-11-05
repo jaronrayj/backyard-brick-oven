@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
 import { doc, onSnapshot, setDoc } from 'firebase/firestore'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { onValue, ref as rtdbRef } from 'firebase/database'
@@ -10,6 +9,8 @@ import useTeamRole from '../../utils/useTeamRole'
 import { mountPlanner } from './planner'
 import KeepAwake from '../../components/KeepAwake'
 import './planner.css'
+
+const WrapUp = lazy(() => import('../Events/WrapUp'))
 
 // The planner keeps three Firestore documents under `planner/`:
 //   ref    - recipe, menu, toppings, sauces, settings, recent Pizza Fridays (written by the Cloud Function)
@@ -44,10 +45,9 @@ const pizzas = (next) => onValue(rtdbRef(rtdb, 'pizzas'), (snap) => next(snap.va
 // Upcoming entries on the business calendar, for "From your calendar".
 const calendar = async () => (await httpsCallable(getFunctions(), 'plannerCalendar')()).data
 
-// Admins only: past events with no wrap-up yet, for "To wrap up" on the Plan tab.
+// Admins only: how many recent events still need a wrap-up, for the Wrap up tab.
 const wrapUps = {
   due: async () => (await httpsCallable(getFunctions(), 'wrapUpsDue')()).data,
-  skip: (key) => httpsCallable(getFunctions(), 'skipWrapUp')({ key }),
 }
 
 const Message = ({ children }) => (
@@ -65,19 +65,21 @@ const Planner = () => {
   const access = loading || !user ? 'loading' : role || 'denied'
   const rootRef = useRef(null)
   const [awakeSlot, setAwakeSlot] = useState(null)
-  const navigate = useNavigate()
+  const [wrapSlot, setWrapSlot] = useState(null)
 
   useEffect(() => {
     if ((access !== 'admin' && access !== 'staff') || !rootRef.current) return undefined
     const unmount = mountPlanner(rootRef.current, { store, canWrite: true, isAdmin: access === 'admin', refresh, calendar, pizzas,
-      wrapUps: access === 'admin' ? { ...wrapUps, open: (key) => navigate(`/events/wrapup?key=${encodeURIComponent(key)}`) } : null,
+      wrapUps: access === 'admin' ? wrapUps : null,
     })
     setAwakeSlot(rootRef.current.querySelector('#keep-awake-slot'))
+    if (access === 'admin') setWrapSlot(rootRef.current.querySelector('#wrapup-slot'))
     return () => {
       setAwakeSlot(null)
+      setWrapSlot(null)
       unmount()
     }
-  }, [access]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [access])
 
   if (loading) {
     return <Message><p className="note">Loading…</p></Message>
@@ -107,6 +109,13 @@ const Planner = () => {
     <>
       <div className="bybo-planner" ref={rootRef} />
       {awakeSlot && createPortal(<KeepAwake bare className="btn quiet" />, awakeSlot)}
+      {wrapSlot &&
+        createPortal(
+          <Suspense fallback={<p className="note">Loading…</p>}>
+            <WrapUp bare onChange={() => rootRef.current && rootRef.current.dispatchEvent(new Event('wrapups-changed'))} />
+          </Suspense>,
+          wrapSlot
+        )}
     </>
   )
 }
