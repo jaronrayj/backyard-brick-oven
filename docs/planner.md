@@ -74,6 +74,9 @@ buy and how much of them you'll use, for example "butter: 1 pack, uses about
 33% of it". Cost columns aren't read. Add a row to that tab and it shows up
 after the next refresh.
 
+The Prep tab adds "Make F'Zookie dough" (in batches from G6, plus the count)
+and "Make whipped cream" on each service's prep day when it has F'Zookies.
+
 ## What to bring
 
 The Bring tab's "What to bring" list has two parts. The top comes from the
