@@ -70,6 +70,17 @@ It writes the first empty row by column A rather than appending, because the
 year formula in the last column runs far below the data and an append would
 land under it. That formula column is never written.
 
+**Editing.** Wrap-ups whose event date is in the last 3 days (`EDIT_DAYS` in
+`functions/wrapupRows.js`) are listed under "Edit a recent wrap-up", read fresh
+from the sheet; a "Wrapped up" entry opens its row too. Saving updates that row
+in place and never adds one. The server first re-reads the row and refuses if
+its timestamp, date or event name changed, or if the event is now too old, and
+writes only the cells whose value changed, so a sum typed into a cell
+(`=482.14+50`) stays unless its number changes. Older wrap-ups are changed
+directly in the Form Responses tab, not on the monthly or yearly tabs, which
+are formulas. The copy saved on the event (`wrapUp.values`) isn't updated by an
+edit; only its presence is read, to mark the event as wrapped up.
+
 The calendar read is the "pizza events" calendar (owned by
 `jj.backyardbrickoven@gmail.com`; ID in `functions/wrapup.js`) unless
 `eventSettings/wrapUp` has a `calendarId`.

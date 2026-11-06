@@ -14,6 +14,7 @@ import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { accessToken as tokenFor, serviceAccountEmail } from "./google.js";
 import { requireRole } from "./team.js";
+import { EDIT_DAYS, addDays, buildRow, changedCells, colName, isRecent, recentRows, rowDate, rowKey, writableHeaders } from "./wrapupRows.js";
 
 if (!getApps().length) initializeApp();
 
@@ -56,58 +57,6 @@ const requireAdmin = (request) => requireRole(request, ["admin"], "Only admins c
 // ---------- Sheet ----------
 
 const SHEET = `https://sheets.googleapis.com/v4/spreadsheets/${TRACKER}/values`;
-const colName = (i) => {
-  let s = "";
-  for (let n = i + 1; n > 0; n = Math.floor((n - 1) / 26)) s = String.fromCharCode(65 + ((n - 1) % 26)) + s;
-  return s;
-};
-
-// Columns the site fills, by header. Formula columns ("Column 1" etc.) are left alone.
-export const writableHeaders = (headers) => {
-  let last = -1;
-  headers.forEach((h, i) => {
-    if (String(h || "").trim() && !/^column \d+$/i.test(String(h).trim())) last = i;
-  });
-  return headers.slice(0, last + 1);
-};
-
-// "M/D/YYYY H:MM:SS" in Utah time, like a form timestamp.
-export const sheetTimestamp = (now = new Date()) => {
-  const p = Object.fromEntries(
-    new Intl.DateTimeFormat("en-US", {
-      timeZone: TZ, year: "numeric", month: "numeric", day: "numeric",
-      hour: "numeric", minute: "2-digit", second: "2-digit", hourCycle: "h23",
-    })
-      .formatToParts(now)
-      .map((x) => [x.type, x.value])
-  );
-  return `${p.month}/${p.day}/${p.year} ${p.hour}:${p.minute}:${p.second}`;
-};
-// "2026-10-30" -> "10/30/2026"
-export const sheetDate = (iso) => {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ""));
-  return m ? `${Number(m[2])}/${Number(m[3])}/${m[1]}` : String(iso || "");
-};
-// "18:35" -> "6:35 PM"
-export const sheetTime = (hhmm) => {
-  const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || ""));
-  if (!m) return String(hhmm || "");
-  const h = Number(m[1]);
-  return `${((h + 11) % 12) + 1}:${m[2]} ${h < 12 ? "AM" : "PM"}`;
-};
-
-// One row of values in header order. `values` is keyed by header text.
-export const buildRow = (headers, values, now = new Date()) =>
-  writableHeaders(headers).map((h) => {
-    const key = String(h || "").trim();
-    if (/^timestamp$/i.test(key)) return sheetTimestamp(now);
-    const v = values[key];
-    if (v == null || v === "") return "";
-    if (/date of event/i.test(key)) return sheetDate(v);
-    if (/what time/i.test(key)) return sheetTime(v);
-    return String(v);
-  });
-
 const readHeaders = async (token) =>
   ((await google(token, `${SHEET}/${encodeURIComponent(`${TAB}!1:1`)}`)).values || [[]])[0];
 
@@ -209,12 +158,6 @@ export const notWrappedUp = async (dates) => {
       .filter((c) => !state.has(docId(c.id)))
       .map((c) => ({ key: `c:${c.id}`, date: c.date, title: c.title || "Calendar event", endsAt: c.endsAt })),
   ];
-};
-
-const addDays = (iso, n) => {
-  const d = new Date(`${iso}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
 };
 
 // What the wrap-up page needs: the sheet's columns, recent tracker events and
@@ -400,5 +343,68 @@ export const submitWrapUp = onCall({ invoker: "public" }, async (request) => {
       throw new HttpsError("failed-precondition", `Can't write to the money tracker. Share it with ${sa} as an Editor.`);
     }
     throw new HttpsError("internal", "Couldn't save to the sheet. Nothing was written; try again.");
+  }
+});
+
+// The last few days' wrap-ups from the sheet, for editing. Read fresh each
+// time: these are money numbers that can change in the sheet directly.
+export const recentWrapUps = onCall({ invoker: "public" }, async (request) => {
+  await requireAdmin(request);
+  const sa = await serviceAccountEmail();
+  try {
+    const token = await accessToken();
+    const headers = await readHeaders(token);
+    const last = colName(writableHeaders(headers).length - 1);
+    const grid = (await google(token, `${SHEET}/${encodeURIComponent(`${TAB}!A2:${last}`)}`)).values || [];
+    return { rows: recentRows(headers, grid, localDate(new Date())), days: EDIT_DAYS };
+  } catch (e) {
+    logger.error("Reading recent wrap-ups failed", e);
+    if (e.status === 403 || e.status === 404) {
+      throw new HttpsError("failed-precondition", `Can't open the money tracker. Share it with ${sa} as an Editor.`);
+    }
+    throw new HttpsError("internal", "Couldn't read the money tracker. Try again.");
+  }
+});
+
+// Change an existing wrap-up in place. It re-reads the row first and refuses
+// if it's no longer the row that was opened, and writes only the cells whose
+// value changed. Never adds a row.
+export const updateWrapUp = onCall({ invoker: "public" }, async (request) => {
+  await requireAdmin(request);
+  const { row, key, values } = request.data || {};
+  if (!Number.isInteger(row) || row < 2 || typeof key !== "string" || !values || typeof values !== "object") {
+    throw new HttpsError("invalid-argument", "Nothing to save.");
+  }
+  const sa = await serviceAccountEmail();
+  try {
+    const token = await accessToken();
+    const headers = await readHeaders(token);
+    const last = colName(writableHeaders(headers).length - 1);
+    const current = (await google(token, `${SHEET}/${encodeURIComponent(`${TAB}!A${row}:${last}${row}`)}`)).values?.[0] || [];
+    if (rowKey(headers, current) !== key) {
+      throw new HttpsError("failed-precondition", "That row in the money tracker has changed. Nothing was saved; reload and try again.");
+    }
+    if (!isRecent(rowDate(headers, current), localDate(new Date()))) {
+      throw new HttpsError("failed-precondition", `That event is more than ${EDIT_DAYS} days old. Change it in the money tracker's Form Responses tab.`);
+    }
+    const changes = changedCells(headers, current, values);
+    if (changes.length) {
+      await google(token, `${SHEET}:batchUpdate`, {
+        method: "POST",
+        body: JSON.stringify({
+          valueInputOption: "USER_ENTERED",
+          data: changes.map((c) => ({ range: `${TAB}!${c.col}${row}`, values: [[c.value]] })),
+        }),
+      });
+      logger.info(`Wrap-up row ${row} edited by ${request.auth.token.email}: ${changes.map((c) => c.col).join(", ")}`);
+    }
+    return { row, changed: changes.length };
+  } catch (e) {
+    if (e instanceof HttpsError) throw e;
+    logger.error("Wrap-up edit failed", e);
+    if (e.status === 403 || e.status === 404) {
+      throw new HttpsError("failed-precondition", `Can't write to the money tracker. Share it with ${sa} as an Editor.`);
+    }
+    throw new HttpsError("internal", "Couldn't save to the sheet. Try again.");
   }
 });
