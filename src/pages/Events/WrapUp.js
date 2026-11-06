@@ -4,14 +4,15 @@ import { getFunctions, httpsCallable } from 'firebase/functions'
 import { signInWithGoogle } from '../../utils/firebase'
 import useEventAdmin from './useEventAdmin'
 import { prettyDate } from './quote'
-import { buildChoices } from './choices'
+import { buildChoices, findRow } from './choices'
 import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 
 // Wrap-up after an event or prep day. Replaces the "money tracker" Google Form:
 // the server (functions/wrapup.js) lists recent events from the tracker and
 // Google Calendar, and writes the answers into the next row of the money
 // tracker's Form Responses tab. The fields come from that tab's header row,
-// so adding a column (a new person's hours, say) adds a field here.
+// so adding a column (a new person's hours, say) adds a field here. Wrap-ups
+// from the last few days can be edited, which updates their row in place.
 
 const { input, btnPrimary, btnQuiet } = ui
 
@@ -58,6 +59,12 @@ const label = (h) =>
 
 const callable = (name) => httpsCallable(getFunctions(), name)
 
+const moneyIn = (headers, values) =>
+  headers
+    .filter((h) => /venmo|cash|simpleswipe/i.test(h))
+    .reduce((t, h) => t + (Number(values[h]) || 0), 0)
+const dollars = (n) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+
 const Field = ({ label: text, children, className = '' }) => (
   <label className={`block text-left text-xs text-gray-600 ${className}`}>
     <span className="block mb-1">{text}</span>
@@ -65,14 +72,19 @@ const Field = ({ label: text, children, className = '' }) => (
   </label>
 )
 
-const WrapUpForm = ({ headers, choice, today, onDone, onBack }) => {
+// edit: a saved row from recentWrapUps, to change it rather than add a new one.
+const WrapUpForm = ({ headers, choice, edit = null, today, onDone, onBack }) => {
   const nameH = headers.find((h) => kindOf(h) === 'name')
   const dateH = headers.find((h) => kindOf(h) === 'date')
   const notesH = headers.find((h) => kindOf(h) === 'notes')
-  const [values, setValues] = useState(() => ({
-    ...(nameH ? { [nameH]: choice.name || '' } : {}),
-    ...(dateH ? { [dateH]: choice.date || today } : {}),
-  }))
+  const [values, setValues] = useState(() =>
+    edit
+      ? edit.values
+      : {
+          ...(nameH ? { [nameH]: choice.name || '' } : {}),
+          ...(dateH ? { [dateH]: choice.date || today } : {}),
+        }
+  )
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const set = (h, v) => setValues((x) => ({ ...x, [h]: v }))
@@ -83,9 +95,14 @@ const WrapUpForm = ({ headers, choice, today, onDone, onBack }) => {
     setBusy(true)
     setError('')
     try {
+      if (edit) {
+        const res = await callable('updateWrapUp')({ row: edit.row, key: edit.key, values })
+        onDone({ row: res.data.row, edited: true, changed: res.data.changed })
+        return
+      }
       const calendarEntryId = choice.key.startsWith('c:') ? choice.key.slice(2) : null
       const res = await callable('submitWrapUp')({ values, eventId: choice.eventId, calendarEntryId })
-      onDone(res.data.row)
+      onDone({ row: res.data.row, edited: false })
     } catch (e) {
       setError(e.message || "Couldn't save.")
       setBusy(false)
@@ -101,9 +118,7 @@ const WrapUpForm = ({ headers, choice, today, onDone, onBack }) => {
         .sort((a, b) => groupOf(a).rank - groupOf(b).rank),
     }))
     .filter((g) => g.headers.length)
-  const takenIn = headers
-    .filter((h) => /venmo|cash|simpleswipe/i.test(h))
-    .reduce((t, h) => t + (Number(values[h]) || 0), 0)
+  const takenIn = moneyIn(headers, values)
 
   const control = (h) => {
     const kind = kindOf(h)
@@ -131,7 +146,7 @@ const WrapUpForm = ({ headers, choice, today, onDone, onBack }) => {
   return (
     <div className={`${ui.card} sm:p-6 space-y-5`}>
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-xl font-bold">Wrap up: {choice.title}</h2>
+        <h2 className="text-xl font-bold">{edit ? 'Edit' : 'Wrap up'}: {choice.title}</h2>
         <button type="button" className="text-sm underline text-gray-600" onClick={onBack}>
           Pick another
         </button>
@@ -172,7 +187,7 @@ const WrapUpForm = ({ headers, choice, today, onDone, onBack }) => {
             <h3 className="font-semibold text-gray-900">{g.title}</h3>
             {g.key === 'money' && takenIn > 0 && (
               <span className="text-sm text-gray-600">
-                Venmo + cash + card: <strong>${takenIn.toLocaleString('en-US', { maximumFractionDigits: 2 })}</strong>
+                Venmo + cash + card: <strong>{dollars(takenIn)}</strong>
               </span>
             )}
             {g.key === 'labor' && <span className="text-xs text-gray-500">Hours each person worked</span>}
@@ -199,7 +214,7 @@ const WrapUpForm = ({ headers, choice, today, onDone, onBack }) => {
           Cancel
         </button>
         <button type="button" className={btnPrimary} disabled={busy} onClick={submit}>
-          {busy ? 'Saving…' : 'Save to money tracker'}
+          {busy ? 'Saving…' : edit ? 'Save changes' : 'Save to money tracker'}
         </button>
       </div>
     </div>
@@ -221,7 +236,31 @@ const WrapUp = ({ bare = true, onChange = () => {} }) => {
   const [choice, setChoice] = useState(null)
   const [saved, setSaved] = useState(null)
   const [hidden, setHidden] = useState([])
+  const [recent, setRecent] = useState(null)
+  const [recentError, setRecentError] = useState('')
+  const [editing, setEditing] = useState(null)
+  const [notice, setNotice] = useState('')
   const wanted = new URLSearchParams(useLocation().search).get('key')
+
+  const loadOptions = () =>
+    callable('wrapUpOptions')()
+      .then((res) => {
+        setData(res.data)
+        try {
+          localStorage.setItem(OPTIONS_KEY, JSON.stringify(res.data))
+        } catch (e) {
+          /* storage full or blocked */
+        }
+      })
+      .catch((e) => setLoadError(e.message || "Couldn't load recent events."))
+  // Not kept in the browser like the lists above: these are money numbers.
+  const loadRecent = () =>
+    callable('recentWrapUps')()
+      .then((res) => {
+        setRecent(res.data)
+        setRecentError('')
+      })
+      .catch((e) => setRecentError(e.message || "Couldn't load recent wrap-ups."))
 
   // Last lists from the server, shown at once while the fresh ones load
   // (reading the sheets and calendar takes a few seconds).
@@ -233,16 +272,8 @@ const WrapUp = ({ bare = true, onChange = () => {} }) => {
     } catch (e) {
       /* nothing saved */
     }
-    callable('wrapUpOptions')()
-      .then((res) => {
-        setData(res.data)
-        try {
-          localStorage.setItem(OPTIONS_KEY, JSON.stringify(res.data))
-        } catch (e) {
-          /* storage full or blocked */
-        }
-      })
-      .catch((e) => setLoadError(e.message || "Couldn't load recent events."))
+    loadOptions()
+    loadRecent()
   }, [access])
 
   const choices = useMemo(
@@ -257,6 +288,32 @@ const WrapUp = ({ bare = true, onChange = () => {} }) => {
     if (c) setChoice(c)
     setOpened(true)
   }, [wanted, opened, data, choices])
+
+  // A wrapped-up entry opens its saved row, never a blank form: saving a blank
+  // one would add a second row for the same event.
+  const open = (c) => {
+    setNotice('')
+    if (!c.wrappedUp) {
+      setChoice(c)
+      return
+    }
+    if (!recent) {
+      setNotice(recentError || 'Still loading recent wrap-ups. Try again in a moment.')
+      return
+    }
+    const { row, sameDay } = findRow(recent.rows, c)
+    if (row) setEditing(row)
+    else if (sameDay) setNotice('Pick the one to change under "Edit a recent wrap-up" below.')
+    else setNotice(`That wrap-up isn't in the last ${recent.days} days of the money tracker. Change older ones in its Form Responses tab.`)
+  }
+
+  const finished = (result) => {
+    setSaved(result)
+    onChange()
+    setRecent(null)
+    loadRecent()
+    loadOptions()
+  }
 
   // Close one out without a wrap-up: it drops off here and its reminders stop.
   const skip = async (c) => {
@@ -294,13 +351,35 @@ const WrapUp = ({ bare = true, onChange = () => {} }) => {
     return (
       <Shell>
         <Header title="Wrap-up" />
-        <p className="text-gray-800">Saved to the money tracker (row {saved}).</p>
+        <p className="text-gray-800">
+          {saved.edited && saved.changed === 0
+            ? 'No changes to save.'
+            : saved.edited
+              ? `Updated the money tracker (row ${saved.row}).`
+              : `Saved to the money tracker (row ${saved.row}).`}
+        </p>
         <div className="flex gap-2">
-          <button type="button" className={btnQuiet} onClick={() => { setSaved(null); setChoice(null) }}>
-            Wrap up another
+          <button type="button" className={btnQuiet} onClick={() => { setSaved(null); setChoice(null); setEditing(null) }}>
+            {saved.edited ? 'Back to wrap-ups' : 'Wrap up another'}
           </button>
           {!bare && <Link className={btnQuiet} to="/events">Back to events</Link>}
         </div>
+      </Shell>
+    )
+  }
+
+  if (editing && data) {
+    return (
+      <Shell>
+        <WrapUpForm
+          key={editing.key}
+          headers={data.headers}
+          choice={{ key: `row:${editing.row}`, title: editing.name || 'Wrap-up', info: prettyDate(editing.date), notes: [] }}
+          edit={editing}
+          today={data.today}
+          onDone={finished}
+          onBack={() => setEditing(null)}
+        />
       </Shell>
     )
   }
@@ -312,7 +391,7 @@ const WrapUp = ({ bare = true, onChange = () => {} }) => {
           headers={data.headers}
           choice={choice}
           today={data.today}
-          onDone={(row) => { setSaved(row); onChange() }}
+          onDone={finished}
           onBack={() => setChoice(null)}
         />
       </Shell>
@@ -338,12 +417,13 @@ const WrapUp = ({ bare = true, onChange = () => {} }) => {
           {data.headers.length > 0 && (
             <>
               <p className="text-gray-700">Which one are you wrapping up?</p>
+              {notice && <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-3">{notice}</p>}
               <ul className="space-y-2">
                 {choices.filter((c) => !hidden.includes(c.key)).map((c) => (
                   <li key={c.key} className="flex gap-2 items-stretch">
                     <button
                       type="button"
-                      onClick={() => setChoice(c)}
+                      onClick={() => open(c)}
                       className="flex-1 min-w-0 text-left bg-white rounded-xl shadow-sm border border-gray-200 hover:border-amber-500 p-4"
                     >
                       <span className="flex justify-between gap-2">
@@ -374,6 +454,32 @@ const WrapUp = ({ bare = true, onChange = () => {} }) => {
                   Something else
                 </button>
               </div>
+              {recentError && <p className="text-sm text-red-700">{recentError}</p>}
+              {recent && recent.rows.length > 0 && (
+                <section className="border-t border-gray-200 pt-4 space-y-2">
+                  <h3 className="font-semibold text-gray-900">Edit a recent wrap-up</h3>
+                  <p className="text-xs text-gray-500">From the last {recent.days} days. Change older ones in the money tracker's Form Responses tab.</p>
+                  <ul className="space-y-2">
+                    {recent.rows.map((r) => (
+                      <li key={r.row}>
+                        <button
+                          type="button"
+                          onClick={() => { setNotice(''); setEditing(r) }}
+                          className="w-full text-left bg-white rounded-xl shadow-sm border border-gray-200 hover:border-amber-500 p-4"
+                        >
+                          <span className="flex justify-between gap-2">
+                            <span className="font-semibold">{r.name || 'Wrap-up'}</span>
+                            {moneyIn(data.headers, r.values) > 0 && (
+                              <span className="text-sm text-gray-700">{dollars(moneyIn(data.headers, r.values))}</span>
+                            )}
+                          </span>
+                          <span className="block text-sm text-gray-600">{prettyDate(r.date)}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
             </>
           )}
         </>

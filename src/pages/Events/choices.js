@@ -1,3 +1,12 @@
+// The saved sheet row for a wrapped-up choice. Opens a row only when its date
+// and name both match exactly one; sameDay says how many rows share the date.
+const plainName = (s) => String(s || '').trim().toLowerCase()
+export const findRow = (rows, choice) => {
+  const day = rows.filter((r) => r.date === choice.date)
+  const named = day.filter((r) => plainName(r.name) === plainName(choice.name))
+  return { row: named.length === 1 ? named[0] : null, sameDay: day.length }
+}
+
 // Recent things to wrap up: tracker events with their calendar entries matched
 // by date, then calendar entries the tracker doesn't have. Newest first.
 export const buildChoices = (events, calendar, today) => {
