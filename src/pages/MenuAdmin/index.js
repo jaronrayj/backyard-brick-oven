@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { ref, onValue, update, remove } from 'firebase/database'
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { getFunctions, httpsCallable } from 'firebase/functions'
@@ -6,6 +6,7 @@ import { signInWithGoogle } from '../../utils/firebase'
 import { rtdb } from '../../utils/db'
 import useTeamRole from '../../utils/useTeamRole'
 import { sortPizzas } from '../../utils'
+import { sortable, moved } from '../../utils/sortable'
 import PhotoEditor from './PhotoEditor'
 import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 
@@ -207,7 +208,7 @@ const Editor = ({ pizza, onSave, onCancel, onDelete }) => {
   )
 }
 
-const PizzaRow = ({ id, pizza, editing, setEditing, move, canMoveUp, canMoveDown, nextOrder }) => {
+const PizzaRow = ({ id, pizza, editing, setEditing, onMenu, nextOrder }) => {
   const [saving, setSaving] = useState(false)
   const set = async (fields) => {
     setSaving(true)
@@ -237,8 +238,6 @@ const PizzaRow = ({ id, pizza, editing, setEditing, move, canMoveUp, canMoveDown
     )
   }
 
-  const arrow = 'w-7 h-7 rounded-md border border-gray-200 bg-white text-sm text-gray-600 disabled:opacity-25'
-
   return (
     <li className="px-2 py-1.5 flex gap-2 items-center text-left">
       <button type="button" onClick={() => setEditing(id)} className="flex gap-2 items-center min-w-0 flex-1 text-left" title="Edit">
@@ -252,17 +251,20 @@ const PizzaRow = ({ id, pizza, editing, setEditing, move, canMoveUp, canMoveDown
           <span className="block text-xs text-gray-500 truncate">{pizza.toppings || 'No toppings listed'}</span>
         </span>
       </button>
-      {move ? (
+      {onMenu ? (
         <>
           <Toggle on={!!pizza.special} label="Special" disabled={saving} onClick={() => set({ special: !pizza.special })} />
           <button type="button" aria-label={`Take ${pizza.name} off the menu`} title="Take off the menu" disabled={saving} onClick={() => set({ active: false, special: false })} className="w-7 h-7 rounded-md text-gray-400 hover:text-red-700 hover:bg-red-50 shrink-0">
             ✕
           </button>
-          <button type="button" aria-label={`Move ${pizza.name} up`} disabled={!canMoveUp} onClick={() => move(-1)} className={arrow}>
-            ↑
-          </button>
-          <button type="button" aria-label={`Move ${pizza.name} down`} disabled={!canMoveDown} onClick={() => move(1)} className={arrow}>
-            ↓
+          <button
+            type="button"
+            data-sort-id={id}
+            aria-label={`Move ${pizza.name} (drag, or use the arrow keys)`}
+            title="Drag to move"
+            className="grip w-9 h-9 shrink-0 grid place-items-center rounded-md text-lg text-gray-400 hover:text-gray-900 hover:bg-gray-100 cursor-grab touch-none select-none"
+          >
+            ⠿
           </button>
         </>
       ) : (
@@ -293,12 +295,16 @@ const MenuAdmin = () => {
     ? offMenu.filter(([, p]) => `${p.name || ''} ${p.toppings || ''}`.toLowerCase().includes(term))
     : offMenu
 
-  // Reordering renumbers the whole on-menu list so the order stays clean.
-  const move = (index, dir) => {
-    const list = onMenu.map(([id]) => id)
-    const target = index + dir
-    if (target < 0 || target >= list.length) return
-    ;[list[index], list[target]] = [list[target], list[index]]
+  // Reordering (drag ⠿) renumbers the whole on-menu list so the order stays clean.
+  const order = useRef([])
+  order.current = onMenu.map(([id]) => id)
+  const [menuList, setMenuList] = useState(null)
+  useEffect(() => {
+    if (!menuList) return undefined
+    return sortable(menuList, { items: () => [...menuList.children], handle: '.grip', onMove: (from, to) => move(from, to) })
+  }, [menuList]) // eslint-disable-line react-hooks/exhaustive-deps
+  const move = (from, to) => {
+    const list = moved(order.current, from, to)
     const changes = {}
     list.forEach((id, i) => {
       changes[`${id}/order`] = i + 1
@@ -352,19 +358,17 @@ const MenuAdmin = () => {
         <>
           <section className="grid grid-cols-[minmax(0,1fr)] gap-2">
             <h2 className="text-left font-semibold text-gray-700">
-              On the menu ({onMenu.length}) <span className="font-normal text-sm text-gray-500">· shown on the site in this order. Tap a pizza to edit it.</span>
+              On the menu ({onMenu.length}) <span className="font-normal text-sm text-gray-500">· shown on the site in this order. Tap a pizza to edit it, drag ⠿ to reorder.</span>
             </h2>
-            <ul className="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
-              {onMenu.map(([id, p], i) => (
+            <ul ref={setMenuList} className="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+              {onMenu.map(([id, p]) => (
                 <PizzaRow
                   key={id}
                   id={id}
                   pizza={p}
                   editing={editing}
                   setEditing={setEditing}
-                  move={(dir) => move(i, dir)}
-                  canMoveUp={i > 0}
-                  canMoveDown={i < onMenu.length - 1}
+                  onMenu
                 />
               ))}
             </ul>
