@@ -109,6 +109,11 @@
   .bybo-planner .item .nm { flex: 1 1 auto; min-width: 0; }
   .bybo-planner .item .sub { display: block; font-size: 12px; color: var(--muted); }
   .bybo-planner .group .kids { padding-left: 28px; }
+  /* Edit list: each item's choices on a line under its name, like the add form. */
+  .bybo-planner .item.edit { flex-wrap: wrap; cursor: default; }
+  .bybo-planner .item.edit .opts { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; padding-left: 4px; }
+  .bybo-planner .item.edit .opt { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+  .bybo-planner .item input.every { width: 4.5rem; height: auto; font: inherit; font-size: 13px; color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; accent-color: auto; }
   .bybo-planner .item .move { display: inline-flex; gap: 2px; flex: none; }
   .bybo-planner .item .move .btn { padding: 4px 8px; color: var(--fg); font-size: 14px; }
   .bybo-planner .group .kids .item { padding-block: 8px; }
