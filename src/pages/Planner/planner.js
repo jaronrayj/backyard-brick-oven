@@ -1013,6 +1013,40 @@ export function mountPlanner(root, deps) {
     ['plan', 'shop', 'prep', 'bring', 'wrapup'].forEach((p) => { $('#page-' + p).hidden = b.dataset.tab !== p; });
     try { window.history.replaceState(null, '', '#' + b.dataset.tab); } catch (e) { /* hash is optional */ }
   }));
+  /* Swipe left or right anywhere in the middle of the screen to go to the next or previous tab.
+     Edges are left alone (the phone's own back swipe), and so are sliders, the text box you're
+     typing in, and anything that scrolls sideways. */
+  let swipe = null;
+  root.addEventListener('touchstart', (e) => {
+    swipe = null;
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0], edge = 28;
+    if (t.clientX < edge || t.clientX > window.innerWidth - edge) return;
+    for (let n = e.target; n && n !== root; n = n.parentElement) {
+      if (n === document.activeElement && /^(INPUT|TEXTAREA)$/.test(n.tagName)) return; // typing: leave the cursor alone
+      if (n.type === 'range' || n.isContentEditable) return;
+      if (n.scrollWidth > n.clientWidth + 1 && /auto|scroll/.test(getComputedStyle(n).overflowX)) return;
+    }
+    swipe = {x: t.clientX, y: t.clientY, at: Date.now()};
+  }, {passive: true});
+  root.addEventListener('touchcancel', () => { swipe = null; }, {passive: true});
+  root.addEventListener('touchend', (e) => {
+    const s0 = swipe; swipe = null;
+    if (!s0 || e.changedTouches.length !== 1) return;
+    const t = e.changedTouches[0], dx = t.clientX - s0.x, dy = t.clientY - s0.y;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.8 || Date.now() - s0.at > 700) return;
+    if (String(window.getSelection && window.getSelection()).trim()) return;
+    const tabs = [...root.querySelectorAll('.tabs [data-tab]')].filter((b) => !b.hidden);
+    const at = tabs.findIndex((b) => b.getAttribute('aria-selected') === 'true');
+    const next = tabs[at + (dx < 0 ? 1 : -1)];
+    if (!next) return;
+    next.click();
+    const page = $('#page-' + next.dataset.tab);
+    page.classList.remove('swipe-in-left', 'swipe-in-right');
+    void page.offsetWidth;
+    page.classList.add(dx < 0 ? 'swipe-in-left' : 'swipe-in-right');
+    page.addEventListener('animationend', () => page.classList.remove('swipe-in-left', 'swipe-in-right'), {once: true});
+  }, {passive: true});
   if (['#shop', '#bring', '#prep'].includes(window.location.hash) || (window.location.hash === '#wrapup' && deps.wrapUps)) root.querySelector('.tabs [data-tab="' + window.location.hash.slice(1) + '"]').click();
   /* Between rounds: drop services whose day has passed (their prep goes with them). Upcoming
      services, picked pizzas, your own lists and all checkmarks stay. */

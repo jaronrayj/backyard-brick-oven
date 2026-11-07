@@ -3,6 +3,10 @@
 `/planner` plans dough, pizzas, shopping and prep for upcoming services. Staff
 sign in with Google; nobody needs access to the Google Sheets.
 
+On a phone, swipe left or right in the middle of the screen to move between the
+tabs. Swipes that start at the screen edge, on a slider or in the text box you're
+typing in are ignored.
+
 ## How it fits together
 
 | Piece | Where |
