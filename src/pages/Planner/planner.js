@@ -710,7 +710,7 @@ export function mountPlanner(root, deps) {
       if (!group.length) return;
       box.append(el('h3', null, title));
       group.forEach((e, gi) => {
-        const row = el('div', 'item');
+        const row = el('div', 'item edit-row');
         const arrows = el('span', 'move');
         [['↑', -1, 'Move up'], ['↓', 1, 'Move down']].forEach(([t, dir, label]) => {
           const b = el('button', 'btn quiet', t); b.type = 'button'; b.setAttribute('aria-label', label + ' ' + e.name);
@@ -723,22 +723,24 @@ export function mountPlanner(root, deps) {
         const rule = e.gear && e.gear.per ? '1 per ' + (Number(e.gear.every) || 1) + (e.gear.per === 'guest' ? ' guests' : ' dough balls') : '';
         if (e.topping) nm.append(el('span', 'sub', 'Topping'));
         else if (rule) nm.append(el('span', 'sub', rule));
-        row.append(nm, whereSelect(e.key, e.name));
+        const ctl = el('span', 'ctl');
+        ctl.append(whereSelect(e.key, e.name));
+        row.append(nm, ctl);
         if (e.gear) {
           const item = e.gear;
-          const sel = el('select');
+          const sel = el('select', 'for');
           sel.setAttribute('aria-label', 'Who ' + item.name + ' is for');
           BRING_FOR.forEach(([v, t]) => { const o = el('option', null, t); o.value = v; if ((item.for || 'all') === v) o.selected = true; sel.append(o); });
           sel.disabled = !canWrite;
           sel.addEventListener('change', () => { item.for = sel.value; savePlan(); });
-          const rm = el('button', 'btn quiet rm', 'Remove'); rm.type = 'button'; rm.disabled = !canWrite;
-          rm.setAttribute('aria-label', 'Remove ' + item.name);
+          const rm = el('button', 'btn quiet rm', '✕'); rm.type = 'button'; rm.disabled = !canWrite;
+          rm.setAttribute('aria-label', 'Remove ' + item.name); rm.title = 'Remove';
           rm.addEventListener('click', () => {
             PLAN.bring = PLAN.bring.filter((x) => x.id !== item.id);
             CHECKED = CHECKED.filter((x) => x !== e.key);
             savePlan(); saveChecks(); renderBring();
           });
-          row.append(sel, rm);
+          ctl.append(sel, rm);
         }
         box.append(row);
       });
@@ -914,12 +916,12 @@ export function mountPlanner(root, deps) {
     const label = (s) => svcName(s) + ' · ' + day(s.date);
     const days = new Map();
     /* Same task on the same day is one line: amounts add up and the services are listed together. */
-    const task = (date, rank, key, title, amt, note, unitName) => {
+    const task = (date, rank, key, title, amt, note, unitName, fmt) => {
       if (!days.has(date)) days.set(date, []);
       const list = days.get(date);
       const same = typeof amt === 'number' && list.find((x) => x.title === title && typeof x.grams === 'number');
       if (same) { same.grams += amt; if (note && !same.notes.includes(note)) same.notes.push(note); return; }
-      list.push({rank, key, title, unitName, grams: typeof amt === 'number' ? amt : null, amt: typeof amt === 'number' ? null : amt, notes: note ? [note] : []});
+      list.push({rank, key, title, unitName, fmt, grams: typeof amt === 'number' ? amt : null, amt: typeof amt === 'number' ? null : amt, notes: note ? [note] : []});
     };
 
     const mixes = new Map();
@@ -968,6 +970,14 @@ export function mountPlanner(root, deps) {
         const title = norm(a.prep).includes(norm(name)) ? a.prep : a.prep + ' ' + name;
         task(addDays(s.date, -prepDays), 3, 'top|' + name, title, v, label(s), name);
       });
+      /* F'Zookies: cookie dough and whipped cream on the prep day, counted in F'Zookies (batches when the tab gives a batch size). */
+      const zookies = Object.entries(own).filter(([k]) => isDessert(k)).reduce((a, [, v]) => a + (Number(v) || 0), 0);
+      if (zookies) {
+        const batch = REF.dessert && REF.dessert.batch;
+        const dough = (n) => (batch ? half(n / batch) + (n / batch > 1 ? ' batches' : ' batch') + ' · ' : '') + n + " F'Zookies";
+        task(addDays(s.date, -prepDays), 4, 'zookie|dough', "Make F'Zookie dough", zookies, label(s), null, dough);
+        task(addDays(s.date, -prepDays), 4, 'zookie|cream', 'Make whipped cream', zookies, label(s), null, (n) => 'for ' + n + " F'Zookies");
+      }
     });
 
     /* Past days drop off once everything on them is checked. Anything left unchecked stays, under
@@ -990,11 +1000,11 @@ export function mountPlanner(root, deps) {
           lab.classList.toggle('done', cb.checked); saveChecks();
         });
         const nm = el('span', 'nm', x.title);
-        lab.append(cb, nm, el('span', 'amt', x.grams != null ? volume(x.grams, x.unitName) : x.amt));
+        lab.append(cb, nm, el('span', 'amt', x.grams != null ? (x.fmt ? x.fmt(x.grams) : volume(x.grams, x.unitName)) : x.amt));
         box.append(lab);
       });
     });
-    if (!anyPicked()) box.append(el('p', 'empty', 'Pick pizzas on the Plan tab to add sauce and topping prep.'));
+    if (!anyPicked()) box.append(el('p', 'empty', "Pick pizzas or F'Zookies on the Plan tab to add sauce, topping and dessert prep."));
   };
 
   /* ---------- Controls ---------- */
