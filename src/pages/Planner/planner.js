@@ -14,6 +14,7 @@
  *                  (index.js draws the form into #wrapup-slot; fire 'wrapups-changed' on root to recount)
  * deps.calendar  - async () => { items: [{id, title, date, time, location, notes}], problem? }, upcoming calendar entries
  */
+import { sortable, moved } from '../../utils/sortable';
 
 const MARKUP = '<div class="wrap">\n  <header class="top">\n    <div class="title-row"><h1>Planner</h1>\n    <div class="status"><span id="data-warn"></span><span id="save-status"></span><span id="keep-awake-slot"></span></div></div>\n    <nav class="tabs" role="tablist" aria-label="Planner pages">\n      <button type="button" role="tab" id="tab-plan" aria-controls="page-plan" aria-selected="true" data-tab="plan">Plan</button>\n      <button type="button" role="tab" id="tab-shop" aria-controls="page-shop" aria-selected="false" data-tab="shop">Shopping</button>\n      <button type="button" role="tab" id="tab-prep" aria-controls="page-prep" aria-selected="false" data-tab="prep">Prep</button>\n      <button type="button" role="tab" id="tab-bring" aria-controls="page-bring" aria-selected="false" data-tab="bring">Bring</button>\n      <button type="button" role="tab" id="tab-wrapup" aria-controls="page-wrapup" aria-selected="false" data-tab="wrapup" hidden>Wrap up</button>\n    </nav>\n  </header>\n\n  <p class="ro" id="readonly" hidden>You can look but not change this plan. Ask Jaron to add your account to the staff list.</p>\n\n  <section id="page-plan" role="tabpanel" aria-labelledby="tab-plan" class="panel">\n    <article class="card">\n      <h2>Services</h2>\n      <p class="note">Pizza Friday uses recent demand. Events use guests × pizzas per guest. Type a count to override. Bread uses the same dough, by the loaf.</p>\n      <div id="services"></div>\n      <div id="cal-suggest" class="cal"></div>\n      <div class="row">\n        <button type="button" class="btn" id="add-svc">Add a service</button>\n        <button type="button" class="btn quiet" id="clear-done" hidden>Clear finished services</button>\n      </div>\n      <details class="tweaks">\n        <summary>Yeast, water and timing</summary>\n        <div class="row">\n          <label class="field">Extra for safety (%)<input type="number" id="t-buffer" min="0" max="100" step="5" inputmode="numeric"></label>\n          <label class="field">Mix days before service<input type="number" id="t-lead" min="0" max="5" step="1" inputmode="numeric"></label>\n          <label class="field">Yeast (% of recipe)<input type="number" id="t-yeast" min="10" max="300" step="5" inputmode="numeric"></label>\n          <label class="field">Cold water (% of recipe)<input type="number" id="t-water" min="50" max="150" step="1" inputmode="numeric"></label>\n          <button type="button" class="btn" id="t-reset">Reset to saved settings</button>\n        </div>\n        <p class="note sheets-line"><span id="data-status">Loading recipe and menu…</span> <button type="button" class="linkbtn" id="refresh" hidden>Refresh now</button></p>\n      </details>\n      <details class="tweaks">\n        <summary>Recent Pizza Fridays</summary>\n        <p class="note" id="hist-note">Demand is sold + comped + could have sold more.</p>\n        <div style="overflow-x:auto"><table class="hist" id="hist"></table></div>\n      </details>\n    </article>\n\n    <article class="card">\n      <h2>Dough plan</h2>\n      <p class="note" id="plan-note">Shared mix days are combined. Big days split into even mixer batches.</p>\n      <div id="plan"></div>\n    </article>\n\n    <article class="card">\n      <h2>Pizzas</h2>\n      <p class="note">Each service has its own pizzas. Pick the service, then tap the pizzas it\'s getting; its dough splits evenly across them. Pizzas that are off the website are under Older pizzas.</p>\n      <div class="svc-switch" id="svc-switch" role="group" aria-label="Pizzas for"></div>\n      <div class="row" id="same-row" hidden><label class="field">Same pizzas as<select id="same-as"></select></label></div>\n      <div class="pick-groups" id="chips"></div>\n      <div class="row">\n        <button type="button" class="btn" id="split">Split evenly again</button>\n        <button type="button" class="btn" id="clear">Clear</button>\n        <span class="seg" role="group" aria-label="Each tap">Each tap\n          <button type="button" class="btn" data-step="1" aria-pressed="false">1</button>\n          <button type="button" class="btn" data-step="5" aria-pressed="true">5</button>\n          <button type="button" class="btn" data-step="10" aria-pressed="false">10</button>\n        </span>\n      </div>\n      <p class="note" id="count-line"></p>\n      <div id="counters"></div>\n    </article>\n  </section>\n\n  <section id="page-shop" role="tabpanel" aria-labelledby="tab-shop" class="panel" hidden>\n    <article class="card">\n      <h2>Shopping list</h2>\n      <p class="note" id="shop-line"></p>\n      <form class="row" id="shop-form">\n        <label class="field">Add an item<input type="text" id="shop-new" enterkeyhint="done" autocomplete="off" placeholder="e.g. Paper plates"></label>\n        <label class="field" style="flex:0 1 7rem">How much<input type="text" id="shop-qty" autocomplete="off" placeholder="optional"></label>\n        <button type="submit" class="btn" id="shop-add">Add</button>\n      </form>\n      <div class="row"><button type="button" class="btn quiet" id="uncheck">Uncheck everything</button></div>\n      <div class="list" id="shoplist"></div>\n    </article>\n  </section>\n\n  <section id="page-bring" role="tabpanel" aria-labelledby="tab-bring" class="panel" hidden>\n    <article class="card">\n      <h2>What to bring</h2>\n      <p class="note" id="bring-line">What to pack for the services on the Plan tab. Your own items show only for the kinds of services you have planned; counts follow guests or dough balls.</p>\n      <div class="list" id="bringauto"></div>\n      <div class="list" id="bringlist"></div>\n      <div class="row"><button type="button" class="btn quiet" id="bring-edit" aria-pressed="false">Edit list</button><button type="button" class="btn quiet" id="bring-uncheck">Uncheck everything</button></div>\n      <div class="row" id="bring-form" hidden>\n        <label class="field">Item<input type="text" id="bring-new" enterkeyhint="done" autocomplete="off" placeholder="e.g. Pizza peels"></label>\n        <label class="field">For<select id="bring-for"></select></label>\n        <label class="field">How many<select id="bring-per"><option value="">Just bring it</option><option value="guest">1 per … guests</option><option value="ball">1 per … dough balls</option></select></label>\n        <label class="field" id="bring-every-wrap" hidden>Every<input type="number" id="bring-every" min="1" inputmode="numeric" value="10"></label>\n        <label class="field">Packed from<select id="bring-where"><option value="">Not sure yet</option><option value="home">Home</option><option value="commissary">Commissary</option></select></label>\n        <button type="button" class="btn" id="bring-add">Add</button>\n      </div>\n    </article>\n  </section>\n\n  <section id="page-wrapup" role="tabpanel" aria-labelledby="tab-wrapup" hidden>\n    <div id="wrapup-slot"></div>\n  </section>\n\n  <section id="page-prep" role="tabpanel" aria-labelledby="tab-prep" hidden>\n    <article class="card">\n      <h2>Prep list</h2>\n      <p class="note">Day by day for the services on the Plan tab. Amounts split each service\'s share of the pizzas you picked.</p>\n      <div class="row"><button type="button" class="btn quiet" id="prep-uncheck">Uncheck everything</button></div>\n      <div class="list" id="preplist"></div>\n    </article>\n  </section>\n</div>';
 
@@ -629,44 +630,29 @@ export function mountPlanner(root, deps) {
     const pos = new Map((PLAN.bringOrder || []).map((k, i) => [k, i]));
     return entries.map((e, i) => ({e, i})).sort((a, b) => (pos.has(a.e.key) ? pos.get(a.e.key) : 1e6 + a.i) - (pos.has(b.e.key) ? pos.get(b.e.key) : 1e6 + b.i)).map((x) => x.e);
   };
-  const moveBring = (all, group, key, dir) => {
-    const keys = group.map((e) => e.key);
-    const i = keys.indexOf(key);
-    const j = i + dir;
-    if (i < 0 || j < 0 || j >= keys.length) return;
-    const full = all.map((e) => e.key);
-    const a = full.indexOf(keys[i]), b = full.indexOf(keys[j]);
-    [full[a], full[b]] = [full[b], full[a]];
-    PLAN.bringOrder = full;
-    savePlan(); renderBring();
-  };
   const SECTIONS = [...LOCS, ['', 'Not sorted yet']];
-  /* Move a block of keys (one item, or all the toppings together) past its neighbor block in the same section. */
-  const moveBlock = (all, blocks, index, dir) => {
-    const j = index + dir;
-    if (j < 0 || j >= blocks.length) return;
-    const swapped = blocks.slice(); [swapped[index], swapped[j]] = [swapped[j], swapped[index]];
+  /* Move a block of keys (one item, or all the toppings together) to another spot among its
+     section's blocks; the section keeps the same slots in the full order. */
+  const moveBlock = (all, blocks, from, to) => {
     const inSection = new Set(blocks.flat());
     const full = all.map((e) => e.key);
     const slots = full.map((k, i) => (inSection.has(k) ? i : -1)).filter((i) => i >= 0);
-    const flat = swapped.flat();
+    const flat = moved(blocks, from, to).flat();
     slots.forEach((slot, n) => { full[slot] = flat[n]; });
     PLAN.bringOrder = full;
     savePlan(); renderBring();
   };
-  const arrowPair = (name, first, last, onMove) => {
-    const arrows = el('span', 'move');
-    [['↑', -1, 'Move up'], ['↓', 1, 'Move down']].forEach(([t, dir, label]) => {
-      const b = el('button', 'btn quiet', t); b.type = 'button'; b.setAttribute('aria-label', label + ' ' + name);
-      b.disabled = !canWrite || (dir < 0 ? first : last);
-      b.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); onMove(dir); });
-      arrows.append(b);
-    });
-    return arrows;
+  /* Drag handle (⠿). kind keeps a nested list's handles apart from its parent list's. */
+  const grip = (name, id, kind) => {
+    const b = el('button', 'grip ' + kind, '⠿'); b.type = 'button';
+    b.setAttribute('aria-label', 'Move ' + name + ' (drag, or use the arrow keys)'); b.title = 'Drag to move';
+    b.dataset.sortId = id; b.disabled = !canWrite;
+    return b;
   };
+  const sortList = (box, kind, onMove) => sortable(box, {items: () => [...box.children], handle: '.grip.' + kind, onMove});
 
   /* "Toppings" ticks every topping at once, and shows ticked once they all are. */
-  const toppingGroup = (list, arrows, everything) => {
+  const toppingGroup = (list, handle, everything) => {
     const keys = list.map((t) => t.key);
     const all = keys.every((k) => CHECKED.includes(k));
     const some = keys.some((k) => CHECKED.includes(k));
@@ -680,15 +666,16 @@ export function mountPlanner(root, deps) {
     const nm = el('span', 'nm', 'Toppings');
     nm.append(el('span', 'sub', keys.filter((k) => CHECKED.includes(k)).length + ' of ' + keys.length + ' packed'));
     lab.append(cb, nm);
-    if (arrows) lab.append(arrows);
+    if (handle) lab.append(handle);
     const kids = el('div', 'kids');
     const blocks = list.map((t) => [t.key]);
-    list.forEach((t, i) => {
+    list.forEach((t) => {
       const row = checkRow(t.key, t.name, '', null);
       row.querySelector('input').addEventListener('change', () => renderBring());
-      if (everything) row.append(arrowPair(t.name, i === 0, i === list.length - 1, (dir) => moveBlock(everything, blocks, i, dir)));
+      if (everything) row.append(grip(t.name, t.key, 'kid'));
       kids.append(row);
     });
+    if (everything) sortList(kids, 'kid', (from, to) => moveBlock(everything, blocks, from, to));
     wrap.append(lab, kids);
     return wrap;
   };
@@ -704,21 +691,19 @@ export function mountPlanner(root, deps) {
     $('#bring-form').hidden = !bringEditing;
     const entries = ordered(bringEntries());
     if (bringEditing) {
-      box.append(el('p', 'note', 'Change who each item is for, how many to bring and where it\'s packed from, the same as when you add one. Use ↑ ↓ to put things in packing order.'));
+      box.append(el('p', 'note', 'Change who each item is for, how many to bring and where it\'s packed from, the same as when you add one. Drag ⠿ to put things in packing order.'));
       SECTIONS.forEach(([loc, title]) => {
       const group = entries.filter((e) => whereOf(e.key) === loc);
       if (!group.length) return;
       box.append(el('h3', null, title));
-      group.forEach((e, gi) => {
+      const list = el('div', 'sort');
+      box.append(list);
+      sortList(list, 'row', (from, to) => moveBlock(entries, group.map((e) => [e.key]), from, to));
+      group.forEach((e) => {
         const row = el('div', 'item edit');
-        const arrows = el('span', 'move');
-        [['↑', -1, 'Move up'], ['↓', 1, 'Move down']].forEach(([t, dir, label]) => {
-          const b = el('button', 'btn quiet', t); b.type = 'button'; b.setAttribute('aria-label', label + ' ' + e.name);
-          b.disabled = !canWrite || (dir < 0 ? gi === 0 : gi === group.length - 1);
-          b.addEventListener('click', () => moveBring(entries, group, e.key, dir));
-          arrows.append(b);
-        });
-        row.append(arrows);
+        const handle = el('span', 'move');
+        handle.append(grip(e.name, e.key, 'row'));
+        row.append(handle);
         const nm = el('span', 'nm', e.name);
         if (e.topping) nm.append(el('span', 'sub', 'Topping'));
         else if (!e.gear) nm.append(el('span', 'sub', 'From the plan'));
@@ -761,14 +746,14 @@ export function mountPlanner(root, deps) {
           opts.append(rm);
         }
         row.append(opts);
-        box.append(row);
+        list.append(row);
       });
       });
       if (!entries.length) box.append(el('p', 'empty', 'Add the gear you pack below.'));
       return;
     }
     const shown = entries.filter((e) => !e.hiddenNow);
-    $('#bring-line').textContent = 'What to pack for the services on the Plan tab, by where it comes from. Use ↑ ↓ to put things in packing order.';
+    $('#bring-line').textContent = 'What to pack for the services on the Plan tab, by where it comes from. Drag ⠿ to put things in packing order.';
     const hidden = entries.length - shown.length;
     if (!shown.length) { box.append(el('p', 'empty', 'Nothing to bring yet. Plan a service and pick pizzas, or tap Edit list to add gear.')); }
     SECTIONS.forEach(([loc, title]) => {
@@ -784,12 +769,14 @@ export function mountPlanner(root, deps) {
         else if (!units.some((u) => u.tops)) units.push({tops});
       });
       const blocks = units.map((u) => (u.tops ? u.tops.map((t) => t.key) : [u.e.key]));
-      units.forEach((u, i) => {
-        const arrows = arrowPair(u.tops ? 'Toppings' : u.e.name, i === 0, i === units.length - 1, (dir) => moveBlock(entries, blocks, i, dir));
-        if (u.tops) { box.append(toppingGroup(u.tops, arrows, entries)); return; }
+      const list = el('div', 'sort');
+      box.append(list);
+      sortList(list, 'row', (from, to) => moveBlock(entries, blocks, from, to));
+      units.forEach((u) => {
+        if (u.tops) { list.append(toppingGroup(u.tops, grip('Toppings', 'toppings', 'row'), entries)); return; }
         const row = checkRow(u.e.key, u.e.name, u.e.sub, u.e.amt);
-        row.append(arrows);
-        box.append(row);
+        row.append(grip(u.e.name, u.e.key, 'row'));
+        list.append(row);
       });
     });
     if (hidden) box.append(el('p', 'empty', hidden + (hidden === 1 ? ' item is' : ' items are') + ' for services that aren’t planned right now.'));

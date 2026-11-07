@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Drag to reorder (src/utils/sortable.js), outside the Planner (it has its own). */
+.dragging { position: relative; z-index: 2; background: #fff; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); border-radius: 10px; }
+.dragging .grip { cursor: grabbing; color: #d97706; }
+body.sorting, body.sorting * { cursor: grabbing !important; user-select: none !important; -webkit-user-select: none !important; }

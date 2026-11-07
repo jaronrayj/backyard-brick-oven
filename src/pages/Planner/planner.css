@@ -114,7 +114,7 @@
   .bybo-planner .item.edit { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nm move" "opts opts"; align-items: center; gap: 8px 10px; cursor: default; }
   .bybo-planner .item.edit .nm { grid-area: nm; overflow-wrap: anywhere; }
   .bybo-planner .item.edit .move { grid-area: move; gap: 4px; }
-  .bybo-planner .item.edit .move .btn { box-sizing: border-box; width: 40px; height: 40px; padding: 0; display: inline-grid; place-items: center; }
+  .bybo-planner .item.edit .move .grip { width: 40px; height: 40px; }
   .bybo-planner .item.edit .opts { grid-area: opts; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; min-width: 0; }
   .bybo-planner .item.edit .opt { display: grid; gap: 3px; font-size: 12px; color: var(--muted); flex: 1 1 9rem; min-width: 0; }
   .bybo-planner .item.edit .opt select { max-width: none; width: 100%; height: 40px; font-size: 16px; padding-left: 8px; }
@@ -123,14 +123,21 @@
   .bybo-planner .item input.every { font: inherit; color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; accent-color: auto; }
   @media (min-width: 640px) {
     .bybo-planner .item.edit { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "move nm" "opts opts"; }
-    .bybo-planner .item.edit .move .btn { width: 32px; height: 32px; }
+    .bybo-planner .item.edit .move .grip { width: 32px; height: 32px; }
     .bybo-planner .item.edit .opt { flex: 0 1 10rem; }
     .bybo-planner .item.edit .opt select, .bybo-planner .item.edit .opt input.every { height: 34px; font-size: 13px; }
     .bybo-planner .item.edit .opt:has(input.every) { flex-basis: 5rem; }
     .bybo-planner .item.edit .rm { width: 34px; height: 34px; }
   }
   .bybo-planner .item .move { display: inline-flex; gap: 2px; flex: none; }
-  .bybo-planner .item .move .btn { padding: 4px 8px; color: var(--fg); font-size: 14px; }
+  /* Drag handle (src/utils/sortable.js): press and drag to reorder; ↑ ↓ keys when focused. */
+  .bybo-planner .grip { all: unset; box-sizing: border-box; flex: none; width: 36px; height: 36px; display: inline-grid; place-items: center; font-size: 18px; color: var(--muted); border-radius: 8px; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .bybo-planner .grip:hover { background: var(--bg); color: var(--fg); }
+  .bybo-planner .grip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .bybo-planner .grip[disabled] { visibility: hidden; }
+  .bybo-planner .dragging { position: relative; z-index: 2; background: var(--panel); box-shadow: 0 6px 18px rgba(0,0,0,.15); border-radius: 10px; opacity: .95; }
+  .bybo-planner .dragging .grip { cursor: grabbing; color: var(--accent); }
+  body.sorting, body.sorting * { cursor: grabbing !important; user-select: none !important; -webkit-user-select: none !important; }
   .bybo-planner .group .kids .item { padding-block: 8px; }
   /* Dropdowns in list rows (Bring > Edit list): one plain style, with our own arrow instead of the browser's shaded one. */
   .bybo-planner .item select { -webkit-appearance: none; appearance: none; font: inherit; font-size: 13px; line-height: 1.3; color: var(--fg); background-color: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 6px 28px 6px 10px; min-width: 0; max-width: 11rem; cursor: pointer; opacity: 1;
