@@ -143,6 +143,12 @@
   .bybo-planner .hist th { color: var(--muted); font-weight: 500; }
   .bybo-planner .empty { color: var(--muted); font-size: 14px; }
   .bybo-planner .ro { font-size: 13px; color: var(--warn); }
+  @media (prefers-reduced-motion: no-preference) {
+    .bybo-planner .swipe-in-left { animation: bybo-in-left .18s ease-out; }
+    .bybo-planner .swipe-in-right { animation: bybo-in-right .18s ease-out; }
+    @keyframes bybo-in-left { from { transform: translateX(24px); opacity: .4; } to { transform: none; opacity: 1; } }
+    @keyframes bybo-in-right { from { transform: translateX(-24px); opacity: .4; } to { transform: none; opacity: 1; } }
+  }
   @media (prefers-reduced-motion: no-preference) { .bybo-planner .item, .bybo-planner .chip { transition: background-color .15s ease, opacity .15s ease; } }
   /* Room for the team tab bar on phones. */
   @media (max-width: 639px) { .bybo-planner .wrap { padding-bottom: 112px; } .bybo-planner header.top { top: 56px; } }
