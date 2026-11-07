@@ -109,11 +109,26 @@
   .bybo-planner .item .nm { flex: 1 1 auto; min-width: 0; }
   .bybo-planner .item .sub { display: block; font-size: 12px; color: var(--muted); }
   .bybo-planner .group .kids { padding-left: 28px; }
-  /* Edit list: each item's choices on a line under its name, like the add form. */
-  .bybo-planner .item.edit { flex-wrap: wrap; cursor: default; }
-  .bybo-planner .item.edit .opts { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; padding-left: 4px; }
-  .bybo-planner .item.edit .opt { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
-  .bybo-planner .item input.every { width: 4.5rem; height: auto; font: inherit; font-size: 13px; color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; accent-color: auto; }
+  /* Bring › Edit list: name and arrows on top, then the same labeled choices as the add form
+     (For, How many, Every, Packed from) and ✕. Big touch targets on a phone, nothing scrolls sideways. */
+  .bybo-planner .item.edit { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nm move" "opts opts"; align-items: center; gap: 8px 10px; cursor: default; }
+  .bybo-planner .item.edit .nm { grid-area: nm; overflow-wrap: anywhere; }
+  .bybo-planner .item.edit .move { grid-area: move; gap: 4px; }
+  .bybo-planner .item.edit .move .btn { box-sizing: border-box; width: 40px; height: 40px; padding: 0; display: inline-grid; place-items: center; }
+  .bybo-planner .item.edit .opts { grid-area: opts; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; min-width: 0; }
+  .bybo-planner .item.edit .opt { display: grid; gap: 3px; font-size: 12px; color: var(--muted); flex: 1 1 9rem; min-width: 0; }
+  .bybo-planner .item.edit .opt select { max-width: none; width: 100%; height: 40px; font-size: 16px; padding-left: 8px; }
+  .bybo-planner .item.edit .opt input.every { width: 100%; height: 40px; font-size: 16px; box-sizing: border-box; }
+  .bybo-planner .item.edit .rm { flex: none; width: 40px; height: 40px; padding: 0; box-sizing: border-box; display: inline-grid; place-items: center; }
+  .bybo-planner .item input.every { font: inherit; color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; accent-color: auto; }
+  @media (min-width: 640px) {
+    .bybo-planner .item.edit { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "move nm" "opts opts"; }
+    .bybo-planner .item.edit .move .btn { width: 32px; height: 32px; }
+    .bybo-planner .item.edit .opt { flex: 0 1 10rem; }
+    .bybo-planner .item.edit .opt select, .bybo-planner .item.edit .opt input.every { height: 34px; font-size: 13px; }
+    .bybo-planner .item.edit .opt:has(input.every) { flex-basis: 5rem; }
+    .bybo-planner .item.edit .rm { width: 34px; height: 34px; }
+  }
   .bybo-planner .item .move { display: inline-flex; gap: 2px; flex: none; }
   .bybo-planner .item .move .btn { padding: 4px 8px; color: var(--fg); font-size: 14px; }
   .bybo-planner .group .kids .item { padding-block: 8px; }
@@ -132,6 +147,12 @@
   .bybo-planner .hist th { color: var(--muted); font-weight: 500; }
   .bybo-planner .empty { color: var(--muted); font-size: 14px; }
   .bybo-planner .ro { font-size: 13px; color: var(--warn); }
+  @media (prefers-reduced-motion: no-preference) {
+    .bybo-planner .swipe-in-left { animation: bybo-in-left .18s ease-out; }
+    .bybo-planner .swipe-in-right { animation: bybo-in-right .18s ease-out; }
+    @keyframes bybo-in-left { from { transform: translateX(24px); opacity: .4; } to { transform: none; opacity: 1; } }
+    @keyframes bybo-in-right { from { transform: translateX(-24px); opacity: .4; } to { transform: none; opacity: 1; } }
+  }
   @media (prefers-reduced-motion: no-preference) { .bybo-planner .item, .bybo-planner .chip { transition: background-color .15s ease, opacity .15s ease; } }
   /* Room for the team tab bar on phones. */
   @media (max-width: 639px) { .bybo-planner .wrap { padding-bottom: 112px; } .bybo-planner header.top { top: 56px; } }

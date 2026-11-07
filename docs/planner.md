@@ -3,6 +3,10 @@
 `/planner` plans dough, pizzas, shopping and prep for upcoming services. Staff
 sign in with Google; nobody needs access to the Google Sheets.
 
+On a phone, swipe left or right in the middle of the screen to move between the
+tabs. Swipes that start at the screen edge, on a slider or in the text box you're
+typing in are ignored.
+
 ## How it fits together
 
 | Piece | Where |
@@ -73,6 +77,9 @@ each item there (column A) with the share of a store pack one batch uses
 buy and how much of them you'll use, for example "butter: 1 pack, uses about
 33% of it". Cost columns aren't read. Add a row to that tab and it shows up
 after the next refresh.
+
+The Prep tab adds "Make F'Zookie dough" (in batches from G6, plus the count)
+and "Make whipped cream" on each service's prep day when it has F'Zookies.
 
 ## What to bring
 

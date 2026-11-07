@@ -710,7 +710,7 @@ export function mountPlanner(root, deps) {
       if (!group.length) return;
       box.append(el('h3', null, title));
       group.forEach((e, gi) => {
-        const row = el('div', 'item');
+        const row = el('div', 'item edit');
         const arrows = el('span', 'move');
         [['↑', -1, 'Move up'], ['↓', 1, 'Move down']].forEach(([t, dir, label]) => {
           const b = el('button', 'btn quiet', t); b.type = 'button'; b.setAttribute('aria-label', label + ' ' + e.name);
@@ -751,8 +751,8 @@ export function mountPlanner(root, deps) {
         opt('Packed from', whereSelect(e.key, e.name));
         if (e.gear) {
           const item = e.gear;
-          const rm = el('button', 'btn quiet rm', 'Remove'); rm.type = 'button'; rm.disabled = !canWrite;
-          rm.setAttribute('aria-label', 'Remove ' + item.name);
+          const rm = el('button', 'btn quiet rm', '✕'); rm.type = 'button'; rm.disabled = !canWrite;
+          rm.setAttribute('aria-label', 'Remove ' + item.name); rm.title = 'Remove';
           rm.addEventListener('click', () => {
             PLAN.bring = PLAN.bring.filter((x) => x.id !== item.id);
             CHECKED = CHECKED.filter((x) => x !== e.key);
@@ -760,7 +760,6 @@ export function mountPlanner(root, deps) {
           });
           opts.append(rm);
         }
-        row.classList.add('edit');
         row.append(opts);
         box.append(row);
       });
@@ -939,12 +938,12 @@ export function mountPlanner(root, deps) {
     const label = (s) => svcName(s) + ' · ' + day(s.date);
     const days = new Map();
     /* Same task on the same day is one line: amounts add up and the services are listed together. */
-    const task = (date, rank, key, title, amt, note, unitName) => {
+    const task = (date, rank, key, title, amt, note, unitName, fmt) => {
       if (!days.has(date)) days.set(date, []);
       const list = days.get(date);
       const same = typeof amt === 'number' && list.find((x) => x.title === title && typeof x.grams === 'number');
       if (same) { same.grams += amt; if (note && !same.notes.includes(note)) same.notes.push(note); return; }
-      list.push({rank, key, title, unitName, grams: typeof amt === 'number' ? amt : null, amt: typeof amt === 'number' ? null : amt, notes: note ? [note] : []});
+      list.push({rank, key, title, unitName, fmt, grams: typeof amt === 'number' ? amt : null, amt: typeof amt === 'number' ? null : amt, notes: note ? [note] : []});
     };
 
     const mixes = new Map();
@@ -993,6 +992,14 @@ export function mountPlanner(root, deps) {
         const title = norm(a.prep).includes(norm(name)) ? a.prep : a.prep + ' ' + name;
         task(addDays(s.date, -prepDays), 3, 'top|' + name, title, v, label(s), name);
       });
+      /* F'Zookies: cookie dough and whipped cream on the prep day, counted in F'Zookies (batches when the tab gives a batch size). */
+      const zookies = Object.entries(own).filter(([k]) => isDessert(k)).reduce((a, [, v]) => a + (Number(v) || 0), 0);
+      if (zookies) {
+        const batch = REF.dessert && REF.dessert.batch;
+        const dough = (n) => (batch ? half(n / batch) + (n / batch > 1 ? ' batches' : ' batch') + ' · ' : '') + n + " F'Zookies";
+        task(addDays(s.date, -prepDays), 4, 'zookie|dough', "Make F'Zookie dough", zookies, label(s), null, dough);
+        task(addDays(s.date, -prepDays), 4, 'zookie|cream', 'Make whipped cream', zookies, label(s), null, (n) => 'for ' + n + " F'Zookies");
+      }
     });
 
     /* Past days drop off once everything on them is checked. Anything left unchecked stays, under
@@ -1015,11 +1022,11 @@ export function mountPlanner(root, deps) {
           lab.classList.toggle('done', cb.checked); saveChecks();
         });
         const nm = el('span', 'nm', x.title);
-        lab.append(cb, nm, el('span', 'amt', x.grams != null ? volume(x.grams, x.unitName) : x.amt));
+        lab.append(cb, nm, el('span', 'amt', x.grams != null ? (x.fmt ? x.fmt(x.grams) : volume(x.grams, x.unitName)) : x.amt));
         box.append(lab);
       });
     });
-    if (!anyPicked()) box.append(el('p', 'empty', 'Pick pizzas on the Plan tab to add sauce and topping prep.'));
+    if (!anyPicked()) box.append(el('p', 'empty', "Pick pizzas or F'Zookies on the Plan tab to add sauce, topping and dessert prep."));
   };
 
   /* ---------- Controls ---------- */
@@ -1028,6 +1035,40 @@ export function mountPlanner(root, deps) {
     ['plan', 'shop', 'prep', 'bring', 'wrapup'].forEach((p) => { $('#page-' + p).hidden = b.dataset.tab !== p; });
     try { window.history.replaceState(null, '', '#' + b.dataset.tab); } catch (e) { /* hash is optional */ }
   }));
+  /* Swipe left or right anywhere in the middle of the screen to go to the next or previous tab.
+     Edges are left alone (the phone's own back swipe), and so are sliders, the text box you're
+     typing in, and anything that scrolls sideways. */
+  let swipe = null;
+  root.addEventListener('touchstart', (e) => {
+    swipe = null;
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0], edge = 28;
+    if (t.clientX < edge || t.clientX > window.innerWidth - edge) return;
+    for (let n = e.target; n && n !== root; n = n.parentElement) {
+      if (n === document.activeElement && /^(INPUT|TEXTAREA)$/.test(n.tagName)) return; // typing: leave the cursor alone
+      if (n.type === 'range' || n.isContentEditable) return;
+      if (n.scrollWidth > n.clientWidth + 1 && /auto|scroll/.test(getComputedStyle(n).overflowX)) return;
+    }
+    swipe = {x: t.clientX, y: t.clientY, at: Date.now()};
+  }, {passive: true});
+  root.addEventListener('touchcancel', () => { swipe = null; }, {passive: true});
+  root.addEventListener('touchend', (e) => {
+    const s0 = swipe; swipe = null;
+    if (!s0 || e.changedTouches.length !== 1) return;
+    const t = e.changedTouches[0], dx = t.clientX - s0.x, dy = t.clientY - s0.y;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.8 || Date.now() - s0.at > 700) return;
+    if (String(window.getSelection && window.getSelection()).trim()) return;
+    const tabs = [...root.querySelectorAll('.tabs [data-tab]')].filter((b) => !b.hidden);
+    const at = tabs.findIndex((b) => b.getAttribute('aria-selected') === 'true');
+    const next = tabs[at + (dx < 0 ? 1 : -1)];
+    if (!next) return;
+    next.click();
+    const page = $('#page-' + next.dataset.tab);
+    page.classList.remove('swipe-in-left', 'swipe-in-right');
+    void page.offsetWidth;
+    page.classList.add(dx < 0 ? 'swipe-in-left' : 'swipe-in-right');
+    page.addEventListener('animationend', () => page.classList.remove('swipe-in-left', 'swipe-in-right'), {once: true});
+  }, {passive: true});
   if (['#shop', '#bring', '#prep'].includes(window.location.hash) || (window.location.hash === '#wrapup' && deps.wrapUps)) root.querySelector('.tabs [data-tab="' + window.location.hash.slice(1) + '"]').click();
   /* Between rounds: drop services whose day has passed (their prep goes with them). Upcoming
      services, picked pizzas, your own lists and all checkmarks stay. */

@@ -7,6 +7,7 @@
   },
   "main": "index.js",
   "scripts": {
+    "test": "node --test",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
     "deploy": "firebase deploy --only functions",
