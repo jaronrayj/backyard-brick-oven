@@ -4,8 +4,8 @@
 sign in with Google; nobody needs access to the Google Sheets.
 
 On a phone, swipe left or right in the middle of the screen to move between the
-tabs. Swipes that start at the screen edge, on a slider or in the text box you're
-typing in are ignored.
+tabs. Swipes that start at the screen edge, on a slider, on a drag grip or in the text
+box you're typing in are ignored.
 
 ## How it fits together
 
@@ -52,7 +52,7 @@ shopping list, and take no share of the toppings.
 ## From your calendar
 
 Under Services, "From your calendar" lists the next two weeks of the business
-calendar (the same one Wrap-up reads. "Clear finished services" (under Services, once a service's day has passed) removes past services (and their prep); upcoming services, picked pizzas, your own items and all checkmarks stay. On the Prep tab, a past day with anything unchecked stays under "Missed" until it's checked off; fully checked past days drop off. Admins also get a **Wrap up** tab: the wrap-up page (`src/pages/Events/WrapUp.js`, drawn into the tab by `index.js`), with a count of the last week's ended events still to wrap up; see docs/events.md. Pizzas are per service: each service keeps its own `picked`, `counts` and `manualCounts`, the Pizzas card switches between services ("Same pizzas as" copies another's mix), prep uses each service's own counts and shopping adds them all up. Plans saved before this get the old single list copied to every service once (`perService: true`); `plannerCalendar` in
+calendar (the same one Wrap-up reads. "Clear finished services" (under Services, once a service's day has passed) removes past services (and their prep); upcoming services, picked pizzas, your own items and all checkmarks stay (your own prep items for past days go too). On the Prep tab you can add your own items (`PLAN.prepExtras`: name, optional amount and a day; the day starts on the next prep day). They show last on their day with ✕ to remove. On the Prep tab, a past day with anything unchecked stays under "Missed" until it's checked off; fully checked past days drop off. Admins also get a **Wrap up** tab: the wrap-up page (`src/pages/Events/WrapUp.js`, drawn into the tab by `index.js`), with a count of the last week's ended events still to wrap up; see docs/events.md. Pizzas are per service: each service keeps its own `picked`, `counts` and `manualCounts`, the Pizzas card switches between services ("Same pizzas as" copies another's mix), prep uses each service's own counts and shopping adds them all up. Plans saved before this get the old single list copied to every service once (`perService: true`); `plannerCalendar` in
 `functions/planner.js`) that aren't planned yet. "Add" makes a normal service
 you can edit: the calendar title becomes its name, "Pizza Friday" in the title
 makes it a Pizza Friday, "wedding" a wedding, anything else a party, and the
