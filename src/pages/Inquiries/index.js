@@ -148,7 +148,7 @@ const Inquiries = () => {
           </button>
           <p className="text-sm mt-4 text-gray-200">
             Or text us at{' '}
-            <a href="sms:+18018723439" className="underline font-semibold">
+            <a href="sms:+18018723439" onClick={() => track('contact_text')} className="underline font-semibold">
               (801) 872-3439
             </a>
           </p>
@@ -252,6 +252,13 @@ const Inquiries = () => {
                   </li>
                 ))}
               </ul>
+              <button
+                type="button"
+                onClick={() => openForm('Wedding')}
+                className="mt-6 bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-colors duration-200"
+              >
+                Get a wedding quote
+              </button>
             </div>
 
             {/* Groups / Parties */}
@@ -278,6 +285,13 @@ const Inquiries = () => {
                   </li>
                 ))}
               </ul>
+              <button
+                type="button"
+                onClick={() => openForm()}
+                className="mt-6 bg-white hover:bg-amber-50 text-amber-700 font-bold py-3 px-6 rounded-lg border-2 border-amber-600 transition-colors duration-200"
+              >
+                Get a party quote
+              </button>
             </div>
           </div>
 
@@ -332,6 +346,13 @@ const Inquiries = () => {
                 oven. Then eat what you made.
               </p>
               <p>We bring everything. You just show up hungry.</p>
+              <button
+                type="button"
+                onClick={() => openForm('Pizza class')}
+                className="mt-2 bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-colors duration-200"
+              >
+                Ask about a class
+              </button>
             </div>
           </div>
         </div>

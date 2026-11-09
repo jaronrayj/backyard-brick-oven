@@ -148,6 +148,12 @@ const MainPage = () => {
                 🔥 Each 10" thin crust pizza is flame cooked in our Gozney dome
                 at 1000°F — ready in about 60 seconds flat
               </p>
+              <a
+                href="/inquiries"
+                className="mt-4 self-center text-base font-semibold text-amber-700 hover:text-amber-800 underline underline-offset-4"
+              >
+                Planning an event? We cater weddings &amp; parties →
+              </a>
 
               <br />
               <div className="flex justify-center gap-4">
