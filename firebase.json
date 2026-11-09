@@ -6,6 +6,23 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "redirects": [
+      {
+        "source": "/review",
+        "destination": "https://g.page/r/CUwmwFmjGGdVEAE/review",
+        "type": 302
+      },
+      {
+        "source": "/instagram",
+        "destination": "https://www.instagram.com/backyard_brick_oven/",
+        "type": 302
+      },
+      {
+        "source": "/facebook",
+        "destination": "https://www.facebook.com/people/Backyard-Brick-Oven-LLC/100090391791253/",
+        "type": 302
+      }
+    ],
     "rewrites": [
       {
         "source": "/api/inquiry",
