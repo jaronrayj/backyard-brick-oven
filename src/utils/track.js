@@ -29,6 +29,7 @@ export const FUNNEL = [
 export const EXTRA = [
   { step: 'quote_abandon', label: 'Closed the form after starting it' },
   { step: 'quote_error', label: 'Form errors' },
+  { step: 'contact_text', label: 'Tapped "text us" instead' },
 ]
 const ONCE = new Set(FUNNEL.map((f) => f.step))
 const ALL = new Set([...ONCE, ...EXTRA.map((f) => f.step)])
