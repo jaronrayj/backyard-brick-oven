@@ -3,6 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- The old Firebase addresses (web.app / firebaseapp.com) send everyone, Google included, to the real
+         domain so search results point there. Firebase's own /__/ paths (sign-in) are left alone. -->
+    <script>
+      (function () {
+        var l = window.location;
+        if (/^backyard-brickoven\.(web\.app|firebaseapp\.com)$/.test(l.hostname) && l.pathname.indexOf('/__/') !== 0) {
+          l.replace('https://backyardbrickovenpizza.com' + l.pathname + l.search + l.hash);
+        }
+      })();
+    </script>
     <meta name="theme-color" content="#ffa100" />
     <meta name="description" content="Backyard Brick Oven — Neapolitan-style brick oven pizza in Bountiful, Utah by Jaron Johnson. Join us for Pizza Friday or book catering for your next event." />
     <meta name="keywords" content="pizza, Neapolitan pizza, Bountiful Utah, pizza catering, brick oven pizza, Pizza Friday, Jaron Johnson, Backyard Brick Oven, food catering Utah" />
