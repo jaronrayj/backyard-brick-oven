@@ -42,8 +42,8 @@ const refresh = async () => {
 // The website's pizzas (on and off the menu), live from the Realtime Database.
 const pizzas = (next) => onValue(rtdbRef(rtdb, 'pizzas'), (snap) => next(snap.val()), () => {})
 
-// Upcoming entries on the business calendar, for "From your calendar".
-const calendar = async () => (await httpsCallable(getFunctions(), 'plannerCalendar')()).data
+// The business calendar: the next two weeks for "From your calendar", or { from, to } for the Calendar tab.
+const calendar = async (range) => (await httpsCallable(getFunctions(), 'plannerCalendar')(range || {})).data
 
 // Admins only: how many recent events still need a wrap-up, for the Wrap up tab.
 const wrapUps = {

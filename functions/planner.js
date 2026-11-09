@@ -205,16 +205,27 @@ export const refreshPlannerData = onCall({ invoker: "public" }, async (request) 
 // back as { items: [], problem } so the planner still works without it.
 const CALENDAR_DAYS = 14;
 const utahDate = (d) => d.toLocaleDateString("en-CA", { timeZone: "America/Denver" });
+// The Calendar tab passes { from, to } (YYYY-MM-DD, at most 42 days apart) for one month grid.
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_RANGE_DAYS = 42;
 export const plannerCalendar = onCall({ invoker: "public" }, async (request) => {
   await requireRole(request, ["admin", "staff"], "Only the team can see the calendar.");
   const now = new Date();
-  const from = utahDate(now);
-  const to = utahDate(new Date(now.getTime() + CALENDAR_DAYS * 86400000));
+  let from = utahDate(now);
+  let to = utahDate(new Date(now.getTime() + CALENDAR_DAYS * 86400000));
+  const want = request.data || {};
+  if (want.from || want.to) {
+    const span = (Date.parse(want.to) - Date.parse(want.from)) / 86400000;
+    if (!ISO_DAY.test(want.from || "") || !ISO_DAY.test(want.to || "") || !(span >= 0 && span <= MAX_RANGE_DAYS)) {
+      throw new HttpsError("invalid-argument", `Ask for from..to as YYYY-MM-DD, at most ${MAX_RANGE_DAYS} days apart.`);
+    }
+    ({ from, to } = want);
+  }
   try {
     const { items } = await calendarBetween(from, to);
     return {
       items: items
-        .filter((c) => c.date >= from)
+        .filter((c) => c.date >= from && c.date <= to)
         .map(({ id, title, date, time, location, notes }) => ({ id, title, date, time, location, notes: notes.slice(0, 500) })),
     };
   } catch (e) {

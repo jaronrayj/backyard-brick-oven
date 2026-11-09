@@ -12,11 +12,12 @@
  * deps.refresh   - async () => re-read the Google Sheets on the server
  * deps.wrapUps   - admins only: {due() -> {items: [{key, date, title}]}}; shows the Wrap up tab
  *                  (index.js draws the form into #wrapup-slot; fire 'wrapups-changed' on root to recount)
- * deps.calendar  - async () => { items: [{id, title, date, time, location, notes}], problem? }, upcoming calendar entries
+ * deps.calendar  - async (range?) => { items: [{id, title, date, time, location, notes}], problem? }; with no range,
+ *                  the next two weeks; with {from, to} (YYYY-MM-DD), that span (the Calendar tab's month)
  */
 import { sortable, moved } from '../../utils/sortable';
 
-const MARKUP = '<div class="wrap">\n  <header class="top">\n    <div class="title-row"><h1>Planner</h1>\n    <div class="status"><span id="data-warn"></span><span id="save-status"></span><span id="keep-awake-slot"></span></div></div>\n    <nav class="tabs" role="tablist" aria-label="Planner pages">\n      <button type="button" role="tab" id="tab-plan" aria-controls="page-plan" aria-selected="true" data-tab="plan">Plan</button>\n      <button type="button" role="tab" id="tab-shop" aria-controls="page-shop" aria-selected="false" data-tab="shop">Shopping</button>\n      <button type="button" role="tab" id="tab-prep" aria-controls="page-prep" aria-selected="false" data-tab="prep">Prep</button>\n      <button type="button" role="tab" id="tab-bring" aria-controls="page-bring" aria-selected="false" data-tab="bring">Bring</button>\n      <button type="button" role="tab" id="tab-wrapup" aria-controls="page-wrapup" aria-selected="false" data-tab="wrapup" hidden>Wrap up</button>\n    </nav>\n  </header>\n\n  <p class="ro" id="readonly" hidden>You can look but not change this plan. Ask Jaron to add your account to the staff list.</p>\n\n  <section id="page-plan" role="tabpanel" aria-labelledby="tab-plan" class="panel">\n    <article class="card">\n      <h2>Services</h2>\n      <p class="note">Pizza Friday uses recent demand. Events use guests × pizzas per guest. Type a count to override. Bread uses the same dough, by the loaf.</p>\n      <div id="services"></div>\n      <div id="cal-suggest" class="cal"></div>\n      <div class="row">\n        <button type="button" class="btn" id="add-svc">Add a service</button>\n        <button type="button" class="btn quiet" id="clear-done" hidden>Clear finished services</button>\n      </div>\n      <details class="tweaks">\n        <summary>Yeast, water and timing</summary>\n        <div class="row">\n          <label class="field">Extra for safety (%)<input type="number" id="t-buffer" min="0" max="100" step="5" inputmode="numeric"></label>\n          <label class="field">Mix days before service<input type="number" id="t-lead" min="0" max="5" step="1" inputmode="numeric"></label>\n          <label class="field">Yeast (% of recipe)<input type="number" id="t-yeast" min="10" max="300" step="5" inputmode="numeric"></label>\n          <label class="field">Cold water (% of recipe)<input type="number" id="t-water" min="50" max="150" step="1" inputmode="numeric"></label>\n          <button type="button" class="btn" id="t-reset">Reset to saved settings</button>\n        </div>\n        <p class="note sheets-line"><span id="data-status">Loading recipe and menu…</span> <button type="button" class="linkbtn" id="refresh" hidden>Refresh now</button></p>\n      </details>\n      <details class="tweaks">\n        <summary>Recent Pizza Fridays</summary>\n        <p class="note" id="hist-note">Demand is sold + comped + could have sold more.</p>\n        <div style="overflow-x:auto"><table class="hist" id="hist"></table></div>\n      </details>\n    </article>\n\n    <article class="card">\n      <h2>Dough plan</h2>\n      <p class="note" id="plan-note">Shared mix days are combined. Big days split into even mixer batches.</p>\n      <div id="plan"></div>\n    </article>\n\n    <article class="card">\n      <h2>Pizzas</h2>\n      <p class="note">Each service has its own pizzas. Pick the service, then tap the pizzas it\'s getting; its dough splits evenly across them. Pizzas that are off the website are under Older pizzas.</p>\n      <div class="svc-switch" id="svc-switch" role="group" aria-label="Pizzas for"></div>\n      <div class="row" id="same-row" hidden><label class="field">Same pizzas as<select id="same-as"></select></label></div>\n      <div class="pick-groups" id="chips"></div>\n      <div class="row">\n        <button type="button" class="btn" id="split">Split evenly again</button>\n        <button type="button" class="btn" id="clear">Clear</button>\n        <span class="seg" role="group" aria-label="Each tap">Each tap\n          <button type="button" class="btn" data-step="1" aria-pressed="false">1</button>\n          <button type="button" class="btn" data-step="5" aria-pressed="true">5</button>\n          <button type="button" class="btn" data-step="10" aria-pressed="false">10</button>\n        </span>\n      </div>\n      <p class="note" id="count-line"></p>\n      <div id="counters"></div>\n    </article>\n  </section>\n\n  <section id="page-shop" role="tabpanel" aria-labelledby="tab-shop" class="panel" hidden>\n    <article class="card">\n      <h2>Shopping list</h2>\n      <p class="note" id="shop-line"></p>\n      <div class="row"><button type="button" class="btn quiet" id="uncheck">Uncheck everything</button></div>\n      <form class="row" id="shop-form">\n        <label class="field">Add an item<input type="text" id="shop-new" enterkeyhint="done" autocomplete="off" placeholder="e.g. Paper plates"></label>\n        <label class="field" style="flex:0 1 7rem">How much<input type="text" id="shop-qty" autocomplete="off" placeholder="optional"></label>\n        <button type="submit" class="btn" id="shop-add">Add</button>\n      </form>\n      <div class="list" id="shoplist"></div>\n    </article>\n  </section>\n\n  <section id="page-bring" role="tabpanel" aria-labelledby="tab-bring" class="panel" hidden>\n    <article class="card">\n      <h2>What to bring</h2>\n      <p class="note" id="bring-line">What to pack for the services on the Plan tab. Your own items show only for the kinds of services you have planned; counts follow guests or dough balls.</p>\n      <div class="row"><button type="button" class="btn quiet" id="bring-uncheck">Uncheck everything</button></div>\n      <div class="list" id="bringauto"></div>\n      <div class="list" id="bringlist"></div>\n      <div class="row"><button type="button" class="btn quiet" id="bring-edit" aria-pressed="false">Edit list</button></div>\n      <div class="row" id="bring-form" hidden>\n        <label class="field">Item<input type="text" id="bring-new" enterkeyhint="done" autocomplete="off" placeholder="e.g. Pizza peels"></label>\n        <label class="field">For<select id="bring-for"></select></label>\n        <label class="field">How many<select id="bring-per"><option value="">Just bring it</option><option value="guest">1 per … guests</option><option value="ball">1 per … dough balls</option></select></label>\n        <label class="field" id="bring-every-wrap" hidden>Every<input type="number" id="bring-every" min="1" inputmode="numeric" value="10"></label>\n        <label class="field">Packed from<select id="bring-where"><option value="">Not sure yet</option><option value="home">Home</option><option value="commissary">Commissary</option></select></label>\n        <button type="button" class="btn" id="bring-add">Add</button>\n      </div>\n    </article>\n  </section>\n\n  <section id="page-wrapup" role="tabpanel" aria-labelledby="tab-wrapup" hidden>\n    <div id="wrapup-slot"></div>\n  </section>\n\n  <section id="page-prep" role="tabpanel" aria-labelledby="tab-prep" hidden>\n    <article class="card">\n      <h2>Prep list</h2>\n      <p class="note">Day by day for the services on the Plan tab. Amounts split each service\'s share of the pizzas you picked.</p>\n      <div class="row"><button type="button" class="btn quiet" id="prep-uncheck">Uncheck everything</button></div>\n      <form class="row" id="prep-form">\n        <label class="field">Add a prep item<input type="text" id="prep-new" enterkeyhint="done" autocomplete="off" placeholder="e.g. Slice basil"></label>\n        <label class="field" style="flex:0 1 7rem">How much<input type="text" id="prep-qty" autocomplete="off" placeholder="optional"></label>\n        <label class="field" style="flex:0 1 10rem">Day<input type="date" id="prep-day"></label>\n        <button type="submit" class="btn" id="prep-add">Add</button>\n      </form>\n      <div class="list" id="preplist"></div>\n    </article>\n  </section>\n</div>';
+const MARKUP = '<div class="wrap">\n  <header class="top">\n    <div class="title-row"><h1>Planner</h1>\n    <div class="status"><span id="data-warn"></span><span id="save-status"></span><span id="keep-awake-slot"></span></div></div>\n    <nav class="tabs" role="tablist" aria-label="Planner pages">\n      <button type="button" role="tab" id="tab-plan" aria-controls="page-plan" aria-selected="true" data-tab="plan">Plan</button>\n      <button type="button" role="tab" id="tab-calendar" aria-controls="page-calendar" aria-selected="false" data-tab="calendar" hidden>Calendar</button>\n      <button type="button" role="tab" id="tab-shop" aria-controls="page-shop" aria-selected="false" data-tab="shop">Shopping</button>\n      <button type="button" role="tab" id="tab-prep" aria-controls="page-prep" aria-selected="false" data-tab="prep">Prep</button>\n      <button type="button" role="tab" id="tab-bring" aria-controls="page-bring" aria-selected="false" data-tab="bring">Bring</button>\n      <button type="button" role="tab" id="tab-wrapup" aria-controls="page-wrapup" aria-selected="false" data-tab="wrapup" hidden>Wrap up</button>\n    </nav>\n  </header>\n\n  <p class="ro" id="readonly" hidden>You can look but not change this plan. Ask Jaron to add your account to the staff list.</p>\n\n  <section id="page-plan" role="tabpanel" aria-labelledby="tab-plan" class="panel">\n    <article class="card">\n      <h2>Services</h2>\n      <p class="note">Pizza Friday uses recent demand. Events use guests × pizzas per guest. Type a count to override. Bread uses the same dough, by the loaf.</p>\n      <div id="services"></div>\n      <div id="cal-suggest" class="cal"></div>\n      <div class="row">\n        <button type="button" class="btn" id="add-svc">Add a service</button>\n        <button type="button" class="btn quiet" id="clear-done" hidden>Clear finished services</button>\n      </div>\n      <details class="tweaks">\n        <summary>Yeast, water and timing</summary>\n        <div class="row">\n          <label class="field">Extra for safety (%)<input type="number" id="t-buffer" min="0" max="100" step="5" inputmode="numeric"></label>\n          <label class="field">Mix days before service<input type="number" id="t-lead" min="0" max="5" step="1" inputmode="numeric"></label>\n          <label class="field">Yeast (% of recipe)<input type="number" id="t-yeast" min="10" max="300" step="5" inputmode="numeric"></label>\n          <label class="field">Cold water (% of recipe)<input type="number" id="t-water" min="50" max="150" step="1" inputmode="numeric"></label>\n          <button type="button" class="btn" id="t-reset">Reset to saved settings</button>\n        </div>\n        <p class="note sheets-line"><span id="data-status">Loading recipe and menu…</span> <button type="button" class="linkbtn" id="refresh" hidden>Refresh now</button></p>\n      </details>\n      <details class="tweaks">\n        <summary>Recent Pizza Fridays</summary>\n        <p class="note" id="hist-note">Demand is sold + comped + could have sold more.</p>\n        <div style="overflow-x:auto"><table class="hist" id="hist"></table></div>\n      </details>\n    </article>\n\n    <article class="card">\n      <h2>Dough plan</h2>\n      <p class="note" id="plan-note">Shared mix days are combined. Big days split into even mixer batches.</p>\n      <div id="plan"></div>\n    </article>\n\n    <article class="card">\n      <h2>Pizzas</h2>\n      <p class="note">Each service has its own pizzas. Pick the service, then tap the pizzas it\'s getting; its dough splits evenly across them. Pizzas that are off the website are under Older pizzas.</p>\n      <div class="svc-switch" id="svc-switch" role="group" aria-label="Pizzas for"></div>\n      <div class="row" id="same-row" hidden><label class="field">Same pizzas as<select id="same-as"></select></label></div>\n      <div class="pick-groups" id="chips"></div>\n      <div class="row">\n        <button type="button" class="btn" id="split">Split evenly again</button>\n        <button type="button" class="btn" id="clear">Clear</button>\n        <span class="seg" role="group" aria-label="Each tap">Each tap\n          <button type="button" class="btn" data-step="1" aria-pressed="false">1</button>\n          <button type="button" class="btn" data-step="5" aria-pressed="true">5</button>\n          <button type="button" class="btn" data-step="10" aria-pressed="false">10</button>\n        </span>\n      </div>\n      <p class="note" id="count-line"></p>\n      <div id="counters"></div>\n    </article>\n  </section>\n\n  <section id="page-calendar" role="tabpanel" aria-labelledby="tab-calendar" class="panel" hidden>\n    <article class="card">\n      <div class="svc-head"><h2 id="month-title">Calendar</h2>\n        <div class="row month-nav"><button type="button" class="btn quiet" id="month-prev" aria-label="Previous month">‹</button><button type="button" class="btn quiet" id="month-today">Today</button><button type="button" class="btn quiet" id="month-next" aria-label="Next month">›</button></div></div>\n      <p class="note" id="month-note">Your pizza events calendar. Tap a day to see what\'s on it.</p>\n      <div class="month" id="month" role="grid" aria-labelledby="month-title"></div>\n      <div class="list" id="day-list" aria-live="polite"></div>\n    </article>\n  </section>\n\n  <section id="page-shop" role="tabpanel" aria-labelledby="tab-shop" class="panel" hidden>\n    <article class="card">\n      <h2>Shopping list</h2>\n      <p class="note" id="shop-line"></p>\n      <div class="row"><button type="button" class="btn quiet" id="uncheck">Uncheck everything</button></div>\n      <form class="row" id="shop-form">\n        <label class="field">Add an item<input type="text" id="shop-new" enterkeyhint="done" autocomplete="off" placeholder="e.g. Paper plates"></label>\n        <label class="field" style="flex:0 1 7rem">How much<input type="text" id="shop-qty" autocomplete="off" placeholder="optional"></label>\n        <button type="submit" class="btn" id="shop-add">Add</button>\n      </form>\n      <div class="list" id="shoplist"></div>\n    </article>\n  </section>\n\n  <section id="page-bring" role="tabpanel" aria-labelledby="tab-bring" class="panel" hidden>\n    <article class="card">\n      <h2>What to bring</h2>\n      <p class="note" id="bring-line">What to pack for the services on the Plan tab. Your own items show only for the kinds of services you have planned; counts follow guests or dough balls.</p>\n      <div class="row"><button type="button" class="btn quiet" id="bring-uncheck">Uncheck everything</button></div>\n      <div class="list" id="bringauto"></div>\n      <div class="list" id="bringlist"></div>\n      <div class="row"><button type="button" class="btn quiet" id="bring-edit" aria-pressed="false">Edit list</button></div>\n      <div class="row" id="bring-form" hidden>\n        <label class="field">Item<input type="text" id="bring-new" enterkeyhint="done" autocomplete="off" placeholder="e.g. Pizza peels"></label>\n        <label class="field">For<select id="bring-for"></select></label>\n        <label class="field">How many<select id="bring-per"><option value="">Just bring it</option><option value="guest">1 per … guests</option><option value="ball">1 per … dough balls</option></select></label>\n        <label class="field" id="bring-every-wrap" hidden>Every<input type="number" id="bring-every" min="1" inputmode="numeric" value="10"></label>\n        <label class="field">Packed from<select id="bring-where"><option value="">Not sure yet</option><option value="home">Home</option><option value="commissary">Commissary</option></select></label>\n        <button type="button" class="btn" id="bring-add">Add</button>\n      </div>\n    </article>\n  </section>\n\n  <section id="page-wrapup" role="tabpanel" aria-labelledby="tab-wrapup" hidden>\n    <div id="wrapup-slot"></div>\n  </section>\n\n  <section id="page-prep" role="tabpanel" aria-labelledby="tab-prep" hidden>\n    <article class="card">\n      <h2>Prep list</h2>\n      <p class="note">Day by day for the services on the Plan tab. Amounts split each service\'s share of the pizzas you picked.</p>\n      <div class="row"><button type="button" class="btn quiet" id="prep-uncheck">Uncheck everything</button></div>\n      <form class="row" id="prep-form">\n        <label class="field">Add a prep item<input type="text" id="prep-new" enterkeyhint="done" autocomplete="off" placeholder="e.g. Slice basil"></label>\n        <label class="field" style="flex:0 1 7rem">How much<input type="text" id="prep-qty" autocomplete="off" placeholder="optional"></label>\n        <label class="field" style="flex:0 1 10rem">Day<input type="date" id="prep-day"></label>\n        <button type="submit" class="btn" id="prep-add">Add</button>\n      </form>\n      <div class="list" id="preplist"></div>\n    </article>\n  </section>\n</div>';
 
 export function mountPlanner(root, deps) {
   root.innerHTML = MARKUP;
@@ -228,6 +229,7 @@ export function mountPlanner(root, deps) {
     pending = false;
     syncCounts();
     renderServices(); renderCal(); renderTweaks(); renderPlan(); renderSwitch(); renderChips(); renderCounters(); renderHist(); renderShop();
+    if (!$('#page-calendar').hidden) renderMonth(); /* "On the plan" / "Add to plan" follow the plan */
   };
   const onFocusOut = () => setTimeout(() => { if (pending && !busy()) renderAll(); }, 0);
   root.addEventListener('focusout', onFocusOut);
@@ -343,6 +345,98 @@ export function mountPlanner(root, deps) {
     const type = guessType(c.title + ' ' + c.notes);
     PLAN.services = [...PLAN.services, {id: uid(), date: c.date, type, guests: type === 'pf' ? 100 : guessGuests(c.title, c.notes) || 50, ppg: null, balls: null, name: c.title, calId: c.id}];
   };
+
+  /* Calendar tab: a month of the business calendar. Each month is fetched once when first shown;
+     tap a day to list its entries, and Add puts an upcoming one on the Plan like "From your calendar". */
+  const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const monthCache = new Map(); /* 'YYYY-MM' -> {items, problem} | Promise */
+  let viewMonth = todayStr().slice(0, 7), pickedDay = todayStr();
+  const monthGrid = (ym) => {
+    const first = ym + '-01';
+    const start = addDays(first, -parse(first).getUTCDay());
+    const next = addDays(first, 32).slice(0, 7) + '-01';
+    const end = addDays(next, (6 - parse(addDays(next, -1)).getUTCDay()) - 1);
+    return {start, end};
+  };
+  const shiftMonth = (ym, n) => { const d = parse(ym + '-01'); d.setUTCMonth(d.getUTCMonth() + n); return d.toISOString().slice(0, 7); };
+  const loadMonth = (ym) => {
+    if (monthCache.has(ym)) return Promise.resolve(monthCache.get(ym));
+    const {start, end} = monthGrid(ym);
+    const p = deps.calendar({from: start, to: end})
+      .then((d) => d || {items: []})
+      .catch(() => ({items: [], problem: "Couldn't read the calendar right now."}))
+      .then((d) => { monthCache.set(ym, d); return d; });
+    monthCache.set(ym, p);
+    return p;
+  };
+  const renderMonth = () => {
+    const ym = viewMonth, data = monthCache.get(ym);
+    const ready = data && !(data instanceof Promise);
+    $('#month-title').textContent = MONTHS_FULL[Number(ym.slice(5)) - 1] + ' ' + ym.slice(0, 4);
+    $('#month-note').textContent = !ready ? 'Loading the calendar…' : data.problem || "Your pizza events calendar. Tap a day to see what's on it.";
+    const items = ready ? data.items : [];
+    const byDay = new Map();
+    items.forEach((c) => { if (c.date) byDay.set(c.date, [...(byDay.get(c.date) || []), c]); });
+    const box = $('#month');
+    box.replaceChildren();
+    DAYS.forEach((d) => box.append(el('div', 'dow', d)));
+    const {start, end} = monthGrid(ym);
+    const today = todayStr();
+    const days = [];
+    for (let d = start; d <= end; d = addDays(d, 1)) days.push(d);
+    days.forEach((d) => {
+      const list = byDay.get(d) || [];
+      const cell = el('button', 'day');
+      cell.type = 'button';
+      if (d.slice(0, 7) !== ym) cell.classList.add('other');
+      if (d === today) cell.classList.add('today');
+      if (list.length) cell.classList.add('busy');
+      cell.setAttribute('aria-pressed', String(d === pickedDay));
+      cell.setAttribute('aria-label', day(d) + (list.length ? ', ' + list.length + (list.length === 1 ? ' entry' : ' entries') : ''));
+      cell.append(el('span', 'num', String(Number(d.slice(8)))));
+      list.slice(0, 2).forEach((c) => cell.append(el('span', 'ev', c.title || '(no title)')));
+      if (list.length > 2) cell.append(el('span', 'ev more', '+' + (list.length - 2) + ' more'));
+      if (list.length) cell.append(el('span', 'dot', list.length > 1 ? String(list.length) : ''));
+      cell.addEventListener('click', () => { pickedDay = d; renderMonth(); });
+      box.append(cell);
+    });
+    renderDay(byDay.get(pickedDay) || [], ready);
+  };
+  const renderDay = (list, ready) => {
+    const box = $('#day-list');
+    box.replaceChildren(el('h3', null, rel(pickedDay) === day(pickedDay) ? day(pickedDay) : rel(pickedDay) + ' · ' + day(pickedDay)));
+    if (!ready) return;
+    if (!list.length) { box.append(el('p', 'empty', 'Nothing on the calendar.')); return; }
+    list.forEach((c) => {
+      const row = el('div', 'cal-row');
+      const info = el('div', 'nm');
+      info.append(el('b', null, c.title || '(no title)'));
+      const sub = [c.time || 'All day', c.location].filter(Boolean).join(' · ');
+      info.append(el('span', 'sub', sub));
+      if (c.notes) info.append(el('span', 'sub notes', c.notes));
+      row.append(info);
+      if (PLAN && c.date >= todayStr() && !/\bprep\b/i.test(c.title)) {
+        if (isPlanned(c)) row.append(el('span', 'sub', 'On the plan'));
+        else {
+          const add = el('button', 'btn primary', 'Add to plan'); add.type = 'button'; add.disabled = !canWrite;
+          add.addEventListener('click', () => { addFromCal(c); savePlan(); renderAll(); renderMonth(); });
+          row.append(add);
+        }
+      }
+      box.append(row);
+    });
+  };
+  const showMonth = () => {
+    if (!deps.calendar) return;
+    const ym = viewMonth;
+    renderMonth();
+    loadMonth(ym).then(() => { if (viewMonth === ym) renderMonth(); });
+    loadMonth(shiftMonth(ym, 1)); /* next month is usually next */
+  };
+  const goMonth = (ym, dayInMonth) => { viewMonth = ym; pickedDay = dayInMonth || (ym === todayStr().slice(0, 7) ? todayStr() : ym + '-01'); showMonth(); };
+  $('#month-prev').addEventListener('click', () => goMonth(shiftMonth(viewMonth, -1)));
+  $('#month-next').addEventListener('click', () => goMonth(shiftMonth(viewMonth, 1)));
+  $('#month-today').addEventListener('click', () => goMonth(todayStr().slice(0, 7), todayStr()));
 
   /* Wrap up tab (admins): the form is drawn by React into #wrapup-slot (index.js). The tab
      shows how many recent events still need one. */
@@ -1036,7 +1130,8 @@ export function mountPlanner(root, deps) {
   /* ---------- Controls ---------- */
   root.querySelectorAll('.tabs [data-tab]').forEach((b) => b.addEventListener('click', () => {
     root.querySelectorAll('.tabs [data-tab]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
-    ['plan', 'shop', 'prep', 'bring', 'wrapup'].forEach((p) => { $('#page-' + p).hidden = b.dataset.tab !== p; });
+    ['plan', 'calendar', 'shop', 'prep', 'bring', 'wrapup'].forEach((p) => { $('#page-' + p).hidden = b.dataset.tab !== p; });
+    if (b.dataset.tab === 'calendar') showMonth();
     try { window.history.replaceState(null, '', '#' + b.dataset.tab); } catch (e) { /* hash is optional */ }
   }));
   /* Swipe left or right anywhere in the middle of the screen to go to the next or previous tab.
@@ -1073,7 +1168,7 @@ export function mountPlanner(root, deps) {
     page.classList.add(dx < 0 ? 'swipe-in-left' : 'swipe-in-right');
     page.addEventListener('animationend', () => page.classList.remove('swipe-in-left', 'swipe-in-right'), {once: true});
   }, {passive: true});
-  if (['#shop', '#bring', '#prep'].includes(window.location.hash) || (window.location.hash === '#wrapup' && deps.wrapUps)) root.querySelector('.tabs [data-tab="' + window.location.hash.slice(1) + '"]').click();
+  if (['#shop', '#bring', '#prep'].includes(window.location.hash) || (window.location.hash === '#wrapup' && deps.wrapUps) || (window.location.hash === '#calendar' && deps.calendar)) root.querySelector('.tabs [data-tab="' + window.location.hash.slice(1) + '"]').click();
   /* Between rounds: drop services whose day has passed (their prep goes with them). Upcoming
      services, picked pizzas, your own lists and all checkmarks stay. */
   $('#clear-done').addEventListener('click', () => {
@@ -1185,6 +1280,7 @@ export function mountPlanner(root, deps) {
     root.addEventListener('wrapups-changed', loadWrapCount);
   }
   if (deps.calendar) {
+    $('#tab-calendar').hidden = false;
     deps.calendar().then((d) => { CAL = d || {items: []}; if (!busy()) renderAll(); else renderCal(); }).catch(() => { CAL = {items: [], problem: "Couldn't read the calendar right now."}; renderCal(); });
   }
   /* The pizza list straight from the website menu, so menu edits and older pizzas show right away. */
