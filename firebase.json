@@ -6,6 +6,13 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "redirects": [
+      {
+        "source": "/review",
+        "destination": "https://g.page/r/CUwmwFmjGGdVEAE/review",
+        "type": 302
+      }
+    ],
     "rewrites": [
       {
         "source": "/api/inquiry",

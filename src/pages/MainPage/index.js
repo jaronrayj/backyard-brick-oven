@@ -91,8 +91,15 @@ const MainPage = () => {
       {
         href: 'https://g.co/kgs/8o94du5',
         imgSrc: googleLogo,
-        altText: 'Google Calendar',
+        altText: 'Google Maps',
         text: 'Directions',
+      },
+      {
+        // Forwards to the Google review form (firebase.json), so printed QR codes keep working.
+        href: '/review',
+        imgSrc: googleLogo,
+        altText: 'Google',
+        text: 'Leave us a review',
       },
       {
         href: 'https://calendar.google.com/calendar/u/0?cid=NDcyZDQ1ZjgwNGRhOTFiMTljYzBmNWE1OWUxNDQ1MjA1NzBhYjE5OTQzZGRjOTBlMDJjMmY0M2NhYTg3MDQ2MkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t',
