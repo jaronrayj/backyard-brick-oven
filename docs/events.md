@@ -151,3 +151,15 @@ Events → Report has two tables for the last six months.
 The same steps also go to Google Analytics (property in `src/utils/firebase.js`),
 which adds where visitors came from and what device they used. Nothing personal
 is sent: no names, emails or form answers.
+
+## Follow-up and history
+
+Each event keeps a `history` list (`[{ at, type, text }]`, `at` in milliseconds) that the editor shows as a timeline. Lines are added on their own when you:
+
+- create an event, write or change a quote, or change the date or guest count (on Save)
+- tap a stage button
+- tap Email follow-up or Text follow-up, one of the quick buttons (Sent the quote, They replied, Talked or texted), or add your own line
+
+Events from before this change show one "Added" line from `createdAt`.
+
+"Last contact" is the newest created, quote-sent, contact or follow-up line. Inquiries are flagged for follow-up after 2 quiet days and quotes after 5 (`FOLLOW_UP_DAYS` in `src/pages/Events/history.js`); the list shows "Follow up: last contact N days ago" on those rows. The follow-up message is written from the stage and what's missing (date, guests, location) and opens in your mail or messages app.

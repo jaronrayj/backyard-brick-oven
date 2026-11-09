@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import {
   addDoc,
+  arrayUnion,
   collection,
   deleteDoc,
   doc,
@@ -15,6 +16,8 @@ import useEventAdmin from './useEventAdmin'
 import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 import ComboBox from '../../components/ComboBox'
 import Report from './Report'
+import FollowUp from './FollowUp'
+import { changeEntries, entry, followUpDue } from './history'
 import { DEFAULT_PRICING, STATUSES, addOnName, money, newQuote, prettyDate, publicPricing, quoteText, totals, travelZones } from './quote'
 import {
   FORECAST_DAYS,
@@ -347,13 +350,29 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
   const setStage = async (status) => {
     if (status === event.status) return
     set({ status })
-    if (!id) return
+    if (!id) {
+      set({ history: [...(event.history || []), entry('stage', `Set to ${statusLabel(status)}`)] })
+      return
+    }
     setStageNote('Saving…')
     try {
-      await updateDoc(doc(db, 'events', id), { status, updatedAt: serverTimestamp() })
+      const line = entry('stage', `Moved to ${statusLabel(status)}`)
+      await updateDoc(doc(db, 'events', id), { status, updatedAt: serverTimestamp(), history: arrayUnion(line) })
+      set({ history: [...(event.history || []), line] })
       setStageNote(`Moved to ${statusLabel(status)}`)
     } catch (e) {
       setStageNote("Couldn't move it. Check you're signed in as an admin.")
+    }
+  }
+
+  // History lines from the follow-up panel save right away too.
+  const log = async (line) => {
+    set({ history: [...(event.history || []), line] })
+    if (!id) return
+    try {
+      await updateDoc(doc(db, 'events', id), { history: arrayUnion(line), updatedAt: serverTimestamp() })
+    } catch (e) {
+      setError("Couldn't save that to the history. Check you're signed in as an admin.")
     }
   }
 
@@ -395,10 +414,15 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
       if (data.quote && event.status === 'inquiry' && initial.status === 'inquiry' && !initial.quote) {
         data.status = 'quoted'
       }
+      const lines = changeEntries(initial, data)
+      if (data.status !== event.status) lines.push(entry('stage', `Moved to ${statusLabel(data.status)}`))
       if (id) {
+        // Append, so lines logged from another device aren't overwritten.
+        delete data.history
+        if (lines.length) data.history = arrayUnion(...lines)
         await updateDoc(doc(db, 'events', id), data)
       } else {
-        data = { ...data, createdAt: serverTimestamp() }
+        data = { ...data, history: [...lines, ...(event.history || [])], createdAt: serverTimestamp() }
         await addDoc(collection(db, 'events'), data)
       }
       onClose()
@@ -512,6 +536,8 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
           {event.comments && <p className="whitespace-pre-wrap">Their note: {event.comments}</p>}
         </section>
       )}
+
+      <FollowUp event={event} isNew={!id} onLog={log} />
 
       <Field label="Your notes">
         <textarea className={input} rows={3} value={event.notes} onChange={(e) => set({ notes: e.target.value })} />
@@ -754,6 +780,7 @@ const byDate = (a, b) => String(a.date || '9999').localeCompare(String(b.date ||
 const EventRow = ({ event, mixLead, plannerRef, onOpen }) => {
   const t = event.quote ? totals(event.quote) : null
   const days = daysUntil(event.date)
+  const due = followUpDue(event)
   return (
     <li>
       <button
@@ -779,6 +806,11 @@ const EventRow = ({ event, mixLead, plannerRef, onOpen }) => {
         <DoughNote event={event} mixLead={mixLead} />
         <PizzaNote event={event} plannerRef={plannerRef} />
         {t && <p className="text-sm font-medium">Quote {money(t.total)}</p>}
+        {due && (
+          <p className="text-sm font-medium text-amber-800">
+            Follow up: last contact {due.days === 1 ? 'yesterday' : `${due.days} days ago`}
+          </p>
+        )}
       </button>
     </li>
   )
