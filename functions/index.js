@@ -4,6 +4,7 @@ import { GMAIL_APP_PASSWORD, GMAIL_USER, sendMail } from "./mail.js";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { saveInquiryEvent, runDoughReminders } from "./events.js";
 import { sendPush, runMorningSummary, runWrapUpReminder } from "./push.js";
+import { runReviewAsks } from "./reviewAsk.js";
 
 // Inquiry notifications go to the business inbox.
 const NOTIFY_TO = "jj.backyardbrickoven@gmail.com";
@@ -217,7 +218,7 @@ export { registerPush, pushStatus, testPush } from "./push.js";
 export const notificationTimer = onSchedule(
   { schedule: "*/15 * * * *", timeZone: "America/Denver", secrets: [GMAIL_APP_PASSWORD], region: "us-central1" },
   async () => {
-    for (const [name, run] of [["dough reminders", runDoughReminders], ["morning summary", runMorningSummary], ["wrap-up reminder", runWrapUpReminder]]) {
+    for (const [name, run] of [["dough reminders", runDoughReminders], ["morning summary", runMorningSummary], ["wrap-up reminder", runWrapUpReminder], ["review emails", runReviewAsks]]) {
       try {
         await run();
       } catch (err) {

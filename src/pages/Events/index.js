@@ -17,6 +17,7 @@ import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 import ComboBox from '../../components/ComboBox'
 import Report from './Report'
 import FollowUp from './FollowUp'
+import ReviewAsk from './ReviewAsk'
 import { changeEntries, entry, followUpDue } from './history'
 import { DEFAULT_PRICING, STATUSES, addOnName, money, newQuote, prettyDate, publicPricing, quoteText, totals, travelZones } from './quote'
 import {
@@ -376,6 +377,18 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
     }
   }
 
+  // Review email: Don't send / Send it after all saves right away (functions/reviewAsk.js reads it).
+  const skipReview = async (skip) => {
+    const line = entry('note', skip ? "Review email: won't send" : 'Review email: will send')
+    set({ reviewAskSkip: skip, history: [...(event.history || []), line] })
+    try {
+      await updateDoc(doc(db, 'events', id), { reviewAskSkip: skip, history: arrayUnion(line), updatedAt: serverTimestamp() })
+    } catch (e) {
+      set({ reviewAskSkip: !skip })
+      setError("Couldn't save that. Check you're signed in as an admin.")
+    }
+  }
+
   const toggleAddOn = (name) =>
     set({ addOns: event.addOns.includes(name) ? event.addOns.filter((a) => a !== name) : [...event.addOns, name] })
 
@@ -389,6 +402,9 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
     try {
       const fields = { ...event }
       delete fields.id
+      // Written by the review email job and the Don't send button, not by Save.
+      delete fields.reviewAsk
+      delete fields.reviewAskSkip
       const numOr = (v) => (v === '' || v == null ? '' : Number(v))
       let data = {
         ...fields,
@@ -538,6 +554,8 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
       )}
 
       <FollowUp event={event} isNew={!id} onLog={log} />
+
+      <ReviewAsk event={event} isNew={!id} onSkip={skipReview} />
 
       <Field label="Your notes">
         <textarea className={input} rows={3} value={event.notes} onChange={(e) => set({ notes: e.target.value })} />
