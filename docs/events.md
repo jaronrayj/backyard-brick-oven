@@ -168,7 +168,7 @@ Events from before this change show one "Added" line from `createdAt`.
 
 `/hello` is the landing page for the QR code on event posters: follow on
 Instagram or Facebook (direct profile links), join the
-list for free breadsticks or a F'Zookie, or book us (`/inquiries`). Code: `src/pages/Hello`.
+list for free Roasted Garlic Breadsticks or a F'Zookie, or book us (`/inquiries`). Code: `src/pages/Hello`.
 
 The form takes a first name and a phone number or email. When it's a phone
 number, the texts consent checkbox appears and must be checked. The

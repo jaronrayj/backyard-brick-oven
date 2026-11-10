@@ -4,10 +4,11 @@ import logo from '../../assets/brickovenLogoText.png'
 import instagramLogo from '../../assets/instagram.png'
 import facebookLogo from '../../assets/facebook.png'
 import { track } from '../../utils/track'
+import { rtdbGet } from '../../utils/publicData'
 import { TEXT_CONSENT, looksLikePhone } from './signupText'
 
 // /hello: landing page for the QR code on event posters. Follow us, join the
-// list for free breadsticks or a F'Zookie, or book us. Sign-ups go to the sendSignup function
+// list for free Roasted Garlic Breadsticks or a F'Zookie, or book us. Sign-ups go to the sendSignup function
 // (functions/signup.js, /api/signup) and show up under Events > Signups.
 
 // The code stays on this phone, so coming back to the page shows it again.
@@ -49,12 +50,54 @@ const Follow = () => (
   </div>
 )
 
-const CodeCard = ({ name, code, onReset }) => (
+// The two freebies, named and pictured as on the menu. Photos come from the
+// menu itself (Realtime Database `pizzas`, edited at /admin/menu), so a new
+// menu photo shows up here too. No photo yet (or offline): just the name.
+const OFFER = "Free Roasted Garlic Breadsticks or a F'Zookie"
+const TREATS = [
+  { label: 'Roasted Garlic Breadsticks', match: /breadstick/i },
+  { label: "F'Zookie", match: /zookie/i },
+]
+const useTreatPhotos = () => {
+  const [photos, setPhotos] = useState({})
+  useEffect(() => {
+    if (navigator.userAgent === 'ReactSnap') return
+    rtdbGet('pizzas')
+      .then((menu) => {
+        const items = Object.values(menu || {})
+        const found = {}
+        TREATS.forEach((t) => {
+          const hits = items.filter((p) => p && t.match.test(p.name || '') && (p.thumb || p.img))
+          const item = hits.find((p) => String(p.active) === 'true') || hits[0]
+          if (item) found[t.label] = item.thumb || item.img
+        })
+        setPhotos(found)
+      })
+      .catch(() => {})
+  }, [])
+  return photos
+}
+
+const Treats = ({ photos, small = false }) => (
+  <div className="grid grid-cols-2 gap-3">
+    {TREATS.map(({ label }, i) => (
+      <figure key={label} className={`bg-white rounded-xl overflow-hidden ${small ? 'border border-amber-200' : 'shadow-md'}`}>
+        <div className={`${small ? 'h-20' : 'h-32'} bg-amber-50`}>
+          {photos[label] && <img src={photos[label]} alt={label} loading="lazy" className="w-full h-full object-cover" />}
+        </div>
+        <figcaption className={`px-2 py-2 font-bold text-gray-900 leading-tight ${small ? 'text-sm' : ''}`}>{label}</figcaption>
+      </figure>
+    ))}
+  </div>
+)
+
+const CodeCard = ({ name, code, photos, onReset }) => (
   <div className="bg-white rounded-xl shadow-md p-6 text-center space-y-3">
     <p className="text-gray-700">You're in{name ? `, ${name}` : ''}!</p>
     <div className="border-4 border-dashed border-amber-500 rounded-xl py-5 px-3 bg-amber-50">
       <p className="text-4xl font-extrabold text-gray-900 tracking-tight">FREE</p>
-      <p className="text-gray-700 mt-1">breadsticks or a F'Zookie on your next visit</p>
+      <p className="text-gray-700 mt-1 mb-3">Roasted Garlic Breadsticks or a F'Zookie on your next visit</p>
+      <Treats photos={photos} small />
       <p className="mt-4 font-mono text-3xl font-bold tracking-widest text-amber-700">{code}</p>
     </div>
     <p className="font-semibold text-gray-900">Screenshot this and show it at the counter.</p>
@@ -108,7 +151,7 @@ const SignUp = ({ onDone }) => {
     <form onSubmit={submit} className="bg-white rounded-xl shadow-md p-6 text-left space-y-4">
       <div>
         <h2 className="text-xl font-bold text-gray-900">Join our list</h2>
-        <p className="text-gray-600 text-sm mt-1">Hear about Pizza Fridays, pop-ups and specials, and get free breadsticks or a F'Zookie on us.</p>
+        <p className="text-gray-600 text-sm mt-1">Hear about Pizza Fridays, pop-ups and specials, and get free Roasted Garlic Breadsticks or a F'Zookie on us.</p>
       </div>
       {/* Honeypot: hidden from people, bots tend to fill it */}
       <input type="text" name="_gotcha" tabIndex="-1" autoComplete="off" className="hidden" aria-hidden="true" />
@@ -151,6 +194,7 @@ const SignUp = ({ onDone }) => {
 const Hello = () => {
   // Read after the first render so the prerendered page (react-snap) always shows the form.
   const [done, setDone] = useState(null)
+  const photos = useTreatPhotos()
   useEffect(() => {
     const saved = readSaved()
     if (saved && saved.code) setDone(saved)
@@ -166,7 +210,7 @@ const Hello = () => {
     <>
       <Helmet>
         <title>Hello! | Backyard Brick Oven</title>
-        <meta name="description" content="Join the Backyard Brick Oven list and get free breadsticks or a F'Zookie. Neapolitan-style pizza in Bountiful, Utah." />
+        <meta name="description" content="Join the Backyard Brick Oven list and get free Roasted Garlic Breadsticks or a F'Zookie. Neapolitan-style pizza in Bountiful, Utah." />
         <link rel="canonical" href="https://backyardbrickovenpizza.com/hello" />
       </Helmet>
       <div className="bg-slate-200 min-h-screen">
@@ -174,11 +218,12 @@ const Hello = () => {
           <div className="bg-white rounded-2xl shadow-md p-4 w-60 mx-auto">
             <img src={logo} alt="Backyard Brick Oven" className="w-full" />
           </div>
-          <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">Free breadsticks or a F'Zookie on us</h1>
+          <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">{OFFER}</h1>
           {done ? (
-            <CodeCard name={done.name} code={done.code} onReset={() => finish(null)} />
+            <CodeCard name={done.name} code={done.code} photos={photos} onReset={() => finish(null)} />
           ) : (
             <>
+              <Treats photos={photos} />
               <Follow />
               <SignUp onDone={finish} />
             </>
