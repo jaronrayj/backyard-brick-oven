@@ -29,6 +29,10 @@
         "function": "sendInquiry"
       },
       {
+        "source": "/pizza-fridays.ics",
+        "function": "pizzaFridaysCalendar"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

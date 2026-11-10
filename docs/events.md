@@ -173,9 +173,32 @@ Events from before this change show one "Added" line from `createdAt`.
   Pizza Friday (on trust, no code). Names and photos come from the menu
   (Realtime Database `pizzas`), so a new menu photo shows up there too.
 - The next Pizza Fridays (`upcomingPizzaFridays`), hours and directions.
-- Add Pizza Fridays to your calendar: Apple subscribes to the public iCal feed
-  of the Pizza Fridays Google Calendar; Google adds it by calendar id.
+- Add Pizza Fridays to your calendar (also the home page's "Pizza Friday
+  calendar" button): subscribes to the site's own feed,
+  `backyardbrickovenpizza.com/pizza-fridays.ics` (`functions/pizzaFridayFeed.js`,
+  `src/utils/calendarLinks.js`). Apple through `webcal://`, Google by URL.
 - Follow on Instagram / Facebook, and Book us for your event (`/inquiries`).
 
 The Report shows `hello_view` (opened `/hello`) and `hello_calendar` (tapped
 an add-to-calendar button).
+
+## Pizza Fridays feed
+
+`/pizza-fridays.ics` is built from the pizza events calendar, the same one the
+Planner and the home page dates use. Every entry titled "Pizza Friday"
+counts, unless its title says "cancel". It covers 2 weeks back and 4 months
+ahead. Each date gets the same public title, hours (5–7:30 pm, `HOURS`),
+place and site link. The entry's own times (setup), notes and location are
+never sent. To skip a Friday, delete it or put "cancelled" in its title.
+
+How fast changes show up:
+- the home page and /hello dates: within a minute (`upcomingPizzaFridays` cache)
+- the feed itself: within 5 minutes (Hosting CDN cache)
+- subscribers' phones: whenever their calendar app refreshes. Apple is usually
+  every few hours (the feed asks for 6), and Google Calendar can take up to a day.
+  Nothing on our side can speed that up.
+
+If the calendar can't be read, the feed answers 503 rather than an empty
+calendar, so subscribers' apps keep the Fridays they already have.
+
+The old public "Pizza Fridays" Google Calendar is no longer used.

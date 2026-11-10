@@ -7,6 +7,7 @@ import facebookLogo from '../../assets/facebook.png'
 import googleCalendarLogo from '../../assets/google-calendar-logo.png'
 import { track } from '../../utils/track'
 import { rtdbGet } from '../../utils/publicData'
+import { APPLE_CALENDAR, GOOGLE_CALENDAR } from '../../utils/calendarLinks'
 
 // /hello: landing page for the QR code on event posters. A free Roasted Garlic
 // Breadsticks or F'Zookie for showing this screen at Pizza Friday (on trust:
@@ -19,11 +20,6 @@ const INSTAGRAM = 'https://www.instagram.com/backyard_brick_oven/'
 const FACEBOOK = 'https://www.facebook.com/people/Backyard-Brick-Oven-LLC/100090391791253/'
 const DIRECTIONS = 'https://g.co/kgs/8o94du5'
 
-// The public "Pizza Fridays" Google Calendar (same one as the home page).
-// Apple: subscribe to its public iCal feed; Google: add it to their calendars.
-const CALENDAR_ID = '472d45f804da91b19cc0f5a59e144520570ab19943ddc90e02c2f43caa870462@group.calendar.google.com'
-const APPLE_CALENDAR = `webcal://calendar.google.com/calendar/ical/${encodeURIComponent(CALENDAR_ID)}/public/basic.ics`
-const GOOGLE_CALENDAR = `https://calendar.google.com/calendar/u/0?cid=${btoa(CALENDAR_ID)}`
 
 // The two freebies, named and pictured as on the menu. Photos come from the
 // menu itself (Realtime Database `pizzas`, edited at /admin/menu), so a new
