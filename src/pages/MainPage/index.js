@@ -105,7 +105,7 @@ const MainPage = () => {
         href: 'https://calendar.google.com/calendar/u/0?cid=NDcyZDQ1ZjgwNGRhOTFiMTljYzBmNWE1OWUxNDQ1MjA1NzBhYjE5OTQzZGRjOTBlMDJjMmY0M2NhYTg3MDQ2MkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t',
         imgSrc: googleCalendarLogo,
         altText: 'Google Calendar',
-        text: 'Pizza Friday Calendar',
+        text: 'Pizza Friday calendar',
       },
     ]
   }, [])
@@ -180,23 +180,18 @@ const MainPage = () => {
                   </a>
                 ))}
               </div>
-              <div className="flex flex-col xl:flex-row justify-center items-center gap-4 mt-4">
+              {/* Equal-width pills, stacked: one line each and tidy at every width. */}
+              <div className="flex flex-col items-center gap-2 mt-5">
                 {googleLinks.map(({ href, imgSrc, altText, text }) => (
                   <a
                     key={href}
                     href={href}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center space-x-2 bg-white ring-1 ring-gray-300 rounded-full px-4 py-2 shadow-md cursor-pointer w-auto h-12 min-w-[200px] active:scale-95 active:shadow-sm hover:shadow-lg hover:ring-yellow-400 transition-all duration-150"
+                    className="inline-flex items-center justify-center gap-2 w-full max-w-[16rem] bg-white ring-1 ring-gray-300 rounded-full px-4 py-2 shadow-sm whitespace-nowrap hover:shadow-md hover:ring-yellow-400 active:scale-95 transition-all duration-150"
                   >
-                    <img
-                      className="w-10 h-10 object-contain shrink-0"
-                      src={imgSrc}
-                      alt={altText}
-                    />
-                    <p className="text-sm font-bold whitespace-normal">
-                      {text}
-                    </p>
+                    <img className="w-5 h-5 object-contain shrink-0" src={imgSrc} alt={altText} />
+                    <span className="text-sm font-semibold text-gray-800">{text}</span>
                   </a>
                 ))}
               </div>
