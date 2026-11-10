@@ -39,12 +39,6 @@ service cloud.firestore {
     match /siteStats/{month} {
       allow read: if isAdmin();
     }
-    // /hello sign-ups (poster QR code). Written only by the sendSignup
-    // function; admins see them under Events > Signups.
-    match /signups/{id} {
-      allow read: if isAdmin();
-      allow write: if false;
-    }
     match /publicSettings/{doc} {
       allow read: if true;
       allow write: if isAdmin();

@@ -164,32 +164,18 @@ Events from before this change show one "Added" line from `createdAt`.
 
 "Last contact" is the newest created, quote-sent, contact or follow-up line. Inquiries are flagged for follow-up after 2 quiet days and quotes after 5 (`FOLLOW_UP_DAYS` in `src/pages/Events/history.js`); the list shows "Follow up: last contact N days ago" on those rows. The follow-up message is written from the stage and what's missing (date, guests, location) and opens in your mail or messages app.
 
-## Signups (poster QR code)
+## Poster page (/hello)
 
-`/hello` is the landing page for the QR code on event posters: follow on
-Instagram or Facebook (direct profile links), join the
-list for free Roasted Garlic Breadsticks or a F'Zookie, or book us (`/inquiries`). Code: `src/pages/Hello`.
+`/hello` is the landing page for the QR code on event posters
+(`src/pages/Hello`). No sign-up and nothing personal collected:
 
-The form takes a first name and a phone number or email. When it's a phone
-number, the texts consent checkbox appears and must be checked. The
-`sendSignup` function (`functions/signup.js`, reached at `/api/signup`) checks
-it and saves `signups/{id}`:
+- Free Roasted Garlic Breadsticks or a F'Zookie for showing the screen at any
+  Pizza Friday (on trust, no code). Names and photos come from the menu
+  (Realtime Database `pizzas`), so a new menu photo shows up there too.
+- The next Pizza Fridays (`upcomingPizzaFridays`), hours and directions.
+- Add Pizza Fridays to your calendar: Apple subscribes to the public iCal feed
+  of the Pizza Fridays Google Calendar; Google adds it by calendar id.
+- Follow on Instagram / Facebook, and Book us for your event (`/inquiries`).
 
-- `name`, `contact` (`+18015551234` or a lowercased email), `contactType` (`phone` | `email`)
-- `consent` (agreed to texts; always false for email) and `consentText`, the exact words they agreed to
-- `source` (`hello`), `code` (like `BYBO-K7QM`), `createdAt`
-
-The id comes from the contact, so signing up again gives back the same code
-instead of a second one. Each new sign-up also sends a short email to the
-business inbox. A failed email doesn't stop the sign-up.
-
-The consent wording and the phone/email rules are in `functions/signupText.js`,
-copied byte for byte to `src/pages/Hello/signupText.js`. The functions tests
-fail if the two copies differ.
-
-Admins see the list under Events > Signups (newest first, with Download CSV).
-The Firestore rules let admins read `signups` and stop anyone writing it from
-the browser. Only the function writes it.
-
-The Report shows two counts for the page: `hello_view` (opened `/hello`) and
-`hello_signup` (signed up).
+The Report shows `hello_view` (opened `/hello`) and `hello_calendar` (tapped
+an add-to-calendar button).

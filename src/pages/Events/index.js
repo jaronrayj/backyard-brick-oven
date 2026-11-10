@@ -16,7 +16,6 @@ import useEventAdmin from './useEventAdmin'
 import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 import ComboBox from '../../components/ComboBox'
 import Report from './Report'
-import Signups from './Signups'
 import FollowUp from './FollowUp'
 import ReviewAsk from './ReviewAsk'
 import { changeEntries, entry, followUpDue } from './history'
@@ -904,13 +903,6 @@ const Events = () => {
       </Shell>
     )
   }
-  if (editing === 'signups') {
-    return (
-      <Shell>
-        <Signups onClose={() => setEditing(null)} />
-      </Shell>
-    )
-  }
   if (editing === 'settings') {
     return (
       <Shell>
@@ -931,9 +923,6 @@ const Events = () => {
       <PageHeader title="Events" sub="Inquiries, quotes and bookings">
         <button type="button" className={btnQuiet} onClick={() => setEditing('report')}>
           Report
-        </button>
-        <button type="button" className={btnQuiet} onClick={() => setEditing('signups')}>
-          Signups
         </button>
         <button type="button" className={btnQuiet} onClick={() => setEditing('settings')}>
           Pricing
