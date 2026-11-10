@@ -34,7 +34,7 @@ export const EXTRA = [
 // The /hello page (QR code on event posters). Counted once per visitor session.
 export const POSTER = [
   { step: 'hello_view', label: 'Opened the poster page (/hello)' },
-  { step: 'hello_signup', label: 'Signed up for $1 off' },
+  { step: 'hello_signup', label: 'Signed up for the freebie' },
 ]
 const ONCE = new Set([...FUNNEL, ...POSTER].map((f) => f.step))
 const ALL = new Set([...ONCE, ...EXTRA.map((f) => f.step)])

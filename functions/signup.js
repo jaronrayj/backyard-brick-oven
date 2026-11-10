@@ -1,5 +1,5 @@
 // /hello sign-ups (QR code on event posters): first name + phone or email,
-// saved to Firestore signups/{id}, and the visitor gets a $1-off code.
+// saved to Firestore signups/{id}, and the visitor gets a code for free breadsticks or a F'Zookie.
 // Reached at /api/signup (firebase.json rewrite), like sendInquiry.
 //
 // signups/{id}: name, contact ("+18015551234" or an email), contactType

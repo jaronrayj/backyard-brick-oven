@@ -7,7 +7,7 @@ import { track } from '../../utils/track'
 import { TEXT_CONSENT, looksLikePhone } from './signupText'
 
 // /hello: landing page for the QR code on event posters. Follow us, join the
-// list for $1 off, or book us. Sign-ups go to the sendSignup function
+// list for free breadsticks or a F'Zookie, or book us. Sign-ups go to the sendSignup function
 // (functions/signup.js, /api/signup) and show up under Events > Signups.
 
 // The code stays on this phone, so coming back to the page shows it again.
@@ -53,8 +53,8 @@ const CodeCard = ({ name, code, onReset }) => (
   <div className="bg-white rounded-xl shadow-md p-6 text-center space-y-3">
     <p className="text-gray-700">You're in{name ? `, ${name}` : ''}!</p>
     <div className="border-4 border-dashed border-amber-500 rounded-xl py-5 px-3 bg-amber-50">
-      <p className="text-4xl font-extrabold text-gray-900 tracking-tight">$1 OFF</p>
-      <p className="text-gray-700 mt-1">your next order</p>
+      <p className="text-4xl font-extrabold text-gray-900 tracking-tight">FREE</p>
+      <p className="text-gray-700 mt-1">breadsticks or a F'Zookie on your next visit</p>
       <p className="mt-4 font-mono text-3xl font-bold tracking-widest text-amber-700">{code}</p>
     </div>
     <p className="font-semibold text-gray-900">Screenshot this and show it at the counter.</p>
@@ -108,7 +108,7 @@ const SignUp = ({ onDone }) => {
     <form onSubmit={submit} className="bg-white rounded-xl shadow-md p-6 text-left space-y-4">
       <div>
         <h2 className="text-xl font-bold text-gray-900">Join our list</h2>
-        <p className="text-gray-600 text-sm mt-1">Hear about pop-ups and specials, and get $1 off your next order.</p>
+        <p className="text-gray-600 text-sm mt-1">Hear about Pizza Fridays, pop-ups and specials, and get free breadsticks or a F'Zookie on us.</p>
       </div>
       {/* Honeypot: hidden from people, bots tend to fill it */}
       <input type="text" name="_gotcha" tabIndex="-1" autoComplete="off" className="hidden" aria-hidden="true" />
@@ -142,7 +142,7 @@ const SignUp = ({ onDone }) => {
         disabled={busy}
         className={`${bigButton} bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-60`}
       >
-        {busy ? 'Signing up…' : 'Get my $1 off'}
+        {busy ? 'Signing up…' : 'Get my freebie'}
       </button>
     </form>
   )
@@ -166,7 +166,7 @@ const Hello = () => {
     <>
       <Helmet>
         <title>Hello! | Backyard Brick Oven</title>
-        <meta name="description" content="Follow Backyard Brick Oven and get $1 off your next order. Neapolitan-style pizza in Bountiful, Utah." />
+        <meta name="description" content="Join the Backyard Brick Oven list and get free breadsticks or a F'Zookie. Neapolitan-style pizza in Bountiful, Utah." />
         <link rel="canonical" href="https://backyardbrickovenpizza.com/hello" />
       </Helmet>
       <div className="bg-slate-200 min-h-screen">
@@ -174,7 +174,7 @@ const Hello = () => {
           <div className="bg-white rounded-2xl shadow-md p-4 w-60 mx-auto">
             <img src={logo} alt="Backyard Brick Oven" className="w-full" />
           </div>
-          <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">Get $1 off your next order</h1>
+          <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">Free breadsticks or a F'Zookie on us</h1>
           {done ? (
             <CodeCard name={done.name} code={done.code} onReset={() => finish(null)} />
           ) : (
