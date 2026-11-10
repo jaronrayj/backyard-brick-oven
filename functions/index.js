@@ -228,3 +228,4 @@ export const notificationTimer = onSchedule(
   }
 );
 export { countStep } from "./stats.js";
+export { sendSignup } from "./signup.js";

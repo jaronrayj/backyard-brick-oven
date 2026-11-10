@@ -1,0 +1,191 @@
+import React, { useEffect, useState } from 'react'
+import { Helmet } from 'react-helmet-async'
+import logo from '../../assets/brickovenLogoText.png'
+import instagramLogo from '../../assets/instagram.png'
+import facebookLogo from '../../assets/facebook.png'
+import { track } from '../../utils/track'
+import { TEXT_CONSENT, looksLikePhone } from './signupText'
+
+// /hello: landing page for the QR code on event posters. Follow us, join the
+// list for $1 off, or book us. Sign-ups go to the sendSignup function
+// (functions/signup.js, /api/signup) and show up under Events > Signups.
+
+// The code stays on this phone, so coming back to the page shows it again.
+const SAVED = 'bybo-hello-code'
+const readSaved = () => {
+  try {
+    return JSON.parse(window.localStorage.getItem(SAVED) || 'null')
+  } catch (e) {
+    return null
+  }
+}
+const save = (value) => {
+  try {
+    if (value) window.localStorage.setItem(SAVED, JSON.stringify(value))
+    else window.localStorage.removeItem(SAVED)
+  } catch (e) {
+    /* storage blocked: the code is still on screen */
+  }
+}
+
+const bigButton =
+  'flex items-center justify-center gap-3 w-full py-4 px-5 rounded-xl text-lg font-bold shadow-md transition-colors duration-200'
+
+const Follow = () => (
+  <div className="space-y-3">
+    <a href="/instagram" target="_blank" rel="noopener noreferrer" className={`${bigButton} bg-white text-gray-900 hover:bg-gray-100`}>
+      <img src={instagramLogo} alt="" className="h-7 w-7" />
+      Follow on Instagram
+    </a>
+    <a href="/facebook" target="_blank" rel="noopener noreferrer" className={`${bigButton} bg-white text-gray-900 hover:bg-gray-100`}>
+      <img src={facebookLogo} alt="" className="h-7 w-7" />
+      Follow on Facebook
+    </a>
+  </div>
+)
+
+const CodeCard = ({ name, code, onReset }) => (
+  <div className="bg-white rounded-xl shadow-md p-6 text-center space-y-3">
+    <p className="text-gray-700">You're in{name ? `, ${name}` : ''}!</p>
+    <div className="border-4 border-dashed border-amber-500 rounded-xl py-5 px-3 bg-amber-50">
+      <p className="text-4xl font-extrabold text-gray-900 tracking-tight">$1 OFF</p>
+      <p className="text-gray-700 mt-1">your next order</p>
+      <p className="mt-4 font-mono text-3xl font-bold tracking-widest text-amber-700">{code}</p>
+    </div>
+    <p className="font-semibold text-gray-900">Screenshot this and show it at the counter.</p>
+    <button type="button" onClick={onReset} className="text-sm text-gray-500 underline">
+      Sign up someone else
+    </button>
+  </div>
+)
+
+const SignUp = ({ onDone }) => {
+  const [contact, setContact] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const phone = looksLikePhone(contact)
+
+  const submit = async (e) => {
+    e.preventDefault()
+    const form = e.target
+    const fd = new FormData(form)
+    const name = String(fd.get('name') || '').trim()
+    setError('')
+    setBusy(true)
+    try {
+      const res = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          contact,
+          consent: phone && fd.get('consent') === 'on',
+          _gotcha: fd.get('_gotcha') || '',
+        }),
+      })
+      let data = {}
+      try {
+        data = await res.json()
+      } catch (_) {
+        /* non-JSON error: keep the default message */
+      }
+      if (!res.ok || !data.code) throw new Error(data.error || 'Something went wrong. Please try again.')
+      track('hello_signup')
+      onDone({ name, code: data.code })
+    } catch (err) {
+      setError(err.message || 'Could not sign up right now. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="bg-white rounded-xl shadow-md p-6 text-left space-y-4">
+      <div>
+        <h2 className="text-xl font-bold text-gray-900">Join our list</h2>
+        <p className="text-gray-600 text-sm mt-1">Hear about pop-ups and specials, and get $1 off your next order.</p>
+      </div>
+      {/* Honeypot: hidden from people, bots tend to fill it */}
+      <input type="text" name="_gotcha" tabIndex="-1" autoComplete="off" className="hidden" aria-hidden="true" />
+      <label className="block">
+        <span className="text-sm text-gray-700">First name</span>
+        <input type="text" name="name" required maxLength={60} autoComplete="given-name" className="w-full mt-1 p-3 rounded-lg border text-gray-800 text-lg" />
+      </label>
+      <label className="block">
+        <span className="text-sm text-gray-700">Phone or email</span>
+        <input
+          type="text"
+          name="contact"
+          required
+          maxLength={120}
+          inputMode={phone ? 'tel' : 'email'}
+          autoComplete="email"
+          value={contact}
+          onChange={(e) => setContact(e.target.value)}
+          className="w-full mt-1 p-3 rounded-lg border text-gray-800 text-lg"
+        />
+      </label>
+      {phone && (
+        <label className="flex items-start gap-3 text-sm text-gray-700">
+          <input type="checkbox" name="consent" required className="mt-1 h-5 w-5 shrink-0 accent-amber-600" />
+          <span>{TEXT_CONSENT}</span>
+        </label>
+      )}
+      {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
+      <button
+        type="submit"
+        disabled={busy}
+        className={`${bigButton} bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-60`}
+      >
+        {busy ? 'Signing up…' : 'Get my $1 off'}
+      </button>
+    </form>
+  )
+}
+
+const Hello = () => {
+  // Read after the first render so the prerendered page (react-snap) always shows the form.
+  const [done, setDone] = useState(null)
+  useEffect(() => {
+    const saved = readSaved()
+    if (saved && saved.code) setDone(saved)
+  }, [])
+
+  const finish = (value) => {
+    save(value)
+    setDone(value)
+    window.scrollTo(0, 0)
+  }
+
+  return (
+    <>
+      <Helmet>
+        <title>Hello! | Backyard Brick Oven</title>
+        <meta name="description" content="Follow Backyard Brick Oven and get $1 off your next order. Neapolitan-style pizza in Bountiful, Utah." />
+        <link rel="canonical" href="https://backyardbrickovenpizza.com/hello" />
+      </Helmet>
+      <div className="bg-slate-200 min-h-screen">
+        <div className="max-w-md mx-auto px-4 py-6 space-y-5">
+          <div className="bg-white rounded-2xl shadow-md p-4 w-60 mx-auto">
+            <img src={logo} alt="Backyard Brick Oven" className="w-full" />
+          </div>
+          <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">Get $1 off your next order</h1>
+          {done ? (
+            <CodeCard name={done.name} code={done.code} onReset={() => finish(null)} />
+          ) : (
+            <>
+              <Follow />
+              <SignUp onDone={finish} />
+            </>
+          )}
+          {done && <Follow />}
+          <a href="/inquiries" className={`${bigButton} bg-gray-900 text-white hover:bg-gray-700`}>
+            Book us for your event
+          </a>
+        </div>
+      </div>
+    </>
+  )
+}
+
+export default Hello

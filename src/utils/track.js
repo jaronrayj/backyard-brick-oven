@@ -31,7 +31,12 @@ export const EXTRA = [
   { step: 'quote_error', label: 'Form errors' },
   { step: 'contact_text', label: 'Tapped "text us" instead' },
 ]
-const ONCE = new Set(FUNNEL.map((f) => f.step))
+// The /hello page (QR code on event posters). Counted once per visitor session.
+export const POSTER = [
+  { step: 'hello_view', label: 'Opened the poster page (/hello)' },
+  { step: 'hello_signup', label: 'Signed up for $1 off' },
+]
+const ONCE = new Set([...FUNNEL, ...POSTER].map((f) => f.step))
 const ALL = new Set([...ONCE, ...EXTRA.map((f) => f.step)])
 
 const TEAM_KEY = 'bybo-team'

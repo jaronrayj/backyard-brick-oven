@@ -29,6 +29,10 @@
         "function": "sendInquiry"
       },
       {
+        "source": "/api/signup",
+        "function": "sendSignup"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

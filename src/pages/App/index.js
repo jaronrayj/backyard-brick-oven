@@ -5,6 +5,7 @@ import MainPage from '../MainPage'
 import Navbar from '../Navbar'
 import Order from '../Order'
 import Inquiries from '../Inquiries'
+import Hello from '../Hello'
 import { isTeamPath } from '../../utils/teamPaths'
 import { startTracking, track } from '../../utils/track'
 
@@ -31,7 +32,9 @@ const Shell = () => {
     if (team) return
     startTracking()
     track('visit')
-    if (pathname.replace(/\/$/, '') === '/inquiries') track('inquiries_view')
+    const path = pathname.replace(/\/$/, '')
+    if (path === '/inquiries') track('inquiries_view')
+    if (path === '/hello') track('hello_view')
   }, [pathname, team])
   return (
     <div className={team ? 'min-h-screen bg-gray-50' : undefined}>
@@ -48,6 +51,7 @@ const Shell = () => {
           <Route exact path="/" element={<MainPage />} />
           <Route exact path="/order" element={<Order />} />
           <Route exact path="/inquiries" element={<Inquiries />} />
+          <Route exact path="/hello" element={<Hello />} />
           <Route exact path="/admin/menu" element={<MenuAdmin />} />
           <Route exact path="/planner" element={<Planner />} />
           <Route exact path="/team" element={<Team />} />
