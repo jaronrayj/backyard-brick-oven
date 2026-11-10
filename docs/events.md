@@ -167,7 +167,7 @@ Events from before this change show one "Added" line from `createdAt`.
 ## Signups (poster QR code)
 
 `/hello` is the landing page for the QR code on event posters: follow on
-Instagram or Facebook (`/instagram`, `/facebook` in `firebase.json`), join the
+Instagram or Facebook (direct profile links), join the
 list for $1 off, or book us (`/inquiries`). Code: `src/pages/Hello`.
 
 The form takes a first name and a phone number or email. When it's a phone

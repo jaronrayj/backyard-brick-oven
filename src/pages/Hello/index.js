@@ -31,13 +31,18 @@ const save = (value) => {
 const bigButton =
   'flex items-center justify-center gap-3 w-full py-4 px-5 rounded-xl text-lg font-bold shadow-md transition-colors duration-200'
 
+// Straight to the profiles (same links as the home page), so they work
+// anywhere, not only where the /instagram and /facebook forwards exist.
+const INSTAGRAM = 'https://www.instagram.com/backyard_brick_oven/'
+const FACEBOOK = 'https://www.facebook.com/people/Backyard-Brick-Oven-LLC/100090391791253/'
+
 const Follow = () => (
   <div className="space-y-3">
-    <a href="/instagram" target="_blank" rel="noopener noreferrer" className={`${bigButton} bg-white text-gray-900 hover:bg-gray-100`}>
+    <a href={INSTAGRAM} target="_blank" rel="noopener noreferrer" className={`${bigButton} bg-white text-gray-900 hover:bg-gray-100`}>
       <img src={instagramLogo} alt="" className="h-7 w-7" />
       Follow on Instagram
     </a>
-    <a href="/facebook" target="_blank" rel="noopener noreferrer" className={`${bigButton} bg-white text-gray-900 hover:bg-gray-100`}>
+    <a href={FACEBOOK} target="_blank" rel="noopener noreferrer" className={`${bigButton} bg-white text-gray-900 hover:bg-gray-100`}>
       <img src={facebookLogo} alt="" className="h-7 w-7" />
       Follow on Facebook
     </a>
