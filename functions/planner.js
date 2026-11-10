@@ -13,6 +13,7 @@ import { getDatabase } from "firebase-admin/database";
 import { accessToken, serviceAccountEmail } from "./google.js";
 import { requireRole } from "./team.js";
 import { calendarBetween } from "./wrapup.js";
+import { isPizzaFriday } from "./pizzaFridayFeed.js";
 
 if (!getApps().length) initializeApp();
 
@@ -236,17 +237,17 @@ export const plannerCalendar = onCall({ invoker: "public" }, async (request) => 
 
 // Next few Pizza Fridays for the home page. Public (no sign-in), so it returns
 // only dates and times of entries titled "Pizza Friday", nothing else from the
-// calendar. Cached for 15 minutes per instance.
+// calendar. Cached for a minute per instance, so calendar edits show up quickly.
 let fridaysCache = { at: 0, dates: null };
 export const upcomingPizzaFridays = onCall({ invoker: "public" }, async () => {
-  if (fridaysCache.dates && Date.now() - fridaysCache.at < 15 * 60000) return { dates: fridaysCache.dates };
+  if (fridaysCache.dates && Date.now() - fridaysCache.at < 60000) return { dates: fridaysCache.dates };
   const now = new Date();
   const from = utahDate(now);
   const to = utahDate(new Date(now.getTime() + 60 * 86400000));
   try {
     const { items } = await calendarBetween(from, to);
     const dates = items
-      .filter((c) => c.date >= from && /pizza\s*friday/i.test(c.title || "") && !/cancel/i.test(c.title || ""))
+      .filter((c) => c.date >= from && isPizzaFriday(c))
       .sort((a, b) => (a.date < b.date ? -1 : 1))
       .slice(0, 3)
       .map(({ date, time }) => ({ date, time: time || "" }));

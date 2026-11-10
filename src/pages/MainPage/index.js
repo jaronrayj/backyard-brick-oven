@@ -19,6 +19,7 @@ import actionPavilionCrowd from '../../assets/action_pavilion_crowd.jpg'
 import actionCrew from '../../assets/action_crew.jpg'
 import actionOvenMountains from '../../assets/action_oven_mountains.jpg'
 import { objectFilter, sortPizzas } from '../../utils'
+import { GOOGLE_CALENDAR } from '../../utils/calendarLinks'
 
 // "Fri, Nov 13"
 const fridayLabel = (iso, withDay) =>
@@ -102,7 +103,7 @@ const MainPage = () => {
         text: 'Leave us a review',
       },
       {
-        href: 'https://calendar.google.com/calendar/u/0?cid=NDcyZDQ1ZjgwNGRhOTFiMTljYzBmNWE1OWUxNDQ1MjA1NzBhYjE5OTQzZGRjOTBlMDJjMmY0M2NhYTg3MDQ2MkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t',
+        href: GOOGLE_CALENDAR,
         imgSrc: googleCalendarLogo,
         altText: 'Google Calendar',
         text: 'Pizza Friday calendar',

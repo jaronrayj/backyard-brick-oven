@@ -39,7 +39,8 @@
     "include": [
       "/",
       "/order",
-      "/inquiries"
+      "/inquiries",
+      "/hello"
     ],
     "puppeteerArgs": [
       "--no-sandbox",

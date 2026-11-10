@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../../utils/db'
-import { EXTRA, FUNNEL } from '../../utils/track'
+import { EXTRA, FUNNEL, POSTER } from '../../utils/track'
 import { ui } from '../../components/TeamPage'
 
 // Events > Report: visitors on the website (Firestore `siteStats`, counted by
@@ -97,7 +97,7 @@ const Report = ({ events, onClose }) => {
         return i > 1 && v ? `${v} · ${pct(v, row(m)[FUNNEL[i - 1].step] || 0)}` : v
       }),
     }))
-    const extra = EXTRA.map(({ step, label }) => ({ label, values: months.map((m) => row(m)[step] || 0) }))
+    const extra = [...EXTRA, ...POSTER].map(({ step, label }) => ({ label, values: months.map((m) => row(m)[step] || 0) }))
     return [...steps, ...extra]
   }, [stats, months])
 
