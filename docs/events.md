@@ -51,7 +51,8 @@ from the Party package's extra-guest price and included guests.
 
 ## Dough reminders
 
-For events marked **Booked**: one email on poolish day and one on mix day
+For the Planner's services (`planner/plan`), and for events marked **Booked** that
+aren't already a Planner service on the same date: one email on poolish day and one on mix day
 (timing below), with the forecast and a link to the planner. Add Pizza Fridays as booked events to get reminders for those too.
 
 ## Wrap-up
@@ -95,7 +96,7 @@ and open it from there). Code: `functions/push.js`, the page button
 | Notification | When |
 | --- | --- |
 | New inquiry | As soon as the website form is sent |
-| Dough step (poolish tonight / mix today) | The dough reminder time (default 2 pm), with the email, for booked events |
+| Dough step (poolish tonight / mix today) | The dough reminder time (default 2 pm), with the email, for Planner services and booked events |
 | Morning summary | The morning time (default 7 am): today's Google Calendar entries, dough steps and booked events, plus yesterday's events still to wrap up; skipped when there's nothing |
 | Wrap-up reminder | At each event's Google Calendar end time (within 15 minutes) (all-day entries and events without a time: the wrap-up time, default 9 pm), once per event and only if it has no wrap-up yet; tapping it opens the Planner's **Wrap up** tab (admins; `/planner#wrapup`), the only place wrap-ups are done (`/events/wrapup` redirects there; the page code is `src/pages/Events/WrapUp.js`). The tab shows how many of the last week's ended events still need one (`wrapUpsDue`). Sent ones are kept in `wrapUpReminders/{date}`. The next morning's summary lists anything from yesterday still not wrapped up |
 
@@ -107,6 +108,11 @@ Only the emails in Firestore `eventSettings/notifications` (`emails: [...]`)
 can turn them on; with no list it's `jj.backyardbrickoven@gmail.com` alone.
 Each phone's push token is kept in `pushTokens/` (server only). The morning
 summary reads the same calendar as Wrap-up, so it needs the same sharing.
+
+Planner services sharing a mix day get one reminder, using the Planner's own
+"mix days before" tweak when set (else the sheet's). What was sent is kept in
+`eventSettings/plannerReminders` (`sent: {"poolish|<mix day>": date}`); the push
+goes out even if the email fails. Logic and tests: `functions/plannerReminders.js`.
 
 ## Dough reminder timing
 
