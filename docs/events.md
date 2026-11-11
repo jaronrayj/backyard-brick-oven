@@ -53,7 +53,7 @@ from the Party package's extra-guest price and included guests.
 
 For the Planner's services (`planner/plan`), and for events marked **Booked** that
 aren't already a Planner service on the same date: one email on poolish day and one on mix day
-(timing below), with the forecast and a link to the planner. Add Pizza Fridays as booked events to get reminders for those too.
+(timing below), with the forecast and a link to the planner. Pizza Fridays on the Planner get them without being added as events.
 
 ## Wrap-up
 
