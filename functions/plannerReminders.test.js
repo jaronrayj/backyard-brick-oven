@@ -27,3 +27,10 @@ test("past services and services without a date are ignored", () => {
   assert.deepEqual(plannerDue({ services: [{ date: "2026-11-01" }, { date: "" }] }, 2, "2026-11-02"), []);
   assert.deepEqual(plannerDue({ services: [{ date: "2026-11-01" }] }, 2, "2026-10-30").map((d) => d.step), ["mix"]);
 });
+
+test("a dough day moved on the Prep tab moves the reminders", () => {
+  const moved = { services: [{ date: "2026-11-13", type: "pf", prepOn: "2026-11-12" }] };
+  assert.deepEqual(plannerDue(moved, 2, "2026-11-11").map((d) => d.step), ["poolish"]);
+  assert.deepEqual(plannerDue(moved, 2, "2026-11-12").map((d) => d.step), ["mix"]);
+  assert.deepEqual(plannerDue(moved, 2, "2026-11-10"), []);
+});

@@ -23,7 +23,8 @@ export const plannerDue = (plan, sheetLead, today, sent = {}) => {
   const services = ((plan && plan.services) || []).filter((s) => /^\d{4}-\d{2}-\d{2}$/.test(s.date || "") && s.date >= today);
   const byMix = new Map();
   for (const s of services) {
-    const mix = addDays(s.date, -lead);
+    // A day moved on the Prep tab (prepOn) wins, as on the Planner.
+    const mix = /^\d{4}-\d{2}-\d{2}$/.test(s.prepOn || "") && s.prepOn <= s.date ? s.prepOn : addDays(s.date, -lead);
     if (!byMix.has(mix)) byMix.set(mix, []);
     byMix.get(mix).push({ name: plannerServiceName(s), date: s.date, balls: s.type !== "bread" && Number(s.balls) > 0 ? Number(s.balls) : null, bread: s.type === "bread" });
   }
