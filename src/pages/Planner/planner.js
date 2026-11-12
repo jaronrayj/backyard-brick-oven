@@ -85,6 +85,10 @@ export function mountPlanner(root, deps) {
     water: setting('cold water percent') ?? 100
   });
   const tweaks = () => ({...savedTweaks(), ...(PLAN && PLAN.tweaks ? PLAN.tweaks : {})});
+  /* Dough and prep happen on the same day: the service's own day if you moved it on the Prep tab
+     (s.prepOn), else "mix days before service" before it. Poolish goes in the evening before. */
+  const ISO = /^\d{4}-\d{2}-\d{2}$/;
+  const mixDayOf = (s, lead) => (ISO.test(s.prepOn || '') && s.prepOn <= s.date ? s.prepOn : addDays(s.date, -lead));
   const mixerCap = () => { const v = setting('mixer capacity'); return v && v > 0 ? v : 120; };
 
   /* ---------- Recipe math ---------- */
@@ -509,7 +513,7 @@ export function mountPlanner(root, deps) {
     const svcs = PLAN.services.filter((s) => s.date).map((s) => ({...s, use: doughFor(s)})).filter((s) => s.use > 0);
     if (!svcs.length) { box.append(el('p', 'empty', 'Add a service date to see the plan.')); return; }
     const groups = new Map();
-    svcs.forEach((s) => { const k = addDays(s.date, -lead); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(s); });
+    svcs.forEach((s) => { const k = mixDayOf(s, lead); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(s); });
     [...groups.keys()].sort().forEach((mix) => {
       const list = groups.get(mix);
       const balls = list.reduce((a, s) => a + s.use, 0);
@@ -1007,6 +1011,60 @@ export function mountPlanner(root, deps) {
   };
 
   /* Prep list: dough steps per mix day, then sauces and topping prep per service, scaled by that service's share of the dough. */
+  /* Starred prep items (PLAN.prepPriority) go to the top of their day, in the order you starred them.
+     They're remembered by what the item is, not its date, so a starred topping stays starred next time. */
+  const stableKey = (k) => k.replace(/^(poolish|mix)\|.*$/, '$1');
+  /* Under each day: + Add an item to that day, and on dough days, Change day (moves the dough and
+     prep for those services; poolish follows to the evening before). */
+  /* Items you added to a dough day move with it. */
+  const moveOwn = (from, to) => { (PLAN.prepExtras || []).forEach((x) => { if (x.date === from) x.date = to; }); };
+  const dayTools = (d, mixHere) => {
+    const row = el('div', 'day-tools');
+    const add = el('button', 'btn quiet', '+ Add item'); add.type = 'button'; add.disabled = !canWrite;
+    row.append(add);
+    const form = el('form', 'day-add'); form.hidden = true;
+    const name = el('input'); name.type = 'text'; name.placeholder = 'Prep item'; name.setAttribute('aria-label', 'Add a prep item for ' + rel(d)); name.autocomplete = 'off'; name.enterKeyHint = 'done';
+    const qty = el('input'); qty.type = 'text'; qty.placeholder = 'How much'; qty.setAttribute('aria-label', 'How much'); qty.autocomplete = 'off';
+    const ok = el('button', 'btn', 'Add'); ok.type = 'submit';
+    form.append(name, qty, ok);
+    add.addEventListener('click', () => { form.hidden = !form.hidden; if (!form.hidden) name.focus(); });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const n = name.value.trim();
+      if (!n || !canWrite) return;
+      PLAN.prepExtras = [...(PLAN.prepExtras || []), {id: uid(), name: n, qty: qty.value.trim(), date: d}];
+      savePlan(); renderPrep();
+    });
+    if (mixHere.length) {
+      const move = el('label', 'move-day');
+      const when = el('input'); when.type = 'date'; when.value = d; when.disabled = !canWrite;
+      when.max = mixHere.map((s) => s.date).sort()[0];
+      when.setAttribute('aria-label', 'Dough and prep day for ' + mixHere.map(svcName).join(', '));
+      when.addEventListener('change', () => {
+        if (!ISO.test(when.value)) return;
+        const ids = new Set(mixHere.map((s) => s.id));
+        PLAN.services.forEach((s) => { if (ids.has(s.id)) s.prepOn = when.value > s.date ? s.date : when.value; });
+        moveOwn(d, when.value);
+        savePlan(); renderAll();
+      });
+      move.append(el('span', null, 'Dough & prep day'), when);
+      row.append(move);
+      if (mixHere.some((s) => s.prepOn)) {
+        const reset = el('button', 'btn quiet', 'Reset day'); reset.type = 'button'; reset.disabled = !canWrite;
+        reset.addEventListener('click', () => {
+          const ids = new Set(mixHere.map((s) => s.id));
+          PLAN.services.forEach((s) => { if (ids.has(s.id)) delete s.prepOn; });
+          moveOwn(d, mixDayOf(PLAN.services.find((s) => ids.has(s.id)), Math.max(0, Math.min(5, Number(tweaks().lead) || 0))));
+          savePlan(); renderAll();
+        });
+        row.append(reset);
+      }
+    }
+    const wrap = el('div', 'day-tools-wrap');
+    wrap.append(row, form);
+    return wrap;
+  };
+
   const renderPrep = () => {
     const box = $('#preplist');
     box.replaceChildren();
@@ -1029,7 +1087,7 @@ export function mountPlanner(root, deps) {
     };
 
     const mixes = new Map();
-    svcs.forEach((s) => { const k = addDays(s.date, -lead); if (!mixes.has(k)) mixes.set(k, []); mixes.get(k).push(s); });
+    svcs.forEach((s) => { const k = mixDayOf(s, lead); if (!mixes.has(k)) mixes.set(k, []); mixes.get(k).push(s); });
     mixes.forEach((list, mix) => {
       const balls = list.reduce((a, s) => a + s.use, 0);
       const n = Math.max(1, Math.ceil(balls / mixerCap()));
@@ -1042,7 +1100,6 @@ export function mountPlanner(root, deps) {
     /* Toppings follow pizzas only; bread takes no share. */
     const rows = pizzaRows();
     const prepOf = new Map(REF.amounts.map((a) => [norm(a.topping), a]));
-    const prepDays = setting('prep days before service') ?? setting('sauce days before service') ?? 1;
     /* Prep amounts in kitchen containers only (no weights): cups under a pint, pints under a quart, then quarts, rounded up to the half. */
     const half = (n) => { const r = Math.ceil(n * 2) / 2; const w = Math.floor(r); return (w ? String(w) : '') + (r % 1 ? '½' : '') || '0'; };
     const volume = (grams, name) => {
@@ -1067,20 +1124,20 @@ export function mountPlanner(root, deps) {
         if (r.sauce) sauces.set(r.sauce, (sauces.get(r.sauce) || 0) + r.grams * n);
         else direct.set(r.topping, (direct.get(r.topping) || 0) + r.grams * n);
       });
-      sauces.forEach((v, name) => task(addDays(s.date, -prepDays), 2, 'sauce|' + name, 'Make ' + name, v, label(s), name));
+      sauces.forEach((v, name) => task(mixDayOf(s, lead), 2, 'sauce|' + name, 'Make ' + name, v, label(s), name));
       direct.forEach((v, name) => {
         const a = prepOf.get(norm(name));
         if (!a || !a.prep) return;
         const title = norm(a.prep).includes(norm(name)) ? a.prep : a.prep + ' ' + name;
-        task(addDays(s.date, -prepDays), 3, 'top|' + name, title, v, label(s), name);
+        task(mixDayOf(s, lead), 3, 'top|' + name, title, v, label(s), name);
       });
       /* F'Zookies: cookie dough and whipped cream on the prep day, counted in F'Zookies (batches when the tab gives a batch size). */
       const zookies = Object.entries(own).filter(([k]) => isDessert(k)).reduce((a, [, v]) => a + (Number(v) || 0), 0);
       if (zookies) {
         const batch = REF.dessert && REF.dessert.batch;
         const dough = (n) => (batch ? half(n / batch) + (n / batch > 1 ? ' batches' : ' batch') + ' · ' : '') + n + " F'Zookies";
-        task(addDays(s.date, -prepDays), 4, 'zookie|dough', "Make F'Zookie dough", zookies, label(s), null, dough);
-        task(addDays(s.date, -prepDays), 4, 'zookie|cream', 'Make whipped cream', zookies, label(s), null, (n) => 'for ' + n + " F'Zookies");
+        task(mixDayOf(s, lead), 4, 'zookie|dough', "Make F'Zookie dough", zookies, label(s), null, dough);
+        task(mixDayOf(s, lead), 4, 'zookie|cream', 'Make whipped cream', zookies, label(s), null, (n) => 'for ' + n + " F'Zookies");
       }
     });
 
@@ -1101,7 +1158,15 @@ export function mountPlanner(root, deps) {
       /* The day's heading names the services its prep is for, so items stay one line. */
       const fors = [...new Set(days.get(d).flatMap((x) => x.notes.join(' + ').split(' + ')).filter(Boolean))];
       box.append(el('h3', d < today ? 'missed' : null, (d < today ? 'Missed: ' : '') + rel(d) + (fors.length ? ' — for ' + fors.join(', ') : '')));
-      days.get(d).sort((a, b) => a.rank - b.rank || a.title.localeCompare(b.title)).forEach((x) => {
+      const mixHere = svcs.filter((s) => mixDayOf(s, lead) === d);
+      box.append(dayTools(d, mixHere));
+      const pri = PLAN.prepPriority || [];
+      const starOf = (x) => pri.indexOf(stableKey(x.key));
+      days.get(d).sort((a, b) => {
+        const sa = starOf(a), sb = starOf(b);
+        if ((sa >= 0) !== (sb >= 0)) return sa >= 0 ? -1 : 1;
+        return (sa >= 0 ? sa - sb : 0) || a.rank - b.rank || a.title.localeCompare(b.title);
+      }).forEach((x) => {
         const key = 'prep|' + d + '|' + x.key;
         const lab = el('label', 'item' + (CHECKED.includes(key) ? ' done' : ''));
         const cb = el('input'); cb.type = 'checkbox'; cb.checked = CHECKED.includes(key); cb.disabled = !canWrite;
@@ -1111,6 +1176,18 @@ export function mountPlanner(root, deps) {
         });
         const nm = el('span', 'nm', x.title);
         lab.append(cb, nm, el('span', 'amt', x.grams != null ? (x.fmt ? x.fmt(x.grams) : volume(x.grams, x.unitName)) : x.amt));
+        const starred = starOf(x) >= 0;
+        if (starred) lab.classList.add('priority');
+        const star = el('button', 'btn quiet star', starred ? '★' : '☆'); star.type = 'button'; star.disabled = !canWrite;
+        star.setAttribute('aria-pressed', String(starred));
+        star.setAttribute('aria-label', (starred ? 'Stop prioritizing ' : 'Prioritize ') + x.title);
+        star.addEventListener('click', (e) => {
+          e.preventDefault();
+          const k = stableKey(x.key);
+          PLAN.prepPriority = starred ? pri.filter((y) => y !== k) : [...pri, k];
+          savePlan(); renderPrep();
+        });
+        lab.append(star);
         if (x.id) {
           const rm = el('button', 'btn quiet rm', '✕'); rm.type = 'button'; rm.disabled = !canWrite; rm.setAttribute('aria-label', 'Remove ' + x.title);
           rm.addEventListener('click', (e) => {
