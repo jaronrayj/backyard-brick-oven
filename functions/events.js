@@ -8,6 +8,7 @@ import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { GMAIL_USER, sendMail } from "./mail.js";
 import { sendPush } from "./push.js";
+import { plannerDue } from "./plannerReminders.js";
 
 if (!getApps().length) initializeApp();
 
@@ -210,14 +211,34 @@ export const runDoughReminders = async () => {
     const mixLead = mixLeadFrom((await db.doc("planner/ref").get()).data());
     const today = todayLocal();
 
+    // The Planner's services are where dough gets planned, so they get reminders too (#dough-from-planner).
+    // A booked event on the same day as a Planner service is left to the Planner's reminder.
+    const plan = (await db.doc("planner/plan").get()).data() || {};
+    const plannerSentRef = db.doc("eventSettings/plannerReminders");
+    const plannerSent = ((await plannerSentRef.get()).data() || {}).sent || {};
+    const planDue = plannerDue(plan, mixLead, today, plannerSent);
+    const planDates = new Set(((plan.services) || []).map((s) => s.date));
+
     const booked = await db.collection("events").where("status", "==", "booked").get();
     const due = booked.docs
       .map((doc) => ({ doc, event: doc.data() }))
+      .filter((x) => !planDates.has(x.event.date))
       .map((x) => ({ ...x, steps: dueSteps(x.event, today, mixLead) }))
       .filter((x) => x.steps.length);
-    if (!due.length) return;
+    if (!due.length && !planDue.length) return;
 
     const blocks = [];
+    const pushes = [];
+    for (const d of planDue) {
+      const names = d.services.map((x) => `${x.name} (${pretty(x.date)}${x.balls ? `, ${x.balls} balls` : ""})`).join(" + ");
+      blocks.push(`${STEP_TEXT[d.step]} — ${names}`);
+      pushes.push({
+        title: `Dough: ${STEP_TEXT[d.step].toLowerCase()}`,
+        body: d.services.map((x) => `${x.name}, ${pretty(x.date)}${x.balls ? ` · ${x.balls} balls` : ""}`).join(" + "),
+        link: "/planner#prep",
+        tag: `dough-plan-${d.key}`,
+      });
+    }
     for (const { event, steps } of due) {
       const weather = await forecastLine(event.geo, event.date).catch(() => "");
       blocks.push(
@@ -234,11 +255,15 @@ export const runDoughReminders = async () => {
     const text = `${blocks.join("\n\n")}\n\nDough amounts: ${SITE}/planner\nEvents: ${SITE}/events\n`;
     const to = (settings.emails && settings.emails.length ? settings.emails : [GMAIL_USER]).join(", ");
     const subject =
-      due.length === 1
-        ? `Dough: ${due[0].steps.map((s) => STEP_TEXT[s].toLowerCase()).join(" and ")} for ${due[0].event.name}`
-        : `Dough reminders: ${due.length} events`;
+      due.length + planDue.length > 1
+        ? `Dough reminders: ${due.length + planDue.length}`
+        : planDue.length
+          ? `Dough: ${STEP_TEXT[planDue[0].step].toLowerCase()} for ${planDue[0].services.map((x) => x.name).join(" + ")}`
+          : `Dough: ${due[0].steps.map((s) => STEP_TEXT[s].toLowerCase()).join(" and ")} for ${due[0].event.name}`;
 
-    await sendMail({ to, subject, text });
+    // Push first, then email: a Gmail hiccup shouldn't cost the phone notification.
+    const mailed = sendMail({ to, subject, text }).catch((err) => logger.error("dough reminder email failed", err));
+    for (const p of pushes) await sendPush(p);
     for (const { event, steps } of due) {
       await sendPush({
         title: `Dough: ${steps.map((s) => STEP_TEXT[s].toLowerCase()).join(" and ")}`,
@@ -248,12 +273,19 @@ export const runDoughReminders = async () => {
       });
     }
 
+    await mailed;
     // Remember what was sent so a re-run the same day doesn't email twice.
+    if (planDue.length) {
+      // Keep only recent keys so the doc stays small.
+      const keep = Object.fromEntries(Object.entries(plannerSent).filter(([k]) => k.split("|")[1] >= addDays(today, -14)));
+      planDue.forEach((d) => { keep[d.key] = today; });
+      await plannerSentRef.set({ sent: keep });
+    }
     await Promise.all(
       due.map(({ doc, event, steps }) =>
         doc.ref.update(Object.fromEntries(steps.map((s) => [`remindersSent.${s}`, event.date])))
       )
     );
-    logger.info(`Sent ${due.length} dough reminder(s) to ${to}`);
+    logger.info(`Sent ${due.length + planDue.length} dough reminder(s) to ${to}`);
   }
 };
