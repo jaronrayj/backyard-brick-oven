@@ -76,6 +76,19 @@
   .bybo-planner .cal-row .sub { font-size: 12px; color: var(--muted); }
   .bybo-planner .cal-row .row { flex-wrap: nowrap; }
   .bybo-planner h3.missed { color: #b45309; }
+  /* Prep: tools under each day heading, priority stars */
+  .bybo-planner .day-tools-wrap { margin: 2px 0 6px; }
+  .bybo-planner .day-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+  .bybo-planner .day-tools .btn { min-height: 36px; padding: 4px 12px; font-size: 14px; }
+  .bybo-planner .move-day { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+  .bybo-planner .move-day input { height: 36px; font-size: 16px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
+  .bybo-planner .day-add { display: flex; gap: 8px; margin-top: 6px; }
+  .bybo-planner .day-add input { flex: 1 1 0; min-width: 0; height: 40px; font-size: 16px; }
+  .bybo-planner .day-add input + input { flex: 0 1 7rem; }
+  .bybo-planner .item .star { flex: none; width: 40px; height: 40px; padding: 0; display: inline-grid; place-items: center; font-size: 18px; color: var(--muted); }
+  .bybo-planner .item.priority .star { color: #d97706; }
+  .bybo-planner .item.priority .nm { font-weight: 600; }
+  @media (min-width: 640px) { .bybo-planner .item .star { width: 32px; height: 32px; } }
   .bybo-planner .svc .sugg { font-size: 13px; color: var(--muted); }
   .bybo-planner .svc .pf-hist { font-size: 13px; color: var(--muted); display: grid; gap: 2px; font-variant-numeric: tabular-nums; }
   .bybo-planner .svc .sugg b { color: var(--fg); font-variant-numeric: tabular-nums; }
