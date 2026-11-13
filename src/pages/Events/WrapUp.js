@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { signInWithGoogle } from '../../utils/firebase'
@@ -280,18 +280,11 @@ const WrapUp = ({ bare = true, onChange = () => {} }) => {
     () => (data ? buildChoices(data.events, data.calendar, data.today).filter((c) => !c.skipped) : []),
     [data]
   )
-  // Opened from the planner's "To wrap up": go straight to that event's form.
-  const [opened, setOpened] = useState(false)
-  useEffect(() => {
-    if (!wanted || opened || !data || !data.headers.length) return
-    const c = choices.find((x) => x.key === wanted)
-    if (c) setChoice(c)
-    setOpened(true)
-  }, [wanted, opened, data, choices])
+  const [openedFor, setOpenedFor] = useState(null)
 
   // A wrapped-up entry opens its saved row, never a blank form: saving a blank
   // one would add a second row for the same event.
-  const open = (c) => {
+  const open = useCallback((c) => {
     setNotice('')
     if (!c.wrappedUp) {
       setChoice(c)
@@ -305,7 +298,23 @@ const WrapUp = ({ bare = true, onChange = () => {} }) => {
     if (row) setEditing(row)
     else if (sameDay) setNotice('Pick the one to change under "Edit a recent wrap-up" below.')
     else setNotice(`That wrap-up isn't in the last ${recent.days} days of the money tracker. Change older ones in its Form Responses tab.`)
-  }
+  }, [recent, recentError])
+
+  // Opened from a wrap-up notification (?key=): go straight to that event's
+  // form, or its saved row if it's already wrapped up. Each new key opens once.
+  // A wrapped-up one waits for the recent rows so it can find its row.
+  useEffect(() => {
+    if (!wanted || wanted === openedFor || !data || !data.headers.length) return
+    const c = choices.find((x) => x.key === wanted)
+    if (c && c.wrappedUp && !recent && !recentError) return
+    if (c) {
+      setSaved(null)
+      setEditing(null)
+      setChoice(null)
+      open(c)
+    }
+    setOpenedFor(wanted)
+  }, [wanted, openedFor, data, choices, recent, recentError, open])
 
   const finished = (result) => {
     setSaved(result)

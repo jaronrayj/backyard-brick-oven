@@ -16,12 +16,13 @@ import { createHash } from "node:crypto";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import logger from "firebase-functions/logger";
 import { initializeApp, getApps } from "firebase-admin/app";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getFirestore, FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 import { requireRole } from "./team.js";
 import { GMAIL_USER } from "./mail.js";
 import { dueSteps, mixLeadFrom, todayLocal, STEP_TEXT, timesFrom, minutesPast } from "./events.js";
 import { calendarBetween, notWrappedUp } from "./wrapup.js";
+import { LINKS, wrapUpLink } from "./links.js";
 
 if (!getApps().length) initializeApp();
 
@@ -97,10 +98,26 @@ export const testPush = onCall({ invoker: "public" }, async (request) => {
   }
 });
 
+// Every notification is also kept in Firestore `notifications/` for the bell's
+// "Recent notifications" list (admins can read it), for this many days.
+const KEEP_DAYS = 30;
+const saveNotification = async ({ title, body, link, tag }) => {
+  try {
+    const list = getFirestore().collection("notifications");
+    await list.add({ title: title || "", body: body || "", link, tag: tag || "", at: FieldValue.serverTimestamp() });
+    const old = await list.where("at", "<", Timestamp.fromMillis(Date.now() - KEEP_DAYS * 86400000)).limit(50).get();
+    await Promise.all(old.docs.map((d) => d.ref.delete()));
+  } catch (err) {
+    logger.error("Couldn't add the notification to the recent list", err);
+  }
+};
+
 // Send one notification to every signed-up phone whose email is still allowed.
 // Never throws: a push problem must not stop the email that goes with it.
 // tag: phones replace an older notification with the same tag.
+// link: a path on the site (see links.js); the service worker opens it.
 export const sendPush = async ({ title, body, link = "/events", tag }) => {
+  await saveNotification({ title, body, link, tag });
   try {
     const db = getFirestore();
     const allowed = await allowedEmails();
@@ -119,6 +136,7 @@ export const sendPush = async ({ title, body, link = "/events", tag }) => {
           ...(tag ? { tag, renotify: true } : {}),
         },
         fcmOptions: { link: link.startsWith("http") ? link : `${SITE}${link}` },
+        data: { link },
       },
     });
     // Forget phones that uninstalled the app or turned notifications off.
@@ -185,7 +203,7 @@ export const runMorningSummary = async () => {
       logger.info("Morning summary: nothing today");
       return;
     }
-    const sent = await sendPush({ title: `Today · ${shortDate(today)}`, body: lines.join("\n"), link: "/events", tag: "morning" });
+    const sent = await sendPush({ title: `Today · ${shortDate(today)}`, body: lines.join("\n"), link: LINKS.morning, tag: "morning" });
     logger.info(`Morning summary sent to ${sent} phone(s)`);
   }
 };
@@ -223,7 +241,7 @@ export const runWrapUpReminder = async () => {
   const n = await sendPush({
     title: due.length === 1 ? `Wrap up ${due[0].title}` : `Wrap up ${due.length} events`,
     body: due.length === 1 ? "Log it to the money tracker while it's fresh." : due.map((x) => x.title).join(", "),
-    link: "/planner#wrapup",
+    link: wrapUpLink(due),
     tag: "wrapup",
   });
   logger.info(`Wrap-up reminder (${due.map((x) => x.key).join(", ")}) sent to ${n} phone(s)`);

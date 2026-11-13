@@ -4,6 +4,7 @@ import { getMessaging, getToken, deleteToken, isSupported, onMessage } from 'fir
 import { BellIcon } from '@heroicons/react/outline'
 import { BellIcon as BellSolid } from '@heroicons/react/solid'
 import Times from './Times'
+import Recent from './Recent'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '../../utils/firebase'
 
@@ -67,12 +68,12 @@ const showWhileOpen = async () => {
   const reg = await swRegistration()
   onMessage(getMessaging(), (payload) => {
     const n = payload.notification || {}
-    const link = payload.fcmOptions?.link || payload.data?.link
+    const link = payload.data?.link || payload.fcmOptions?.link
     reg.showNotification(n.title || 'Backyard Brick Oven', {
       body: n.body,
       icon: n.icon || '/favicon-192.png',
       tag: n.tag,
-      data: { FCM_MSG: { fcmOptions: { link } } },
+      data: { FCM_MSG: { data: { link }, fcmOptions: { link } } },
     })
   })
 }
@@ -109,6 +110,7 @@ const Notifications = ({ className }) => {
   const [showHelp, setShowHelp] = useState(false)
   const [menu, setMenu] = useState(false)
   const [times, setTimes] = useState(false)
+  const [recent, setRecent] = useState(false)
 
   useEffect(() => {
     let live = true
@@ -216,44 +218,83 @@ const Notifications = ({ className }) => {
   const note = message || (showHelp && help)
   const on = state === 'on'
   const Icon = on ? BellSolid : BellIcon
+  const item = 'w-full text-left px-3 py-2 hover:bg-amber-50 text-gray-800'
 
+  // The menu opens on every device, so the recent list is there even where
+  // notifications are off (a computer, say).
   return (
     <div className={`relative ${className || ''}`}>
       <button
         type="button"
         className={`p-2 rounded-full ${on ? 'text-amber-600' : 'text-gray-500'} hover:bg-gray-100 disabled:opacity-40`}
-        disabled={['loading', 'busy'].includes(state)}
-        onClick={() => (help ? setShowHelp((v) => !v) : on ? setMenu((v) => !v) : toggle())}
-        aria-pressed={on}
-        aria-expanded={on ? menu : undefined}
-        aria-label={on ? 'Notifications on. Tap for options.' : 'Turn on notifications'}
-        title={on ? 'Notifications on' : 'Turn on notifications'}
+        disabled={state === 'busy'}
+        onClick={() => {
+          setShowHelp(false)
+          setMenu((v) => !v)
+        }}
+        aria-expanded={menu}
+        aria-label={on ? 'Notifications on. Tap for options.' : 'Notifications. Tap for options.'}
+        title={on ? 'Notifications on' : 'Notifications'}
       >
         <Icon className={`h-6 w-6 ${state === 'busy' ? 'animate-pulse' : ''}`} aria-hidden="true" />
       </button>
-      {menu && on && (
-        <div className="absolute right-0 top-full mt-1 z-30 w-48 rounded-lg bg-white border border-gray-200 shadow-lg py-1 text-sm">
-          <button type="button" className="w-full text-left px-3 py-2 hover:bg-amber-50 text-gray-800" onClick={() => sendTest(0)}>
-            Send a test
-          </button>
-          <button type="button" className="w-full text-left px-3 py-2 hover:bg-amber-50 text-gray-800" onClick={() => sendTest(15)}>
-            Send a test in 15 seconds
-          </button>
+      {menu && (
+        <div className="absolute right-0 top-full mt-1 z-30 w-56 rounded-lg bg-white border border-gray-200 shadow-lg py-1 text-sm">
           <button
             type="button"
-            className="w-full text-left px-3 py-2 hover:bg-amber-50 text-gray-800"
+            className={item}
             onClick={() => {
               setMenu(false)
-              setTimes(true)
+              setTimes(false)
+              setRecent(true)
             }}
           >
-            Notification times
+            Recent notifications
           </button>
-          <button type="button" className="w-full text-left px-3 py-2 hover:bg-amber-50 text-gray-800" onClick={toggle}>
-            Turn off on this device
-          </button>
+          {on && (
+            <>
+              <button type="button" className={item} onClick={() => sendTest(0)}>
+                Send a test
+              </button>
+              <button type="button" className={item} onClick={() => sendTest(15)}>
+                Send a test in 15 seconds
+              </button>
+              <button
+                type="button"
+                className={item}
+                onClick={() => {
+                  setMenu(false)
+                  setRecent(false)
+                  setTimes(true)
+                }}
+              >
+                Notification times
+              </button>
+              <button type="button" className={item} onClick={toggle}>
+                Turn off on this device
+              </button>
+            </>
+          )}
+          {!on && help && (
+            <button
+              type="button"
+              className={item}
+              onClick={() => {
+                setMenu(false)
+                setShowHelp(true)
+              }}
+            >
+              Why can't this device get them?
+            </button>
+          )}
+          {state === 'off' && (
+            <button type="button" className={item} onClick={toggle}>
+              Turn on for this device
+            </button>
+          )}
         </div>
       )}
+      {recent && <Recent onClose={() => setRecent(false)} />}
       {times && (
         <Times
           onClose={(msg) => {

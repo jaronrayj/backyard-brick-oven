@@ -12,6 +12,7 @@ import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { GMAIL_USER, sendMail } from "./mail.js";
 import { sendPush } from "./push.js";
+import { eventLink } from "./links.js";
 import { todayLocal } from "./events.js";
 import { REVIEW_HOUR, reviewEmail, reviewSendDate, reviewState } from "./reviewAskText.js";
 
@@ -59,7 +60,7 @@ export const runReviewAsks = async (now = new Date()) => {
       await sendPush({
         title: "Ask for a review",
         body: `No email on file for ${event.name || "yesterday's event"}. Text them the review link: backyardbrickovenpizza.com/review`,
-        link: "/events",
+        link: eventLink(id),
         tag: `review-${id}`,
       });
       await ref.update({ "reviewAsk.noEmailOn": today });

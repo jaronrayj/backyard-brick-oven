@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   addDoc,
   arrayUnion,
@@ -846,6 +847,19 @@ const Events = () => {
   const [plannerRef, setPlannerRef] = useState(null)
   const [filter, setFilter] = useState('open')
   const [editing, setEditing] = useState(null) // { id, event } | 'settings' | null
+  const location = useLocation()
+  const navigate = useNavigate()
+  const wantedEvent = new URLSearchParams(location.search).get('event')
+
+  // /events?event=<id> (from a notification) opens that event once it has
+  // loaded, then drops the ?event so closing it goes back to the list.
+  useEffect(() => {
+    if (!wantedEvent) return
+    const e = events.find((x) => x.id === wantedEvent)
+    if (!e) return
+    setEditing({ id: e.id, event: { ...blankEvent(), ...e } })
+    navigate(location.pathname, { replace: true })
+  }, [wantedEvent, events, location.pathname, navigate])
 
   useEffect(() => {
     if (access !== true) return undefined
