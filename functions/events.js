@@ -9,6 +9,7 @@ import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { GMAIL_USER, sendMail } from "./mail.js";
 import { sendPush } from "./push.js";
 import { plannerDue } from "./plannerReminders.js";
+import { LINKS } from "./links.js";
 
 if (!getApps().length) initializeApp();
 
@@ -60,12 +61,13 @@ export const inquiryToEvent = (body) => {
   };
 };
 
-// Best effort: an inquiry still emails if this fails.
+// Best effort: an inquiry still emails if this fails. Returns the new event's
+// id (for the notification's link), or null.
 export const saveInquiryEvent = async (body) => {
   try {
     const event = inquiryToEvent(body);
     const geo = await geocode(event.location).catch(() => null);
-    await getFirestore()
+    const ref = await getFirestore()
       .collection("events")
       .add({
         ...event,
@@ -74,8 +76,10 @@ export const saveInquiryEvent = async (body) => {
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       });
+    return ref.id;
   } catch (err) {
     logger.error("Couldn't save the inquiry to events", err);
+    return null;
   }
 };
 
@@ -235,7 +239,7 @@ export const runDoughReminders = async () => {
       pushes.push({
         title: `Dough: ${STEP_TEXT[d.step].toLowerCase()}`,
         body: d.services.map((x) => `${x.name}, ${pretty(x.date)}${x.balls ? ` · ${x.balls} balls` : ""}`).join(" + "),
-        link: "/planner#prep",
+        link: LINKS.dough,
         tag: `dough-plan-${d.key}`,
       });
     }
@@ -268,7 +272,7 @@ export const runDoughReminders = async () => {
       await sendPush({
         title: `Dough: ${steps.map((s) => STEP_TEXT[s].toLowerCase()).join(" and ")}`,
         body: `${event.name}, ${pretty(event.date)}${event.guests ? ` · ${event.guests} guests` : ""}`,
-        link: "/planner",
+        link: LINKS.dough,
         tag: `dough-${event.date}-${steps.join("-")}`,
       });
     }

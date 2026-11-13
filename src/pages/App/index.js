@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect } from 'react'
-import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 
 import MainPage from '../MainPage'
 import Navbar from '../Navbar'
@@ -24,6 +24,21 @@ export const isSiteReadyForOrders = true
 const Shell = () => {
   const { pathname } = useLocation()
   const team = isTeamPath(pathname)
+  const navigate = useNavigate()
+  // A notification tapped while the site is open: the service worker
+  // (public/firebase-messaging-sw.js) brings this window forward and sends
+  // the path to open.
+  useEffect(() => {
+    const sw = navigator.serviceWorker
+    if (!sw) return undefined
+    const onMessage = (e) => {
+      const d = e.data || {}
+      if (d.bybo === 'open' && typeof d.path === 'string' && d.path.startsWith('/')) navigate(d.path)
+    }
+    sw.addEventListener('message', onMessage)
+    sw.startMessages()
+    return () => sw.removeEventListener('message', onMessage)
+  }, [navigate])
   useEffect(() => {
     if (!window.location.hash) window.scrollTo(0, 0)
   }, [pathname])

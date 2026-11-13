@@ -5,6 +5,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { saveInquiryEvent, runDoughReminders } from "./events.js";
 import { sendPush, runMorningSummary, runWrapUpReminder } from "./push.js";
 import { runReviewAsks } from "./reviewAsk.js";
+import { eventLink } from "./links.js";
 
 // Inquiry notifications go to the business inbox.
 const NOTIFY_TO = "jj.backyardbrickoven@gmail.com";
@@ -186,13 +187,13 @@ export const sendInquiry = onRequest(
         html: htmlBody,
       });
 
-      await savedToTracker;
+      const eventId = await savedToTracker;
       await sendPush({
         title: `New inquiry: ${String(body.name).trim()}`,
         body: [String(body.event_type).trim(), prettyDate, String(body.estimated_guests || "").trim() && `${String(body.estimated_guests).trim()} guests`]
           .filter(Boolean)
           .join(" · "),
-        link: "/events",
+        link: eventLink(eventId),
       });
       logger.info("Inquiry email sent");
       return res.status(200).json({ ok: true });

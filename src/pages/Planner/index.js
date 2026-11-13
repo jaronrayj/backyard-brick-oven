@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useLocation } from 'react-router-dom'
 import { doc, onSnapshot, setDoc } from 'firebase/firestore'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { onValue, ref as rtdbRef } from 'firebase/database'
@@ -80,6 +81,17 @@ const Planner = () => {
       unmount()
     }
   }, [access])
+
+  // A notification tapped while the Planner is already open changes the link
+  // (/planner#prep, say) without reloading: switch to that tab. On first load
+  // planner.js reads the #tab itself.
+  const location = useLocation()
+  useEffect(() => {
+    const tab = location.hash.slice(1)
+    if (!rootRef.current || !/^[a-z]+$/.test(tab)) return
+    const btn = rootRef.current.querySelector(`.tabs [data-tab="${tab}"]`)
+    if (btn && !btn.hidden) btn.click()
+  }, [location.key, location.hash, access])
 
   if (loading) {
     return <Message><p className="note">Loading…</p></Message>

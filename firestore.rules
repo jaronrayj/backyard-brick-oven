@@ -34,6 +34,12 @@ service cloud.firestore {
     match /eventSettings/{doc} {
       allow read, write: if isAdmin();
     }
+    // Sent notifications, for the bell's "Recent notifications" (written by
+    // functions/push.js).
+    match /notifications/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
     // Prices the public website shows (written by the Events > Pricing page).
     // Visitor counts (written by the countStep function), for Events > Report.
     match /siteStats/{month} {

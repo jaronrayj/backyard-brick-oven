@@ -90,8 +90,8 @@ The calendar read is the "pizza events" calendar (owned by
 
 "🔕 Notifications" at the top of `/events` turns notifications on for that
 phone (install the site as an app first; on iPhone, add it to the Home Screen
-and open it from there). Code: `functions/push.js`, the page button
-`src/pages/Events/Notifications.js`, and `public/firebase-messaging-sw.js`.
+and open it from there). Code: `functions/push.js`, the bell in the team bar
+`src/components/Notifications/`, and `public/firebase-messaging-sw.js`.
 
 | Notification | When |
 | --- | --- |
@@ -99,6 +99,19 @@ and open it from there). Code: `functions/push.js`, the page button
 | Dough step (poolish tonight / mix today) | The dough reminder time (default 2 pm), with the email, for Planner services and booked events |
 | Morning summary | The morning time (default 7 am): today's Google Calendar entries, dough steps and booked events, plus yesterday's events still to wrap up; skipped when there's nothing |
 | Wrap-up reminder | At each event's Google Calendar end time (within 15 minutes) (all-day entries and events without a time: the wrap-up time, default 9 pm), once per event and only if it has no wrap-up yet; tapping it opens the Planner's **Wrap up** tab (admins; `/planner#wrapup`), the only place wrap-ups are done (`/events/wrapup` redirects there; the page code is `src/pages/Events/WrapUp.js`). The tab shows how many of the last week's ended events still need one (`wrapUpsDue`). Sent ones are kept in `wrapUpReminders/{date}`. The next morning's summary lists anything from yesterday still not wrapped up |
+
+Tapping a notification opens the spot it's about (paths in
+`functions/links.js`): a new inquiry or review reminder opens that event on
+Events (`/events?event=<id>`), a wrap-up reminder opens that event's wrap-up
+form (`/planner?key=<key>#wrapup`; the Wrap up tab when there are several), a
+dough step opens the Planner's Prep tab, and the morning summary its Calendar
+tab. If the site is already open, the service worker brings it forward and
+the page goes there (`src/pages/App`), instead of staying where it was.
+
+Every notification is also kept in Firestore `notifications/` for 30 days
+(written by `sendPush`; admins can read it). The bell's **Recent
+notifications** lists them on any device, even one with notifications off;
+tap one to go where it points.
 
 To check a device, tap the bell once notifications are on and choose **Send a
 test** (`testPush`). It sends only to that device and shows any error FCM
