@@ -346,16 +346,23 @@ export const submitWrapUp = onCall({ invoker: "public" }, async (request) => {
   }
 });
 
+// Every wrap-up row: { headers, grid } with grid from row 2 down. Also used by
+// the Money page (functions/money.js).
+export const readTracker = async () => {
+  const token = await accessToken();
+  const headers = await readHeaders(token);
+  const last = colName(writableHeaders(headers).length - 1);
+  const grid = (await google(token, `${SHEET}/${encodeURIComponent(`${TAB}!A2:${last}`)}`)).values || [];
+  return { headers, grid };
+};
+
 // The last few days' wrap-ups from the sheet, for editing. Read fresh each
 // time: these are money numbers that can change in the sheet directly.
 export const recentWrapUps = onCall({ invoker: "public" }, async (request) => {
   await requireAdmin(request);
   const sa = await serviceAccountEmail();
   try {
-    const token = await accessToken();
-    const headers = await readHeaders(token);
-    const last = colName(writableHeaders(headers).length - 1);
-    const grid = (await google(token, `${SHEET}/${encodeURIComponent(`${TAB}!A2:${last}`)}`)).values || [];
+    const { headers, grid } = await readTracker();
     return { rows: recentRows(headers, grid, localDate(new Date())), days: EDIT_DAYS };
   } catch (e) {
     logger.error("Reading recent wrap-ups failed", e);

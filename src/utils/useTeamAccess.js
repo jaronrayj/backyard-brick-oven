@@ -6,6 +6,7 @@ export const TEAM_TOOLS = [
   { key: 'planner', roles: ['admin', 'staff'], name: 'Planner', href: '/planner', blurb: 'Dough, shopping, prep and wrap-ups for upcoming services.' },
   { key: 'events', roles: ['admin'], name: 'Events', href: '/events', blurb: 'Inquiries, quotes and bookings.' },
   { key: 'menu', roles: ['admin'], name: 'Menu', href: '/admin/menu', blurb: 'The pizzas and photos on the website.' },
+  { key: 'money', roles: ['admin'], name: 'Money', href: '/money', blurb: 'Profit First transfers on the 10th and 25th.' },
   {
     key: 'admin',
     roles: ['admin'],

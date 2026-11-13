@@ -5,6 +5,7 @@ import {
   CalendarIcon,
   ChartBarIcon,
   ClipboardListIcon,
+  CurrencyDollarIcon,
   GlobeAltIcon,
   LogoutIcon,
 } from '@heroicons/react/outline'
@@ -22,6 +23,7 @@ const ICONS = {
   planner: ClipboardListIcon,
   events: CalendarIcon,
   menu: BookOpenIcon,
+  money: CurrencyDollarIcon,
   admin: ChartBarIcon,
 }
 
