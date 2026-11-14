@@ -23,7 +23,7 @@ import QuoteEmail from './QuoteEmail'
 import FollowUp from './FollowUp'
 import ReviewAsk from './ReviewAsk'
 import CalendarLine from './CalendarLine'
-import { changeEntries, entry, followUpDue } from './history'
+import { OPEN_ORDER, changeEntries, daysSince, entry, followUpDue, openGroup, receivedAt } from './history'
 import { DEFAULT_PRICING, STATUSES, addOnName, money, newQuote, prettyDate, publicPricing, quoteText, totals, travelZones } from './quote'
 import {
   FORECAST_DAYS,
@@ -877,10 +877,12 @@ const FILTERS = [
   { key: 'open', label: 'Open', test: (e) => ['inquiry', 'quoted', 'booked'].includes(e.status) },
   { key: 'past', label: 'Done & lost', test: (e) => !['inquiry', 'quoted', 'booked'].includes(e.status) },
 ]
+// Open events by what needs you next (history.js openGroup and OPEN_ORDER).
 const OPEN_GROUPS = [
-  { key: 'inquiry', title: 'New inquiries', hint: 'Open one to write a quote.' },
-  { key: 'quoted', title: 'Quoted', hint: 'Waiting to hear back.' },
-  { key: 'booked', title: 'Booked', hint: 'Wrap-up marks these done afterward.' },
+  { key: 'booked', title: 'Booked', hint: 'Coming up, soonest first.' },
+  { key: 'new', title: 'New inquiries', hint: "You haven't replied yet. Longest waiting first." },
+  { key: 'contacted', title: 'Contacted', hint: 'In touch, no quote yet. Quiet the longest first.' },
+  { key: 'quoted', title: 'Quoted', hint: 'Waiting to hear back. Most overdue first.' },
 ]
 
 const byDate = (a, b) => String(a.date || '9999').localeCompare(String(b.date || '9999'))
@@ -914,10 +916,19 @@ const EventRow = ({ event, mixLead, plannerRef, onOpen }) => {
         <DoughNote event={event} mixLead={mixLead} />
         <PizzaNote event={event} plannerRef={plannerRef} />
         {t && <p className="text-sm font-medium">Quote {money(t.total)}</p>}
-        {due && (
+        {openGroup(event) === 'new' && daysSince(receivedAt(event)) != null ? (
           <p className="text-sm font-medium text-amber-800">
-            Follow up: last contact {due.days === 1 ? 'yesterday' : `${due.days} days ago`}
+            {(() => {
+              const d = daysSince(receivedAt(event))
+              return d <= 0 ? 'Came in today: reply soon' : `Waiting on your reply ${d === 1 ? '1 day' : `${d} days`}`
+            })()}
           </p>
+        ) : (
+          due && (
+            <p className="text-sm font-medium text-amber-800">
+              Follow up: last contact {due.days === 1 ? 'yesterday' : `${due.days} days ago`}
+            </p>
+          )
         )}
       </button>
     </li>
@@ -1081,7 +1092,7 @@ const Events = () => {
         </p>
       ) : filter === 'open' ? (
         OPEN_GROUPS.map((g) => {
-          const list = shown.filter((e) => e.status === g.key)
+          const list = shown.filter((e) => openGroup(e) === g.key).sort(OPEN_ORDER[g.key])
           if (!list.length) return null
           return (
             <section key={g.key} className="space-y-2">
