@@ -71,7 +71,7 @@ const TeamNav = () => {
             <span className="font-bold text-gray-900 whitespace-nowrap sm:hidden lg:inline">BYBO Team</span>
           </Link>
           {showTabs && (
-            <nav className="hidden sm:flex items-center gap-1 ml-2 lg:ml-4 min-w-0" aria-label="Team tools">
+            <nav className="hidden sm:flex items-center gap-1 ml-2 lg:ml-4 shrink-0" aria-label="Team tools">
               {tools.map((t) => (
                 <ToolLink
                   key={t.key}
@@ -90,11 +90,11 @@ const TeamNav = () => {
           <div className="ml-auto flex items-center gap-1 shrink-0">
             <Link
               to="/"
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100"
+              className="flex sm:hidden md:flex items-center gap-1 px-2 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100"
               title="Go to the main website"
             >
               <GlobeAltIcon className="h-5 w-5" aria-hidden="true" />
-              <span className="hidden lg:inline">Website</span>
+              <span className="hidden xl:inline">Website</span>
             </Link>
             {realRole === 'admin' && !viewingAsCrew && (
               <button
@@ -104,7 +104,8 @@ const TeamNav = () => {
                 title="See the team pages the way your crew (staff) see them"
               >
                 <EyeIcon className="h-5 w-5" aria-hidden="true" />
-                <span className="hidden xl:inline whitespace-nowrap">View as crew</span>
+                {/* Icon only (the tooltip says what it does), so the tabs always have room. */}
+                <span className="sr-only">View as crew</span>
               </button>
             )}
             {role === 'admin' && <Notifications />}
