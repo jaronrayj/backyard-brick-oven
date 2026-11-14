@@ -30,8 +30,6 @@ export const DEFAULT_AUTO_REPLY = {
     "You can see our pricing anytime at backyardbrickovenpizza.com/inquiries.",
     "",
     "Talk soon,",
-    "Jaron",
-    "Backyard Brick Oven · (801) 872-3439",
   ].join("\n"),
 };
 
@@ -76,12 +74,13 @@ export const renderAutoReply = (template, event) => {
   const rows = detailRows(event);
   const fill = (s) => String(s).replace(/\{name\}/g, reviewGreetingName(event && event.name)).replace(/\{event\}/g, replyEventWords(event && event.eventType));
   const subject = fill(t.subject).replace(/\s+/g, " ").trim();
-  const text = fill(t.body)
+  const body = dropOldSignOff(t.body);
+  const text = fill(body)
     .replace(/\{details\}/g, rows.map(([k, v]) => `- ${k}: ${v}`).join("\n"))
     .replace(/\n{3,}/g, "\n\n")
     .trim();
   const list = `<ul style="padding-left:20px;margin:0 0 16px">${rows.map(([k, v]) => `<li><b>${esc(k)}:</b> ${esc(v)}</li>`).join("")}</ul>`;
-  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#111827;max-width:560px">${fill(t.body)
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#111827;max-width:560px">${fill(body)
     .trim()
     .split(/\n{2,}/)
     .map((para) => `<p>${linkify(esc(para)).replace(/\n/g, "<br>").replace(/\{details\}/g, `</p>${list}<p>`)}</p>`.replace(/<p>(<br>)*<\/p>/g, ""))
@@ -116,8 +115,6 @@ export const DEFAULT_QUOTE_EMAIL = {
     "Your date is held once the deposit is paid. Reply to this email when you're ready and I'll send you how to pay.",
     "",
     "Talk soon,",
-    "Jaron",
-    "Backyard Brick Oven · (801) 872-3439",
   ].join("\n"),
   tasting: [
     "Come try the pizza first! We'd love to have you over for a free tasting. Tap a time that works:",
@@ -153,8 +150,6 @@ export const DEFAULT_TASTING = {
       "If something comes up, just reply to this email and we'll find another time.",
       "",
       "See you soon,",
-      "Jaron",
-      "Backyard Brick Oven · (801) 872-3439",
     ].join("\n"),
   },
   reminder: {
@@ -169,7 +164,6 @@ export const DEFAULT_TASTING = {
       "If something came up, just reply to this email.",
       "",
       "See you soon,",
-      "Jaron",
     ].join("\n"),
   },
 };
@@ -207,6 +201,44 @@ export const renderTastingEmail = (template, { name, at, place, minutes }) => {
       .replace(/\{when\}/g, tastingWhen(at))
       .replace(/\{place\}/g, String(place || "").trim() || "(we'll send the address)")
       .replace(/\{length\}/g, tastingLength(minutes));
-  const text = fill(template.body).replace(/\n{3,}/g, "\n\n").trim();
+  const text = fill(dropOldSignOff(template.body)).replace(/\n{3,}/g, "\n\n").trim();
   return { subject: fill(template.subject).replace(/\s+/g, " ").trim(), text: `${text}\n`, html: paragraphsHtml(text) };
+};
+
+// ---------- Signature (every email the app sends) ----------
+//
+// Your Gmail signature (from the "Email Signature" page), added under every
+// email: the automatic reply, quote email, tasting emails and review email.
+// Editable under Events > Emails > Signature (eventSettings/emails.signature).
+// Turned off, emails end with the short text sign-off instead.
+
+export const DEFAULT_SIGNATURE = {
+  on: true,
+  html: "<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"color:#222222;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.45;border-collapse:collapse\"><tbody><tr><td style=\"padding-right:14px;vertical-align:top\"><a href=\"https://backyardbrickovenpizza.com/\" target=\"_blank\"><img src=\"https://backyardbrickovenpizza.com/icon-192.png\" width=\"64\" height=\"64\" alt=\"Backyard Brick Oven\" style=\"display:block;border:0;width:64px;height:64px;border-radius:8px\"></a></td><td style=\"border-left:3px solid #c2410c;padding-left:14px;vertical-align:top\"><div style=\"font-size:16px;font-weight:bold;color:#222222\">Jaron Johnson</div><div style=\"color:#555555\">Owner, Backyard Brick Oven</div><div style=\"color:#777777;font-size:13px\">Neapolitan-style pizza for weddings, events &amp; Pizza Fridays · Bountiful, UT</div><div style=\"padding-top:6px\"><a href=\"tel:+18018723439\" style=\"color:#222222;text-decoration:none\" target=\"_blank\">(801) 872-3439</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href=\"https://backyardbrickovenpizza.com/\" style=\"color:#c2410c;text-decoration:none\" target=\"_blank\">backyardbrickovenpizza.com</a></div><div style=\"padding-top:6px;font-size:13px\"><a href=\"https://backyardbrickovenpizza.com/inquiries\" style=\"color:#c2410c;text-decoration:none;font-weight:bold\" target=\"_blank\">Book an event</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href=\"https://backyardbrickovenpizza.com/\" style=\"color:#c2410c;text-decoration:none\" target=\"_blank\">See the menu</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href=\"https://www.instagram.com/backyard_brick_oven/\" style=\"color:#c2410c;text-decoration:none\" target=\"_blank\">Instagram</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href=\"https://share.google/KUHCVmwmo8qqqA64r\" style=\"color:#c2410c;text-decoration:none\" target=\"_blank\">★ Leave us a Google review</a></div></td></tr></tbody></table>",
+  text: "Jaron Johnson\nOwner, Backyard Brick Oven\nNeapolitan-style pizza for weddings, events & Pizza Fridays · Bountiful, UT\n(801) 872-3439 · backyardbrickovenpizza.com\nBook an event: https://backyardbrickovenpizza.com/inquiries\nInstagram: https://www.instagram.com/backyard_brick_oven/",
+};
+const SHORT_SIGN_OFF = "Jaron\nBackyard Brick Oven · (801) 872-3439";
+
+export const signatureFrom = (settings) => ({ ...DEFAULT_SIGNATURE, ...((settings && settings.signature) || {}) });
+
+// Wording saved before the signature existed ends with "Jaron" (and the phone
+// line). The signature has both, so drop them rather than say them twice.
+export const dropOldSignOff = (body) =>
+  String(body || "")
+    .replace(/\n+Jaron\s*\n\s*Backyard Brick Oven · \(801\) 872-3439\s*$/, "")
+    .replace(/\n+Jaron\s*$/, "");
+
+// { subject, text, html } + the signature -> the same, signed.
+export const appendSignature = (mail, signature = DEFAULT_SIGNATURE) => {
+  const sig = { ...DEFAULT_SIGNATURE, ...(signature || {}) };
+  const on = sig.on !== false && String(sig.html || "").trim();
+  const text = on ? String(sig.text || "").trim() : SHORT_SIGN_OFF;
+  const html = on
+    ? `<div style="margin-top:20px">${sig.html}</div>`
+    : `<p style="font-family:Arial,Helvetica,sans-serif;font-size:16px;color:#111827">${esc(SHORT_SIGN_OFF).replace(/\n/g, "<br>")}</p>`;
+  return {
+    ...mail,
+    text: `${String(mail.text || "").replace(/\s+$/, "")}\n\n${text}\n`,
+    html: mail.html ? `${mail.html}\n${html}` : mail.html,
+  };
 };

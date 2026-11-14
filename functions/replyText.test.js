@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { DEFAULT_AUTO_REPLY, detailRows, renderAutoReply, replyEventWords } from "./replyText.js";
+import { DEFAULT_AUTO_REPLY, DEFAULT_SIGNATURE, appendSignature, detailRows, dropOldSignOff, renderAutoReply, replyEventWords } from "./replyText.js";
 import { inquiryToEvent } from "./events.js";
 
 test("the Emails page preview uses the same code as the email", () => {
@@ -56,8 +56,6 @@ test("the default reply for a wedding inquiry", () => {
       "You can see our pricing anytime at backyardbrickovenpizza.com/inquiries.",
       "",
       "Talk soon,",
-      "Jaron",
-      "Backyard Brick Oven · (801) 872-3439",
       "",
     ].join("\n")
   );
@@ -82,4 +80,22 @@ test("your own wording, with {details} anywhere and HTML kept safe", () => {
   assert.match(mail.html, /Thanks Kate and Ryan &lt;3/);
   assert.match(mail.html, /<ul/);
   assert.doesNotMatch(mail.html, /\{details\}/);
+});
+
+test("the signature goes under every email; off, a short sign-off instead", () => {
+  const mail = appendSignature(renderAutoReply(DEFAULT_AUTO_REPLY, inquiryToEvent(form)));
+  assert.match(mail.text, /Talk soon,\n\nJaron Johnson\nOwner, Backyard Brick Oven\n/);
+  assert.match(mail.html, /<img src="https:\/\/backyardbrickovenpizza\.com\/icon-192\.png"/);
+  assert.match(mail.html, /Jaron Johnson<\/div>/);
+  const off = appendSignature({ subject: "s", text: "Hi\n", html: "<p>Hi</p>" }, { ...DEFAULT_SIGNATURE, on: false });
+  assert.equal(off.text, "Hi\n\nJaron\nBackyard Brick Oven · (801) 872-3439\n");
+  assert.doesNotMatch(off.html, /<img/);
+});
+
+test("wording saved before the signature loses its old sign-off", () => {
+  assert.equal(dropOldSignOff("Talk soon,\nJaron\nBackyard Brick Oven · (801) 872-3439"), "Talk soon,");
+  assert.equal(dropOldSignOff("See you soon,\nJaron"), "See you soon,");
+  assert.equal(dropOldSignOff("Thanks, Jaron is great"), "Thanks, Jaron is great");
+  const old = { ...DEFAULT_AUTO_REPLY, body: DEFAULT_AUTO_REPLY.body + "\nJaron\nBackyard Brick Oven · (801) 872-3439" };
+  assert.doesNotMatch(renderAutoReply(old, inquiryToEvent(form)).text, /Jaron/);
 });

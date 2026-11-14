@@ -7,7 +7,7 @@ import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { GMAIL_USER, sendMail } from "./mail.js";
 import { inquiryToEvent } from "./events.js";
-import { DEFAULT_AUTO_REPLY, renderAutoReply } from "./replyText.js";
+import { DEFAULT_AUTO_REPLY, appendSignature, renderAutoReply, signatureFrom } from "./replyText.js";
 
 if (!getApps().length) initializeApp();
 
@@ -18,7 +18,7 @@ export const sendAutoReply = async (body, eventId) => {
     const settings = (await getFirestore().doc("eventSettings/emails").get()).data() || {};
     const template = { ...DEFAULT_AUTO_REPLY, ...(settings.autoReply || {}) };
     if (template.on === false) return false;
-    const mail = renderAutoReply(template, event);
+    const mail = appendSignature(renderAutoReply(template, event), signatureFrom(settings));
     await sendMail({ to: event.email, replyTo: GMAIL_USER, ...mail });
     if (eventId) {
       await getFirestore()

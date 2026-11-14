@@ -3,7 +3,7 @@ import { doc, getDoc } from 'firebase/firestore'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { db } from '../../utils/db'
 import { ui } from '../../components/TeamPage'
-import { DEFAULT_QUOTE_EMAIL, tastingWhen } from './replyText'
+import { DEFAULT_QUOTE_EMAIL, appendSignature, dropOldSignOff, signatureFrom, tastingWhen } from './replyText'
 import { quoteEventWords, renderQuoteEmail } from './quoteEmailText'
 import { reviewGreetingName } from './reviewAskText'
 
@@ -23,6 +23,7 @@ const toIso = (v) => {
 const QuoteEmail = ({ id, event, initial, onSent }) => {
   const [open, setOpen] = useState(false)
   const [template, setTemplate] = useState(null)
+  const [signature, setSignature] = useState(null)
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [times, setTimes] = useState([''])
@@ -34,18 +35,20 @@ const QuoteEmail = ({ id, event, initial, onSent }) => {
     getDoc(doc(db, 'eventSettings', 'emails'))
       .then((snap) => {
         const t = { ...DEFAULT_QUOTE_EMAIL, ...((snap.exists() && snap.data().quoteEmail) || {}) }
+        setSignature(signatureFrom(snap.exists() && snap.data()))
         const fill = (s) => String(s).replace(/\{name\}/g, reviewGreetingName(event.name)).replace(/\{event\}/g, quoteEventWords(event))
         setTemplate(t)
         setSubject(fill(t.subject))
-        setBody(fill(t.body))
+        setBody(fill(dropOldSignOff(t.body)))
       })
       .catch(() => setError("Couldn't load the email wording."))
   }, [open, template, event])
 
   const isoTimes = useMemo(() => times.map(toIso).filter(Boolean), [times])
   const mail = useMemo(
-    () => (template ? renderQuoteEmail({ template: { ...template, subject, body }, event, quote: event.quote, times: isoTimes }) : null),
-    [template, subject, body, event, isoTimes]
+    () =>
+      template ? appendSignature(renderQuoteEmail({ template: { ...template, subject, body }, event, quote: event.quote, times: isoTimes }), signature) : null,
+    [template, signature, subject, body, event, isoTimes]
   )
 
   if (!id) return null
@@ -100,7 +103,7 @@ const QuoteEmail = ({ id, event, initial, onSent }) => {
             <input className={`${ui.input} mt-1`} value={subject} onChange={(e) => setSubject(e.target.value)} />
           </label>
           <label className="block text-sm">
-            <span className="text-gray-700">Message (just for this email; the usual wording is under Emails)</span>
+            <span className="text-gray-700">Message (just for this email; the usual wording is under Emails). Your signature is added below it.</span>
             <textarea className={`${ui.input} mt-1 font-mono`} rows={12} value={body} onChange={(e) => setBody(e.target.value)} />
           </label>
           <p className="text-xs text-gray-500">
