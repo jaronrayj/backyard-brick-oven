@@ -24,7 +24,7 @@ import { requireRole } from "./team.js";
 import { accessToken } from "./google.js";
 import { calendarIdNow } from "./wrapup.js";
 import { eventLink } from "./links.js";
-import { DEFAULT_TASTING, renderTastingEmail, tastingWhen } from "./replyText.js";
+import { DEFAULT_TASTING, appendSignature, renderTastingEmail, signatureFrom, tastingWhen } from "./replyText.js";
 
 if (!getApps().length) initializeApp();
 
@@ -37,10 +37,12 @@ const utahDay = (d) => new Date(d).toLocaleDateString("en-CA", { timeZone: TZ })
 const utahHour = (d) => Number(new Date(d).toLocaleString("en-US", { timeZone: TZ, hour: "numeric", hourCycle: "h23" }));
 
 export const tastingSettings = async () => {
-  const saved = ((await getFirestore().doc("eventSettings/emails").get()).data() || {}).tasting || {};
+  const all = (await getFirestore().doc("eventSettings/emails").get()).data() || {};
+  const saved = all.tasting || {};
   return {
     ...DEFAULT_TASTING,
     ...saved,
+    signature: signatureFrom(all),
     confirm: { ...DEFAULT_TASTING.confirm, ...(saved.confirm || {}) },
     reminder: { ...DEFAULT_TASTING.reminder, ...(saved.reminder || {}) },
   };
@@ -189,7 +191,7 @@ export const pickTasting = onCall({ invoker: "public", secrets: [GMAIL_APP_PASSW
   // Everything below is extra: a failure here never undoes the pick.
   const settings = await tastingSettings();
   const jobs = [
-    sendMail({ to: t.email, replyTo: GMAIL_USER, ...renderTastingEmail(settings.confirm, { name: t.name, at: iso, place: settings.place, minutes: t.minutes }) }),
+    sendMail({ to: t.email, replyTo: GMAIL_USER, ...appendSignature(renderTastingEmail(settings.confirm, { name: t.name, at: iso, place: settings.place, minutes: t.minutes }), settings.signature) }),
     sendPush({ title: `Tasting booked: ${t.name || "a couple"}`, body: tastingWhen(iso), link: eventLink(t.eventId), tag: `tasting-${token}` }),
     addTastingToCalendar(token, t, iso, settings.place).then((calendarId) => ref.update({ calendarId })),
   ];
@@ -213,7 +215,7 @@ export const runTastingReminders = async (now = new Date()) => {
   if (!due.length) return;
   const settings = await tastingSettings();
   for (const { ref, t } of due) {
-    await sendMail({ to: t.email, replyTo: GMAIL_USER, ...renderTastingEmail(settings.reminder, { name: t.name, at: t.picked, place: settings.place, minutes: t.minutes }) });
+    await sendMail({ to: t.email, replyTo: GMAIL_USER, ...appendSignature(renderTastingEmail(settings.reminder, { name: t.name, at: t.picked, place: settings.place, minutes: t.minutes }), settings.signature) });
     await ref.update({ reminderSent: FieldValue.serverTimestamp() });
     logger.info(`Tasting reminder sent for ${t.eventId}`);
   }

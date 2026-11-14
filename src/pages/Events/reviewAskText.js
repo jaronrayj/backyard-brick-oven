@@ -56,15 +56,16 @@ export const reviewEmail = (event) => {
   const hope = words === "your wedding" ? " and we hope it was everything you wanted" : "";
   const thanks = `Thank you for having Backyard Brick Oven at ${words}! We loved cooking for you and your guests${hope}.`;
   const ask = "If you have 30 seconds, a Google review helps a small business like ours more than you'd think:";
-  const text = `Hi ${name},\n\n${thanks}\n\n${ask}\n${REVIEW_URL}\n\n— Jaron\nBackyard Brick Oven\n`;
+  // Signed with the email signature (appendSignature in replyText.js) when sent.
+  const text = `Hi ${name},\n\n${thanks}\n\n${ask}\n${REVIEW_URL}\n\nThanks again,\n`;
   const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#111827;max-width:560px">
 <p>Hi ${esc(name)},</p>
 <p>${esc(thanks)}</p>
 <p>${esc(ask)}</p>
 <p><a href="${REVIEW_URL}" style="display:inline-block;background:#d97706;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:8px">Leave us a review</a></p>
-<p style="color:#374151">— Jaron<br>Backyard Brick Oven</p>
 <p style="font-size:12px;color:#9ca3af">Or open ${REVIEW_URL.replace("https://", "")}</p>
+<p>Thanks again,</p>
 </div>`;
   return { to: emailOf(event), subject: "Thanks for having us!", text, html };
 };

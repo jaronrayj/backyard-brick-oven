@@ -15,6 +15,7 @@ import { sendPush } from "./push.js";
 import { eventLink } from "./links.js";
 import { todayLocal } from "./events.js";
 import { REVIEW_HOUR, reviewEmail, reviewSendDate, reviewState } from "./reviewAskText.js";
+import { appendSignature, signatureFrom } from "./replyText.js";
 
 if (!getApps().length) initializeApp();
 
@@ -46,10 +47,11 @@ export const runReviewAsks = async (now = new Date()) => {
   const snap = await db.collection("events").where("status", "in", ["booked", "done"]).get();
   const due = reviewAsksDue(snap.docs.map((d) => ({ id: d.id, event: d.data() })), today);
 
+  const signature = due.length ? signatureFrom((await db.doc("eventSettings/emails").get()).data()) : null;
   for (const { id, event, action } of due) {
     const ref = db.doc(`events/${id}`);
     if (action === "send") {
-      const mail = reviewEmail(event);
+      const mail = appendSignature(reviewEmail(event), signature);
       await sendMail({ ...mail, replyTo: GMAIL_USER });
       await ref.update({
         reviewAsk: { sentAt: FieldValue.serverTimestamp(), to: mail.to, on: today },
