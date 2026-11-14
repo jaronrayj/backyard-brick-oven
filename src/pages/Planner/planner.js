@@ -12,7 +12,7 @@
  * deps.refresh   - async () => re-read the Google Sheets on the server
  * deps.wrapUps   - admins only: {due() -> {items: [{key, date, title}]}}; shows the Wrap up tab
  *                  (index.js draws the form into #wrapup-slot; fire 'wrapups-changed' on root to recount)
- * deps.calendar  - async (range?) => { items: [{id, title, date, time, location, notes}], problem? }; with no range,
+ * deps.calendar  - async (range?) => { items: [{id, title, date, time, location, notes, tentative}], problem? }; with no range,
  *                  the next two weeks; with {from, to} (YYYY-MM-DD), that span (the Calendar tab's month)
  */
 import { sortable, moved } from '../../utils/sortable';
@@ -318,7 +318,7 @@ export function mountPlanner(root, deps) {
     box.replaceChildren();
     if (!CAL || !PLAN) return;
     const skipped = PLAN.calSkipped || [];
-    const list = CAL.items.filter((c) => c.date && !/\bprep\b/i.test(c.title) && !skipped.includes(c.id) && !isPlanned(c));
+    const list = CAL.items.filter((c) => c.date && !c.tentative && !/\bprep\b/i.test(c.title) && !skipped.includes(c.id) && !isPlanned(c));
     if (CAL.problem) box.append(el('p', 'note', CAL.problem));
     if (!list.length) return;
     const head = el('div', 'svc-head');
@@ -1342,7 +1342,12 @@ export function mountPlanner(root, deps) {
     else if (firstPlan) PLAN = defaultPlan();
     PLAN.services = PLAN.services || []; PLAN.tweaks = PLAN.tweaks || {}; PLAN.bring = PLAN.bring || []; PLAN.extras = PLAN.extras || []; PLAN.where = PLAN.where || {};
     firstPlan = false;
-    if (REF && migratePizzas() && canWrite) savePlan();
+    /* Services clear themselves once their day is over (the morning after). Your
+       own prep items stay, so unchecked ones still show under "Missed". */
+    const before = PLAN.services.length, today = todayStr();
+    PLAN.services = PLAN.services.filter((s) => !s.date || s.date >= today);
+    const cleared = PLAN.services.length < before;
+    if (((REF && migratePizzas()) || cleared) && canWrite) savePlan();
     renderAll();
   }, () => { $('#save-status').textContent = 'The plan couldn\'t load. Reload the page.'; }));
   unsubs.push(db.doc('plan/checks').onSnapshot((snap) => {

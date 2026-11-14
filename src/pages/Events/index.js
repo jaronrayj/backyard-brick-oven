@@ -20,6 +20,7 @@ import Report from './Report'
 import Emails from './Emails'
 import FollowUp from './FollowUp'
 import ReviewAsk from './ReviewAsk'
+import CalendarLine from './CalendarLine'
 import { changeEntries, entry, followUpDue } from './history'
 import { DEFAULT_PRICING, STATUSES, addOnName, money, newQuote, prettyDate, publicPricing, quoteText, totals, travelZones } from './quote'
 import {
@@ -407,6 +408,8 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
       // Written by the review email job and the Don't send button, not by Save.
       delete fields.reviewAsk
       delete fields.reviewAskSkip
+      // Written by the calendar sync (functions/calendarSync.js) and its buttons.
+      delete fields.calendar
       const numOr = (v) => (v === '' || v == null ? '' : Number(v))
       let data = {
         ...fields,
@@ -558,6 +561,8 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
       <FollowUp event={event} isNew={!id} onLog={log} />
 
       <ReviewAsk event={event} isNew={!id} onSkip={skipReview} />
+
+      <CalendarLine id={id} event={event} />
 
       <Field label="Your notes">
         <textarea className={input} rows={3} value={event.notes} onChange={(e) => set({ notes: e.target.value })} />
