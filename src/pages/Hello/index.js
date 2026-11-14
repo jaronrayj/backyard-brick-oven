@@ -1,26 +1,26 @@
 import React, { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
-import { getFunctions, httpsCallable } from 'firebase/functions'
 import logo from '../../assets/brickovenLogoText.png'
 import instagramLogo from '../../assets/instagram.png'
 import facebookLogo from '../../assets/facebook.png'
-import googleCalendarLogo from '../../assets/google-calendar-logo.png'
 import { track } from '../../utils/track'
 import { rtdbGet } from '../../utils/publicData'
-import { APPLE_CALENDAR, GOOGLE_CALENDAR } from '../../utils/calendarLinks'
 import { EMAIL_MAX, NAME_MAX, checkSignup } from './signupText'
 
-// /hello: landing page for the QR code on event posters. A free Roasted Garlic
-// Breadsticks or F'Zookie for showing this screen at Pizza Friday (on trust:
-// no sign-up, no code), follow us, join the email list (functions/signup.js),
-// the next Pizza Fridays and adding them to your calendar, or book us.
+// /hello: landing page for the QR code on event posters. One job: trade free
+// Roasted Garlic Breadsticks or a F'Zookie for an email address, then ask for
+// a follow while they're happy.
+//   1. The offer and an email box (first name optional).
+//   2. After signing up (functions/signup.js, which also sends a welcome
+//      email): the freebie ticket to show at the counter, then Follow us.
+// The ticket is remembered on this phone, so reopening the page shows it again.
 
 // Straight to the profiles (same links as the home page), so they work
 // anywhere, not only where the /instagram and /facebook forwards exist.
 const INSTAGRAM = 'https://www.instagram.com/backyard_brick_oven/'
 const FACEBOOK = 'https://www.facebook.com/people/Backyard-Brick-Oven-LLC/100090391791253/'
 const DIRECTIONS = 'https://g.co/kgs/8o94du5'
-
+const SAVED = 'bybo-hello-ticket'
 
 // The two freebies, named and pictured as on the menu. Photos come from the
 // menu itself (Realtime Database `pizzas`, edited at /admin/menu), so a new
@@ -52,23 +52,26 @@ const useTreatPhotos = () => {
   return photos
 }
 
-// Next Pizza Fridays from the business calendar, as on the home page.
-const useFridays = () => {
-  const [fridays, setFridays] = useState([])
-  useEffect(() => {
-    if (prerendering()) return
-    httpsCallable(getFunctions(), 'upcomingPizzaFridays')()
-      .then((res) => setFridays(((res.data && res.data.dates) || []).slice(0, 3)))
-      .catch(() => {})
-  }, [])
-  return fridays
+// The ticket saved on this phone: { name, date } or null.
+const loadTicket = () => {
+  try {
+    const t = JSON.parse(localStorage.getItem(SAVED))
+    return t && t.date ? t : null
+  } catch (_) {
+    return null
+  }
 }
-const fridayLabel = (iso) =>
-  new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
+const saveTicket = (t) => {
+  try {
+    localStorage.setItem(SAVED, JSON.stringify(t))
+  } catch (_) {
+    /* private browsing: the ticket still shows until they leave */
+  }
+}
+const prettyDay = (d) => new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 
 const bigButton =
   'flex items-center justify-center gap-3 w-full py-4 px-5 rounded-xl text-lg font-bold shadow-md transition-colors duration-200'
-const whiteButton = `${bigButton} bg-white text-gray-900 hover:bg-gray-100`
 
 const Treats = ({ photos }) => (
   <div className="grid grid-cols-2 gap-3">
@@ -83,50 +86,109 @@ const Treats = ({ photos }) => (
   </div>
 )
 
-const Freebie = ({ photos }) => (
-  <div className="bg-white rounded-xl shadow-md p-5 text-center space-y-3">
-    <div className="border-4 border-dashed border-amber-500 rounded-xl p-4 bg-amber-50 space-y-3">
-      <p className="text-4xl font-extrabold text-gray-900 tracking-tight">FREE</p>
-      <p className="text-gray-800 font-semibold">Roasted Garlic Breadsticks or a F'Zookie</p>
+// Step 1: the offer, paid for with an email address.
+const Offer = ({ photos, onDone }) => {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const submit = async (e) => {
+    e.preventDefault()
+    const checked = checkSignup({ name, email })
+    if (checked.error) return setError(checked.error)
+    setError('')
+    setBusy(true)
+    try {
+      const res = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, _gotcha: new FormData(e.target).get('_gotcha') || '' }),
+      })
+      let data = {}
+      try {
+        data = await res.json()
+      } catch (_) {
+        /* non-JSON error: keep the default message */
+      }
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Something went wrong. Please try again.')
+      track('hello_signup')
+      onDone({ name: checked.name, date: new Date().toISOString() })
+    } catch (err) {
+      setError(err.message || 'Could not sign up right now. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form onSubmit={submit} noValidate className="bg-white rounded-xl shadow-md p-5 space-y-4">
+      <div className="text-center space-y-1">
+        <p className="text-4xl font-extrabold text-gray-900 tracking-tight">FREE</p>
+        <p className="text-lg font-semibold text-gray-800">Roasted Garlic Breadsticks or a F'Zookie</p>
+      </div>
       <Treats photos={photos} />
-    </div>
-    <p className="font-semibold text-gray-900">Show this screen at any Pizza Friday. Screenshot it so you have it!</p>
-  </div>
-)
+      <p className="text-gray-700">Join our email list and it's yours at any Pizza Friday. We only email when there's something worth sharing.</p>
+      {/* Honeypot: hidden from people, bots tend to fill it */}
+      <input type="text" name="_gotcha" tabIndex="-1" autoComplete="off" className="hidden" aria-hidden="true" />
+      <label className="block">
+        <span className="text-sm text-gray-700">Email</span>
+        <input
+          id="hello-email"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          required
+          maxLength={EMAIL_MAX}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full mt-1 p-3 rounded-lg border text-gray-800 text-lg"
+        />
+      </label>
+      <label className="block">
+        <span className="text-sm text-gray-700">First name (optional)</span>
+        <input
+          id="hello-name"
+          type="text"
+          autoComplete="given-name"
+          maxLength={NAME_MAX}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full mt-1 p-3 rounded-lg border text-gray-800 text-lg"
+        />
+      </label>
+      {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
+      <button type="submit" disabled={busy} className={`${bigButton} bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-60`}>
+        {busy ? 'One sec…' : 'Get my freebie'}
+      </button>
+    </form>
+  )
+}
 
-const PizzaFriday = ({ fridays }) => (
-  <div className="bg-white rounded-xl shadow-md p-5 space-y-4">
-    <div>
-      <h2 className="text-xl font-bold text-gray-900">Pizza Friday</h2>
-      <p className="text-gray-700">5–7:30 pm in Bountiful</p>
-      {fridays.length > 0 && <p className="text-gray-700 mt-1">Next: {fridays.map((f) => fridayLabel(f.date)).join(' · ')}</p>}
-      <a href={DIRECTIONS} target="_blank" rel="noopener noreferrer" className="inline-block mt-1 text-amber-700 font-semibold underline">
-        Directions
-      </a>
+// Step 2a: the ticket to show at the counter.
+const Ticket = ({ ticket, photos }) => {
+  const first = (ticket.name || '').split(' ')[0]
+  return (
+    <div className="bg-white rounded-xl shadow-md p-5 text-center space-y-3" role="status">
+      <p className="text-gray-800 font-semibold">{first ? `You're on the list, ${first}!` : "You're on the list!"}</p>
+      <div className="border-4 border-dashed border-amber-500 rounded-xl p-4 bg-amber-50 space-y-3">
+        <p className="text-4xl font-extrabold text-gray-900 tracking-tight">FREE</p>
+        <p className="text-gray-800 font-semibold">Roasted Garlic Breadsticks or a F'Zookie</p>
+        <Treats photos={photos} />
+        <p className="text-sm text-gray-600">
+          {first ? `For ${first} · ` : ''}Signed up {prettyDay(ticket.date)}
+        </p>
+      </div>
+      <p className="font-semibold text-gray-900">Show this screen at any Pizza Friday. We emailed you a copy too.</p>
     </div>
-    <div className="space-y-2">
-      <p className="font-semibold text-gray-900">Add Pizza Fridays to your calendar</p>
-      <a href={APPLE_CALENDAR} onClick={() => track('hello_calendar', { calendar: 'apple' })} className={`${bigButton} bg-gray-900 text-white hover:bg-gray-700`}>
-        iPhone / Apple Calendar
-      </a>
-      <a
-        href={GOOGLE_CALENDAR}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={() => track('hello_calendar', { calendar: 'google' })}
-        className={`${whiteButton} border border-gray-200`}
-      >
-        <img src={googleCalendarLogo} alt="" className="h-6 w-6" />
-        Google Calendar
-      </a>
-    </div>
-  </div>
-)
+  )
+}
 
+// Step 2b: the follow ask, right after they've got their freebie.
 const Follow = () => (
   <div className="bg-white rounded-xl shadow-md p-5 space-y-3">
     <div>
-      <h2 className="text-xl font-bold text-gray-900">Follow us!</h2>
+      <h2 className="text-xl font-bold text-gray-900">One more thing: follow us!</h2>
       <p className="text-gray-700">Pizza Friday menus, pop-ups and specials go up there first. It really helps a small business like ours.</p>
     </div>
     <a
@@ -153,115 +215,52 @@ const Follow = () => (
   </div>
 )
 
-const SignUp = () => {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [error, setError] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [done, setDone] = useState(false)
-
-  const submit = async (e) => {
-    e.preventDefault()
-    const checked = checkSignup({ name, email })
-    if (checked.error) return setError(checked.error)
-    setError('')
-    setBusy(true)
-    try {
-      const res = await fetch('/api/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, _gotcha: new FormData(e.target).get('_gotcha') || '' }),
-      })
-      let data = {}
-      try {
-        data = await res.json()
-      } catch (_) {
-        /* non-JSON error: keep the default message */
-      }
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Something went wrong. Please try again.')
-      track('hello_signup')
-      setDone(true)
-    } catch (err) {
-      setError(err.message || 'Could not sign up right now. Please try again.')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  if (done) {
-    return (
-      <div className="bg-white rounded-xl shadow-md p-5 space-y-1" role="status">
-        <h2 className="text-xl font-bold text-gray-900">You're on the list{name.trim() ? `, ${name.trim().split(' ')[0]}` : ''}!</h2>
-        <p className="text-gray-700">We'll only email when there's something worth sharing.</p>
-      </div>
-    )
-  }
-  return (
-    <form onSubmit={submit} className="bg-white rounded-xl shadow-md p-5 space-y-3" noValidate>
-      <div>
-        <h2 className="text-xl font-bold text-gray-900">Get Pizza Friday news by email</h2>
-        <p className="text-gray-700">New pizzas, pop-ups and specials. No spam, just pizza.</p>
-      </div>
-      {/* Honeypot: hidden from people, bots tend to fill it */}
-      <input type="text" name="_gotcha" tabIndex="-1" autoComplete="off" className="hidden" aria-hidden="true" />
-      <label className="block">
-        <span className="text-sm text-gray-700">Email</span>
-        <input
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          required
-          maxLength={EMAIL_MAX}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full mt-1 p-3 rounded-lg border text-gray-800 text-lg"
-        />
-      </label>
-      <label className="block">
-        <span className="text-sm text-gray-700">First name (optional)</span>
-        <input
-          type="text"
-          autoComplete="given-name"
-          maxLength={NAME_MAX}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full mt-1 p-3 rounded-lg border text-gray-800 text-lg"
-        />
-      </label>
-      {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
-      <button type="submit" disabled={busy} className={`${bigButton} bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-60`}>
-        {busy ? 'Signing up…' : 'Sign me up'}
-      </button>
-    </form>
-  )
-}
-
 const Hello = () => {
   const photos = useTreatPhotos()
-  const fridays = useFridays()
+  const [ticket, setTicket] = useState(null)
+  useEffect(() => {
+    if (!prerendering()) setTicket(loadTicket())
+  }, [])
+  const done = (t) => {
+    saveTicket(t)
+    setTicket(t)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   return (
     <>
       <Helmet>
         <title>Hello! | Backyard Brick Oven</title>
         <meta
           name="description"
-          content="Free Roasted Garlic Breadsticks or a F'Zookie at Pizza Friday. Neapolitan-style pizza in Bountiful, Utah."
+          content="Free Roasted Garlic Breadsticks or a F'Zookie at Pizza Friday when you join our email list. Neapolitan-style pizza in Bountiful, Utah."
         />
         <link rel="canonical" href="https://backyardbrickovenpizza.com/hello" />
       </Helmet>
       <div className="bg-slate-200 min-h-screen">
         <div className="max-w-md mx-auto px-4 py-6 space-y-5">
-          <div className="bg-white rounded-2xl shadow-md p-4 w-60 mx-auto">
+          <div className="bg-white rounded-2xl shadow-md p-4 w-56 mx-auto">
             <img src={logo} alt="Backyard Brick Oven" className="w-full" />
           </div>
           <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">Thanks for eating with us!</h1>
-          <Freebie photos={photos} />
-          <Follow />
-          <SignUp />
-          <PizzaFriday fridays={fridays} />
-          <a href="/inquiries" className={`${bigButton} bg-amber-600 text-white hover:bg-amber-700`}>
-            Book us for your event
-          </a>
+          {ticket ? (
+            <>
+              <Ticket ticket={ticket} photos={photos} />
+              <Follow />
+            </>
+          ) : (
+            <Offer photos={photos} onDone={done} />
+          )}
+          <p className="text-center text-gray-700">
+            Pizza Friday · 5–7:30 pm · Bountiful ·{' '}
+            <a href={DIRECTIONS} target="_blank" rel="noopener noreferrer" className="text-amber-700 font-semibold underline">
+              Directions
+            </a>
+            <br />
+            <a href="/inquiries" className="text-amber-700 font-semibold underline">
+              Book us for your event
+            </a>
+          </p>
         </div>
       </div>
     </>
