@@ -10,6 +10,8 @@ import { reviewGreetingName } from './reviewAskText'
 // Event editor > Email the quote: the quote email (wording from Events >
 // Emails, editable here for this one email), tasting times to offer, a
 // preview of exactly what's sent, and Send (functions/tasting.js sendQuoteEmail).
+// Unsaved changes are saved first (onSave keeps the editor open), so the flow
+// is: fill in the event and quote, Email the quote, Send.
 
 const emailOf = (v) => (/[^\s/<>,;]+@[^\s/<>,;]+\.[^\s/<>,;]+/.exec(String(v || '')) || [''])[0]
 // What the quote email depends on; any unsaved change to these means Save first.
@@ -20,7 +22,7 @@ const toIso = (v) => {
   return v && !Number.isNaN(d.getTime()) ? d.toISOString() : ''
 }
 
-const QuoteEmail = ({ id, event, initial, onSent }) => {
+const QuoteEmail = ({ id, event, initial, onSave, onSent }) => {
   const [open, setOpen] = useState(false)
   const [template, setTemplate] = useState(null)
   const [signature, setSignature] = useState(null)
@@ -53,8 +55,9 @@ const QuoteEmail = ({ id, event, initial, onSent }) => {
     [template, signature, subject, body, event, isoTimes]
   )
 
-  if (!id) return null
   const to = emailOf(event.email)
+  // Anything the email depends on that isn't saved yet (or a brand-new event).
+  const dirty = !id || sentFields(event) !== sentFields(initial)
   const picked = event.tasting && event.tasting.picked
   const offered = (event.tasting && event.tasting.offered) || []
   const status = picked ? (
@@ -62,20 +65,31 @@ const QuoteEmail = ({ id, event, initial, onSent }) => {
   ) : offered.length ? (
     <p className="text-sm text-gray-600">Tasting times offered: {offered.map((t) => tastingWhen(t, { short: true })).join(', ')}. Waiting for them to pick.</p>
   ) : null
-  const blocked = !event.quote
-    ? 'Build the quote first.'
-    : !to
-    ? 'Add their email address (and Save) to send it.'
-    : sentFields(event) !== sentFields(initial)
-    ? 'Save your changes first, then email the quote.'
-    : ''
+  const blocked = !event.quote ? 'Build the quote first.' : !to ? 'Add their email address to send it.' : ''
+
+  const openComposer = async () => {
+    setError('')
+    if (dirty) {
+      setBusy(true)
+      const saved = await onSave()
+      setBusy(false)
+      if (!saved) return
+    }
+    setOpen(true)
+  }
 
   const past = isoTimes.some((t) => new Date(t).getTime() <= Date.now())
   const send = async () => {
     setBusy(true)
     setError('')
     try {
-      await httpsCallable(getFunctions(), 'sendQuoteEmail')({ eventId: id, subject: mail.subject, text: mail.text, html: mail.html, times: isoTimes })
+      // Changed something while the email was open: save that first.
+      const eventId = dirty ? await onSave() : id
+      if (!eventId) {
+        setBusy(false)
+        return
+      }
+      await httpsCallable(getFunctions(), 'sendQuoteEmail')({ eventId, subject: mail.subject, text: mail.text, html: mail.html, times: isoTimes })
       onSent(to)
     } catch (e) {
       setError(e.message || "Couldn't send it.")
@@ -90,9 +104,13 @@ const QuoteEmail = ({ id, event, initial, onSent }) => {
       {blocked ? (
         <p className="text-sm text-gray-600">{blocked}</p>
       ) : !open ? (
-        <button type="button" className={ui.btnPrimary} onClick={() => setOpen(true)}>
-          {event.quoteEmailedAt ? 'Email the quote again…' : 'Email the quote…'}
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <button type="button" className={ui.btnPrimary} disabled={busy} onClick={openComposer}>
+            {busy ? 'Saving…' : event.quoteEmailedAt ? 'Email the quote again…' : 'Email the quote…'}
+          </button>
+          {dirty && !busy && <span className="text-xs text-gray-500">Saves your changes first.</span>}
+          {error && <span className="text-sm text-red-700">{error}</span>}
+        </div>
       ) : !mail ? (
         <p className="text-sm text-gray-500">{error || 'Loading…'}</p>
       ) : (
