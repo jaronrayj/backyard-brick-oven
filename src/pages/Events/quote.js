@@ -38,6 +38,10 @@ export const DEFAULT_PRICING = {
   taxRate: 0, // percent, e.g. 7.25
   depositPct: 0, // percent of total due to book
   footer: 'Includes setup, continuous service and cleanup. Date is held once the deposit is paid.',
+  // Event day, for the calendar entries (functions/calendarSync.js has the same
+  // defaults): minutes there before service, packing up, cleaning up at home,
+  // service length when only a start time is given, and average driving speed.
+  eventDay: { setup: 60, pack: 30, cleanup: 30, serviceMinutes: 150, mph: 45 },
 }
 
 const n = (v) => {

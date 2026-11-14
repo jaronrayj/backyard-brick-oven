@@ -34,31 +34,117 @@ const SITE = "https://backyardbrickovenpizza.com";
 const TZ = "America/Denver";
 const SCOPE = "https://www.googleapis.com/auth/calendar.events";
 const GRAPHITE = "8"; // Google Calendar color for tentative entries
-const HOURS_LONG = 2.5; // when only a start time is known
+// Event-day timing (Events > Pricing > Event day, saved as eventSettings/pricing.eventDay).
+// The calendar entry runs from leaving home to the end of cleanup.
+export const DEFAULT_EVENT_DAY = {
+  setup: 60, // there this long before service starts
+  pack: 30, // collecting equipment after service
+  cleanup: 30, // after getting home
+  serviceMinutes: 150, // when only a start time is given
+  mph: 45, // average driving speed, for the drive estimate
+};
+const BOUNTIFUL = { lat: 40.8894, lon: -111.8808 }; // where the drive starts and ends
+const ROAD_FACTOR = 1.25; // roads vs. a straight line
+const GUESSED_DRIVE = 30; // minutes, when there's no miles or location at all
+
+export const eventDayFrom = (pricing) => {
+  const saved = (pricing && pricing.eventDay) || {};
+  const num = (k) => (Number.isFinite(Number(saved[k])) && saved[k] !== "" && Number(saved[k]) >= 0 ? Number(saved[k]) : DEFAULT_EVENT_DAY[k]);
+  return { setup: num("setup"), pack: num("pack"), cleanup: num("cleanup"), serviceMinutes: num("serviceMinutes") || 150, mph: num("mph") || 45 };
+};
 
 // Google event id for an app event: base32hex (0-9, a-v), so hex is safe.
 export const googleIdFor = (id) => `ev${Buffer.from(String(id), "utf8").toString("hex")}`;
 
+const MER = "(a\\.?m\\.?|p\\.?m\\.?)";
+const withMer = (h, mer) => {
+  if (/^p/.test(mer || "") && h < 12) return h + 12;
+  if (/^a/.test(mer || "") && h === 12) return 0;
+  return h;
+};
+
 // "5:30 pm", "5pm", "17:00", "around 6", "5-8 PM" -> { h, m }; nothing usable -> null.
 export const parseTime = (text) => {
   const t = String(text || "").toLowerCase();
-  const m = /\b(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/.exec(t);
+  const m = new RegExp(`\\b(\\d{1,2})(?::(\\d{2}))?\\s*${MER}?`).exec(t);
   if (!m) return null;
   let h = Number(m[1]);
   const min = m[2] ? Number(m[2]) : 0;
   if (h > 23 || min > 59) return null;
-  const mer = m[3] || (/(a\.?m\.?|p\.?m\.?)/.exec(t.slice(m.index + m[0].length)) || [])[1] || "";
-  if (/^p/.test(mer) && h < 12) h += 12;
-  else if (/^a/.test(mer) && h === 12) h = 0;
-  else if (!mer && h >= 1 && h <= 9) h += 12; // "5" for a party means 5 pm
+  const mer = m[3] || (new RegExp(MER).exec(t.slice(m.index + m[0].length)) || [])[1] || "";
+  if (mer) h = withMer(h, mer);
+  else if (h >= 1 && h <= 9) h += 12; // "5" for a party means 5 pm
   return { h, m: min };
+};
+
+// Service window from the time field, in minutes after midnight:
+// "5-8 pm", "11–2pm", "12:30 pm to 3", "6:00 pm" (end = start + serviceMinutes).
+export const parseService = (text, serviceMinutes = DEFAULT_EVENT_DAY.serviceMinutes) => {
+  const t = String(text || "").toLowerCase();
+  const r = new RegExp(`\\b(\\d{1,2})(?::(\\d{2}))?\\s*${MER}?\\s*(?:-|–|—|to|until|till)\\s*(\\d{1,2})(?::(\\d{2}))?\\s*${MER}?`).exec(t);
+  if (r) {
+    let [sh, sm, smer, eh, em, emer] = [Number(r[1]), Number(r[2] || 0), r[3] || "", Number(r[4]), Number(r[5] || 0), r[6] || ""];
+    if (sh > 23 || eh > 23 || sm > 59 || em > 59) return null;
+    eh = emer ? withMer(eh, emer) : eh >= 1 && eh <= 11 ? eh + 12 : eh; // "6-10" ends at 10 pm
+    if (smer) sh = withMer(sh, smer);
+    else if (sh < 12 && sh + 12 <= eh) sh += 12; // "5-8 pm": 5 pm; "11-2 pm": 11 am
+    const start = sh * 60 + sm;
+    let end = eh * 60 + em;
+    if (end <= start) end += 12 * 60;
+    return { start, end };
+  }
+  const one = parseTime(t);
+  return one ? { start: one.h * 60 + one.m, end: one.h * 60 + one.m + serviceMinutes } : null;
+};
+
+const km = (a, b) => {
+  const rad = (d) => (d * Math.PI) / 180;
+  const x = Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lon - a.lon) / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(x));
+};
+
+// One-way drive: { minutes, miles, how } from the event's miles, else its town.
+export const driveFor = (event, timing = DEFAULT_EVENT_DAY) => {
+  const e = event || {};
+  let miles = Number(e.miles) || 0;
+  let how = "miles";
+  if (!miles && e.geo && Number.isFinite(Number(e.geo.lat)) && Number.isFinite(Number(e.geo.lon))) {
+    miles = (km(BOUNTIFUL, { lat: Number(e.geo.lat), lon: Number(e.geo.lon) }) / 1.609) * ROAD_FACTOR;
+    how = "town";
+  }
+  if (!miles) return { minutes: GUESSED_DRIVE, miles: 0, how: "guess" };
+  const minutes = Math.max(10, Math.ceil(((miles / (timing.mph || 45)) * 60) / 5) * 5);
+  return { minutes, miles: Math.round(miles), how };
 };
 
 const pad = (n) => String(n).padStart(2, "0");
 const firstName = (name) => (String(name || "").trim().split(/\s+/)[0] || "").replace(/[^\p{L}'-]/gu, "");
 
+// Minutes after midnight on `date` (can run past midnight) -> "YYYY-MM-DDTHH:MM:00".
+const wall = (date, minutes) => {
+  const [y, mo, d] = date.split("-").map(Number);
+  return new Date(Date.UTC(y, mo - 1, d, 0, minutes)).toISOString().slice(0, 16) + ":00";
+};
+// 1020 -> "5:00 pm"; short drops ":00".
+export const clock = (minutes, { short = false } = {}) => {
+  const m = ((minutes % 1440) + 1440) % 1440;
+  const h = Math.floor(m / 60);
+  const mm = m % 60;
+  return `${h % 12 || 12}${short && !mm ? "" : `:${pad(mm)}`} ${h < 12 ? "am" : "pm"}`;
+};
+// "5–8 pm", "11 am–2 pm", "12:30–3 pm"
+export const clockRange = (a, b) => {
+  const [x, y] = [clock(a, { short: true }), clock(b, { short: true })];
+  const [xt, xm] = x.split(" ");
+  const [, ym] = y.split(" ");
+  return xm === ym ? `${xt}–${y}` : `${x}–${y}`;
+};
+const span = (minutes) => (minutes % 60 ? (minutes > 60 ? `${Math.floor(minutes / 60)} hr ${minutes % 60} min` : `${minutes} min`) : `${minutes / 60} hr`);
+
 // What the entry should look like for this event, or null for no entry.
-export const entryFor = (event, id) => {
+// It covers the whole day's work: leave home, set up, service, pack up, drive
+// home, clean up. The title and description list the service time itself.
+export const entryFor = (event, id, timing = DEFAULT_EVENT_DAY) => {
   const e = event || {};
   if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date || "")) return null;
   if (!["quoted", "booked", "done"].includes(e.status)) return null;
@@ -66,35 +152,56 @@ export const entryFor = (event, id) => {
   const type = String(e.eventType || "").trim();
   const part = String(e.weddingPart || "").trim();
   const guests = Number(e.guests) || 0;
+  const service = parseService(e.time, timing.serviceMinutes);
+  const drive = driveFor(e, timing);
   const summary = [
     tentative ? "(Tentative) " : "",
     String(e.name || "").trim() || type || "Event",
     type && String(e.name || "").trim() ? ` – ${type}${part ? ` (${part.toLowerCase()})` : ""}` : "",
     guests ? `, ${guests} guests` : "",
+    service ? ` · service ${clockRange(service.start, service.end)}` : "",
   ].join("");
-  const description = [
-    tentative ? "Tentative: quoted, not booked yet." : "Booked.",
-    type && `Type: ${type}${part ? ` (${part})` : ""}`,
-    guests && `Guests: ${guests}`,
-    (e.addOns || []).length ? `Add-ons: ${e.addOns.join(", ")}` : "",
-    e.time && `Time: ${e.time}`,
-    [e.name, e.phone].filter(Boolean).join(" · "),
-    `Open in Events: ${SITE}/events?event=${encodeURIComponent(id)}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
-  const at = parseTime(e.time);
-  let start, end;
-  if (at) {
-    const endMin = Math.min(at.h * 60 + at.m + HOURS_LONG * 60, 23 * 60 + 59);
-    start = { dateTime: `${e.date}T${pad(at.h)}:${pad(at.m)}:00`, timeZone: TZ };
-    end = { dateTime: `${e.date}T${pad(Math.floor(endMin / 60))}:${pad(endMin % 60)}:00`, timeZone: TZ };
+
+  let start, end, plan = [];
+  if (service) {
+    const arrive = service.start - timing.setup;
+    const leave = arrive - drive.minutes;
+    const packed = service.end + timing.pack;
+    const home = packed + drive.minutes;
+    const done = home + timing.cleanup;
+    const driveText =
+      drive.how === "guess"
+        ? `${span(drive.minutes)} drive, a guess: add miles to the event`
+        : `${span(drive.minutes)} drive, ${drive.miles} mi${drive.how === "town" ? " estimated from the town" : ""}`;
+    plan = [
+      `Leave by ${clock(leave)} (${driveText})`,
+      `Set up from ${clock(arrive)}`,
+      `SERVICE ${clock(service.start)}–${clock(service.end)}`,
+      timing.pack ? `Pack up until ${clock(packed)}` : "",
+      `Home about ${clock(home)}${timing.cleanup ? `, clean up until ${clock(done)}` : ""}`,
+    ].filter(Boolean);
+    start = { dateTime: wall(e.date, leave), timeZone: TZ };
+    end = { dateTime: wall(e.date, done), timeZone: TZ };
   } else {
     const next = new Date(`${e.date}T12:00:00Z`);
     next.setUTCDate(next.getUTCDate() + 1);
     start = { date: e.date };
     end = { date: next.toISOString().slice(0, 10) };
+    plan = [`No service time yet${e.time ? ` ("${e.time}")` : ""}: add one like "5-8 pm" to block out the day.`];
   }
+  const description = [
+    tentative ? "Tentative: quoted, not booked yet." : "Booked.",
+    ...plan,
+    "",
+    type && `Type: ${type}${part ? ` (${part})` : ""}`,
+    guests && `Guests: ${guests}`,
+    (e.addOns || []).length ? `Add-ons: ${e.addOns.join(", ")}` : "",
+    [e.name, e.phone].filter(Boolean).join(" · "),
+    `Open in Events: ${SITE}/events?event=${encodeURIComponent(id)}`,
+  ]
+    .filter((x) => x !== false && x !== 0 && x != null)
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n");
   return {
     summary,
     description,
@@ -126,13 +233,13 @@ export const findHandMade = (items, event) => {
 
 // What to do for this save. Pure, for tests.
 //   { do: "none" } | { do: "remove" } | { do: "upsert", entry, sig }
-export const planSync = (event, id) => {
+export const planSync = (event, id, timing = DEFAULT_EVENT_DAY) => {
   const cal = (event && event.calendar) || {};
-  if (cal.manual || (cal.optOut && !cal.revive)) return { do: "none" };
-  const entry = entryFor(event, id);
+  if ((cal.manual && !cal.adopt) || (cal.optOut && !cal.revive)) return { do: "none" };
+  const entry = entryFor(event, id, timing);
   if (!entry) return cal.id && !cal.removed ? { do: "remove" } : { do: "none" };
   const sig = sigOf(entry);
-  if (cal.id && cal.sig === sig && !cal.removed && !cal.revive) return { do: "none" };
+  if (cal.id && cal.sig === sig && !cal.removed && !cal.revive && !cal.adopt) return { do: "none" };
   return { do: "upsert", entry, sig };
 };
 
@@ -170,7 +277,7 @@ const dayItems = async (token, calendarId, date) => {
 // again, so a failing sync can't loop.
 export const onlyCalendarChanged = (before, after) => {
   if (!before || !after) return false;
-  if (after.calendar && after.calendar.revive) return false;
+  if (after.calendar && (after.calendar.revive || after.calendar.adopt)) return false;
   const rest = (d) => {
     const { calendar, ...other } = d;
     return JSON.stringify(Object.keys(other).sort().map((k) => [k, other[k]]));
@@ -180,13 +287,17 @@ export const onlyCalendarChanged = (before, after) => {
 
 // Sync one event. Returns the new `calendar` value to save, or undefined for no change.
 export const syncOne = async (id, event, deps = {}) => {
-  const plan = planSync(event, id);
+  const timing = deps.timing || eventDayFrom((await getFirestore().doc("eventSettings/pricing").get()).data());
+  const plan = planSync(event, id, timing);
   if (plan.do === "none") return undefined;
   const token = await (deps.token || (() => accessToken([SCOPE])))();
   const calendarId = await (deps.calendarId || calendarIdNow)();
   const cal = event.calendar || {};
-  const gid = googleIdFor(id);
+  // A hand-made entry the app took over ("Let the app manage it") keeps its own id.
+  const adopted = !!((cal.adopt || cal.adopted) && cal.id);
+  const gid = adopted ? cal.id : googleIdFor(id);
   const at = Date.now();
+  const mark = adopted ? { adopted: true } : {};
 
   if (plan.do === "remove") {
     try {
@@ -194,7 +305,7 @@ export const syncOne = async (id, event, deps = {}) => {
     } catch (e) {
       if (![404, 410].includes(e.status)) throw e;
     }
-    return { id: gid, removed: true, at };
+    return { id: gid, removed: true, at, ...mark };
   }
 
   let current = null;
@@ -205,11 +316,15 @@ export const syncOne = async (id, event, deps = {}) => {
   }
   if (current && current.status === "cancelled" && !cal.removed && !cal.revive) {
     // Deleted in Google Calendar: keep it off.
-    return { id: gid, optOut: true, at };
+    return { id: gid, optOut: true, at, ...mark };
   }
   if (current) {
     await api(token, calendarId, `/${gid}`, { method: "PATCH", body: JSON.stringify(plan.entry) });
-    return { id: gid, sig: plan.sig, at };
+    return { id: gid, sig: plan.sig, at, ...mark };
+  }
+  if (adopted) {
+    // The hand-made entry is gone for good: make the app's own entry instead.
+    return syncOne(id, { ...event, calendar: { revive: true } }, { ...deps, timing });
   }
   const handMade = findHandMade(await dayItems(token, calendarId, event.date), event);
   if (handMade) return { id: handMade.id, manual: true, at };

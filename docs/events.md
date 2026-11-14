@@ -272,17 +272,45 @@ in `eventSettings/emails.autoReply`; with nothing saved, the defaults in
 | Booked or Done | the same entry, confirmed, normal color |
 | Inquiry, Lost, no date, or deleted in the app | removed |
 
-The entry follows changes to the date, time, place, guests and type. The time
-field is free text: "5:30 pm", "5pm", "around 6" (read as pm) become a
-2.5-hour entry, and anything else makes an all-day entry. The description has
-the type, guests, add-ons, time as typed, name and phone, and a link to the
-event.
+The entry follows changes to the date, time, place, guests and type.
+
+It blocks out the whole day: from leaving home to the end of cleanup. The title
+ends with the service time ("· service 5–8 pm"), and the description lists the
+day:
+
+- Leave by 3:20 pm (40 min drive, 30 mi)
+- Set up from 4:00 pm
+- SERVICE 5:00 pm–8:00 pm
+- Pack up until 8:30 pm
+- Home about 9:10 pm, clean up until 9:40 pm
+
+**Service time.** The time field is free text. "5-8 pm", "11-2pm" (11 am to
+2 pm), "12:30 pm to 3" and "7-10" (pm) are read as a range. A single time
+("6 pm", "around 6", read as pm) gets the default service length. Anything
+else ("Evening") makes an all-day entry that asks for a time.
+
+**Drive.** The event's one-way miles at the average speed, rounded up to 5
+minutes, never under 10. With no miles, it uses the straight-line distance from
+Bountiful to the event's town × 1.25. With neither, it guesses 30 minutes and
+says so.
+
+**Settings.** Set-up (60), pack-up (30), cleanup (30), service length when only
+a start is given (150) and average speed (45 mph) are under **Events → Pricing →
+Event day**, saved as `eventSettings/pricing.eventDay` and never published.
+Saving new times, or **Update calendar entries now**, redoes the upcoming
+entries.
+
+The description also has the type, guests, add-ons, name and phone, and a link
+to the event.
 
 - **Ids.** Each entry's Google id is `ev` + the event id in hex, so quick saves
   never make two entries.
 - **Entries you already made.** If that day already has an entry with the
   customer's first name in its title, it's linked (`calendar.manual`) instead
-  of adding another, and the app never changes or deletes it.
+  of adding another, and the app leaves it alone. **Let the app manage it** in
+  the event (`calendar.adopt`) takes that same entry over: it gets the app's
+  title, times and description and stays in step from then on
+  (`calendar.adopted`, keeping your entry's id).
 - **Deleted in Google Calendar** means "keep it off": the app leaves it off
   (`calendar.optOut`) until **Put it back on my calendar** in the event.
 - **The event editor's Calendar line** shows where the event stands. **Add it
