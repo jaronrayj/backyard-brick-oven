@@ -5,6 +5,8 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { saveInquiryEvent, runDoughReminders } from "./events.js";
 import { sendPush, runMorningSummary, runWrapUpReminder } from "./push.js";
 import { runReviewAsks } from "./reviewAsk.js";
+import { sendAutoReply } from "./autoReply.js";
+import { runTastingReminders } from "./tasting.js";
 import { runMoneyDay } from "./money.js";
 import { eventLink } from "./links.js";
 
@@ -196,6 +198,8 @@ export const sendInquiry = onRequest(
           .join(" · "),
         link: eventLink(eventId),
       });
+      // Thank them right away with what they sent (wording under Events > Emails).
+      await sendAutoReply(body, eventId);
       logger.info("Inquiry email sent");
       return res.status(200).json({ ok: true });
     } catch (err) {
@@ -221,7 +225,7 @@ export { moneyToMove, markMoneyMoved } from "./money.js";
 export const notificationTimer = onSchedule(
   { schedule: "*/15 * * * *", timeZone: "America/Denver", secrets: [GMAIL_APP_PASSWORD], region: "us-central1" },
   async () => {
-    for (const [name, run] of [["dough reminders", runDoughReminders], ["morning summary", runMorningSummary], ["wrap-up reminder", runWrapUpReminder], ["review emails", runReviewAsks], ["money day", runMoneyDay]]) {
+    for (const [name, run] of [["dough reminders", runDoughReminders], ["morning summary", runMorningSummary], ["wrap-up reminder", runWrapUpReminder], ["review emails", runReviewAsks], ["tasting reminders", runTastingReminders], ["money day", runMoneyDay]]) {
       try {
         await run();
       } catch (err) {
@@ -233,3 +237,5 @@ export const notificationTimer = onSchedule(
 export { countStep } from "./stats.js";
 export { pizzaFridaysCalendar } from "./pizzaFridayFeed.js";
 export { sendSignup } from "./signup.js";
+export { syncEventCalendar } from "./calendarSync.js";
+export { sendQuoteEmail, tastingInfo, pickTasting } from "./tasting.js";

@@ -17,8 +17,11 @@ import useEventAdmin from './useEventAdmin'
 import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 import ComboBox from '../../components/ComboBox'
 import Report from './Report'
+import Emails from './Emails'
+import QuoteEmail from './QuoteEmail'
 import FollowUp from './FollowUp'
 import ReviewAsk from './ReviewAsk'
+import CalendarLine from './CalendarLine'
 import { changeEntries, entry, followUpDue } from './history'
 import { DEFAULT_PRICING, STATUSES, addOnName, money, newQuote, prettyDate, publicPricing, quoteText, totals, travelZones } from './quote'
 import {
@@ -406,6 +409,11 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
       // Written by the review email job and the Don't send button, not by Save.
       delete fields.reviewAsk
       delete fields.reviewAskSkip
+      // Written by the calendar sync (functions/calendarSync.js) and its buttons.
+      delete fields.calendar
+      // Written by the quote email and the tasting page (functions/tasting.js).
+      delete fields.tasting
+      delete fields.quoteEmailedAt
       const numOr = (v) => (v === '' || v == null ? '' : Number(v))
       let data = {
         ...fields,
@@ -558,6 +566,8 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
 
       <ReviewAsk event={event} isNew={!id} onSkip={skipReview} />
 
+      <CalendarLine id={id} event={event} />
+
       <Field label="Your notes">
         <textarea className={input} rows={3} value={event.notes} onChange={(e) => set({ notes: e.target.value })} />
       </Field>
@@ -578,6 +588,9 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
         <h3 className="font-semibold">Quote</h3>
         <QuoteEditor event={event} pricing={pricing} onChange={(quote) => set({ quote })} />
       </section>
+
+      {/* Sending changes the event on the server (Quoted, history), so the editor closes after. */}
+      <QuoteEmail id={id} event={event} initial={initial} onSent={() => onClose()} />
 
       {error && <p className="text-sm text-red-700">{error}</p>}
       <div className="flex flex-wrap gap-2 justify-between">
@@ -917,6 +930,13 @@ const Events = () => {
       </Shell>
     )
   }
+  if (editing === 'emails') {
+    return (
+      <Shell>
+        <Emails onClose={() => setEditing(null)} />
+      </Shell>
+    )
+  }
   if (editing === 'settings') {
     return (
       <Shell>
@@ -940,6 +960,9 @@ const Events = () => {
         </button>
         <button type="button" className={btnQuiet} onClick={() => setEditing('settings')}>
           Pricing
+        </button>
+        <button type="button" className={btnQuiet} onClick={() => setEditing('emails')}>
+          Emails
         </button>
         <button type="button" className={btnPrimary} onClick={() => setEditing({ id: null, event: blankEvent() })}>
           + New event

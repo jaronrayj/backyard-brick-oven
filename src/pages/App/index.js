@@ -6,6 +6,7 @@ import Navbar from '../Navbar'
 import Order from '../Order'
 import Inquiries from '../Inquiries'
 import Hello from '../Hello'
+import Tasting from '../Tasting'
 import { isTeamPath } from '../../utils/teamPaths'
 import { startTracking, track } from '../../utils/track'
 
@@ -69,6 +70,7 @@ const Shell = () => {
           <Route exact path="/order" element={<Order />} />
           <Route exact path="/inquiries" element={<Inquiries />} />
           <Route exact path="/hello" element={<Hello />} />
+          <Route exact path="/tasting" element={<Tasting />} />
           <Route exact path="/admin/menu" element={<MenuAdmin />} />
           <Route exact path="/admin/signups" element={<Signups />} />
           <Route exact path="/planner" element={<Planner />} />

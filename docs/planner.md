@@ -52,7 +52,7 @@ shopping list, and take no share of the toppings.
 ## From your calendar
 
 Under Services, "From your calendar" lists the next two weeks of the business
-calendar (the same one Wrap-up reads. "Clear finished services" (under Services, once a service's day has passed) removes past services (and their prep); upcoming services, picked pizzas, your own items and all checkmarks stay (your own prep items for past days go too). On the Prep tab, dough and prep share one day per service: the mix day ("mix days
+calendar (the same one Wrap-up reads. Services clear themselves the morning after their day: when the plan loads, any service dated before today is removed (with its prep) and the plan is saved. Your own prep items stay, so unchecked ones still show under "Missed". If the Planner is left open past midnight, "Clear finished services" (under Services) does the same by hand, and also removes your own prep items for past days. On the Prep tab, dough and prep share one day per service: the mix day ("mix days
 before service"), with poolish the evening before. Each dough day has a **Dough & prep
 day** picker that moves it (saved as `prepOn` on those services; **Reset day** goes back),
 and your own items on that day move with it. The sheet's "prep days before service"

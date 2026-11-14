@@ -20,7 +20,7 @@ if (!getApps().length) initializeApp();
 
 const TRACKER = "1osNU39tVU3GrkrgSiR7Mw1kdE6ErDxnu5R3nu0K0izQ"; // money tracker
 const TAB = "Form Responses";
-const DEFAULT_CALENDAR = "9c2393d979144f8e78849fe80c79ccb0c6b45a0c2748dce33725e181a1fdd343@group.calendar.google.com"; // "pizza events" (owned by jj.backyardbrickoven@gmail.com)
+export const DEFAULT_CALENDAR = "9c2393d979144f8e78849fe80c79ccb0c6b45a0c2748dce33725e181a1fdd343@group.calendar.google.com"; // "pizza events" (owned by jj.backyardbrickoven@gmail.com)
 const TZ = "America/Denver";
 const SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets",
@@ -92,10 +92,19 @@ export const calendarItem = (e) => {
     location: String(e.location || "").trim(),
     notes: stripHtml(e.description),
     endsAt: (e.end && e.end.dateTime) || "", // ISO; blank for all-day entries
+    // Quoted events the app put on the calendar (calendarSync.js), or anything marked tentative.
+    tentative: e.status === "tentative" || /^\(tentative\)/i.test(String(e.summary || "").trim()),
+    eventId: (e.extendedProperties && e.extendedProperties.private && e.extendedProperties.private.byboEvent) || "", // set by calendarSync.js and tasting.js
+    // A tasting booked from a quote email (functions/tasting.js).
+    tasting: !!(e.extendedProperties && e.extendedProperties.private && e.extendedProperties.private.byboTasting),
   };
 };
 
-const readCalendar = async (token, calendarId, fromISO, toISO) => {
+// Tentative entries (quoted, not booked) and tastings are left out unless asked
+// for: they aren't services, so the Planner's suggestions, wrap-up and the Pizza
+// Fridays feed skip them. The Planner's Calendar tab shows both; the morning
+// summary shows tastings.
+const readCalendar = async (token, calendarId, fromISO, toISO, { tentative = false, tastings = false } = {}) => {
   const params = new URLSearchParams({
     timeMin: `${fromISO}T00:00:00-07:00`,
     timeMax: `${toISO}T23:59:59-07:00`,
@@ -107,14 +116,19 @@ const readCalendar = async (token, calendarId, fromISO, toISO) => {
     token,
     `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params}`
   );
-  return (data.items || []).filter((e) => e.status !== "cancelled").map(calendarItem);
+  return (data.items || [])
+    .filter((e) => e.status !== "cancelled")
+    .map(calendarItem)
+    .filter((c) => (tentative || !c.tentative) && (tastings || !c.tasting));
 };
 
 // Business calendar entries from..to (YYYY-MM-DD), for the morning summary.
-export const calendarBetween = async (fromISO, toISO) => {
-  const settings = (await getFirestore().doc("eventSettings/wrapUp").get()).data() || {};
-  const calendarId = settings.calendarId || DEFAULT_CALENDAR;
-  return { calendarId, items: await readCalendar(await accessToken(), calendarId, fromISO, toISO) };
+// The business calendar's id: eventSettings/wrapUp.calendarId, or "pizza events".
+export const calendarIdNow = async () => ((await getFirestore().doc("eventSettings/wrapUp").get()).data() || {}).calendarId || DEFAULT_CALENDAR;
+
+export const calendarBetween = async (fromISO, toISO, options) => {
+  const calendarId = await calendarIdNow();
+  return { calendarId, items: await readCalendar(await accessToken(), calendarId, fromISO, toISO, options) };
 };
 
 // Calendar entries with a wrap-up saved or skipped (Firestore wrapUps/{id}):

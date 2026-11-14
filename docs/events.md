@@ -152,7 +152,8 @@ planner's Dough tab. The bell → Notification times sets when they go out and w
    still missing, with the service account email to use:
    - Share the money tracker sheet with that email as **Editor**.
    - In Google Calendar, share the "pizza events" calendar with that email:
-     "See all event details".
+     **"Make changes to events"** (the calendar sync below writes entries;
+     reading alone needs only "See all event details").
    - Turn on the Google Calendar API for the project if the page says it's off.
    Then turn off "Accepting responses" on the money tracker Google Form.
 3. **Set your prices.** Open `/events` → Pricing: tax rate, deposit, add-on
@@ -241,3 +242,90 @@ If the calendar can't be read, the feed answers 503 rather than an empty
 calendar, so subscribers' apps keep the Fridays they already have.
 
 The old public "Pizza Fridays" Google Calendar is no longer used.
+
+## Automatic reply to inquiries
+
+A minute after a website inquiry with an email address comes in,
+`functions/autoReply.js` (called from `sendInquiry`) emails them from the
+business Gmail, with Reply-To set to that Gmail. The email thanks them, lists
+what they sent (type, date, service time, place, guests, extras, their note,
+leaving out anything blank) and says the quote is coming within a day or two.
+The event's history gets "Automatic reply sent to …". If the reply fails, the
+inquiry still goes through. Inquiries with only a phone number get nothing.
+
+The wording is edited under **Events → Emails**: on/off, subject and message,
+with a live preview for a wedding and a party. `{name}` (same greeting as the
+review email), `{event}` ("your wedding" / "your party" / "your pizza class" /
+"your event") and `{details}` (the list) fill in for each inquiry. It's saved
+in `eventSettings/emails.autoReply`; with nothing saved, the defaults in
+`replyText.js` are used. `functions/replyText.js` is copied byte for byte to
+`src/pages/Events/replyText.js` for the preview, and a test checks they match.
+
+## Events on the calendar
+
+`functions/calendarSync.js` (`syncEventCalendar`, runs on every save of
+`events/{id}`) keeps one entry per event on the pizza events calendar:
+
+| Event | Calendar entry |
+| --- | --- |
+| Quoted, with a date | "(Tentative) Name – Type, N guests", gray, status tentative |
+| Booked or Done | the same entry, confirmed, normal color |
+| Inquiry, Lost, no date, or deleted in the app | removed |
+
+The entry follows changes to the date, time, place, guests and type. The time
+field is free text: "5:30 pm", "5pm", "around 6" (read as pm) become a
+2.5-hour entry, and anything else makes an all-day entry. The description has
+the type, guests, add-ons, time as typed, name and phone, and a link to the
+event.
+
+- **Ids.** Each entry's Google id is `ev` + the event id in hex, so quick saves
+  never make two entries.
+- **Entries you already made.** If that day already has an entry with the
+  customer's first name in its title, it's linked (`calendar.manual`) instead
+  of adding another, and the app never changes or deletes it.
+- **Deleted in Google Calendar** means "keep it off": the app leaves it off
+  (`calendar.optOut`) until **Put it back on my calendar** in the event.
+- **The event editor's Calendar line** shows where the event stands. **Add it
+  now** syncs an event saved before this existed. Save never writes
+  `calendar`; only the sync and those buttons (`calendar.revive`) do.
+- **No loops.** Saves that change nothing but `calendar` don't sync again, so
+  a failing sync records `calendar.error` once and stops. The next real save,
+  or **Try again**, retries.
+- **Tentative entries** stay off the Planner's "From your calendar", wrap-up,
+  the morning summary and the Pizza Fridays feed (`readCalendar` in
+  `wrapup.js`). The Planner's Calendar tab shows them. The morning summary
+  also skips entries the app made for booked events, since it already lists
+  them as "Event today".
+
+## Quote email and tastings
+
+**Email the quote** (event editor, under the quote) sends the quote from the
+business Gmail to the event's email address. The message starts from the
+wording under **Events → Emails** and can be changed for each email. `{quote}`
+becomes the quote table (lines, tax, total, deposit as an amount, the quote's
+bottom note). `{tasting}` becomes the tasting invite, but only when tasting
+times are added, with a button per time. It's built in the browser
+(`src/pages/Events/quoteEmailText.js`, previewed exactly as sent) and sent by
+`sendQuoteEmail` (`functions/tasting.js`, admins only). That moves an Inquiry
+to Quoted, adds "Quote emailed to …" (and the offered times) to the history,
+and sets `quoteEmailedAt`. The button waits until the event is saved, has a
+quote and has an email address. The editor closes after sending.
+
+**Tastings.** Offering times makes `tastings/{token}` (server only). Each
+button links to `/tasting?t=<token>&i=<n>` (`src/pages/Tasting`), where they
+confirm a time (`tastingInfo` / `pickTasting`). Past times can't be picked,
+and the first pick wins. A pick:
+- saves `tasting.picked` on the event, with a history line
+- emails them the confirmation with the tasting address
+- sends you a notification
+- adds "Tasting: <name>" to the pizza events calendar (needs "Make changes to
+  events" sharing)
+
+At 9 am the day before, they get a reminder (`runTastingReminders` in
+`notificationTimer`). The address, length (default 60 minutes), confirmation
+and reminder are under Events → Emails (`eventSettings/emails.tasting`). The
+address appears only in those two emails.
+
+Tasting entries carry `byboTasting`. Wrap-up, the Planner's "From your
+calendar" and the Pizza Fridays feed skip them; the morning summary and the
+Planner's Calendar tab show them.
