@@ -1342,7 +1342,12 @@ export function mountPlanner(root, deps) {
     else if (firstPlan) PLAN = defaultPlan();
     PLAN.services = PLAN.services || []; PLAN.tweaks = PLAN.tweaks || {}; PLAN.bring = PLAN.bring || []; PLAN.extras = PLAN.extras || []; PLAN.where = PLAN.where || {};
     firstPlan = false;
-    if (REF && migratePizzas() && canWrite) savePlan();
+    /* Services clear themselves once their day is over (the morning after). Your
+       own prep items stay, so unchecked ones still show under "Missed". */
+    const before = PLAN.services.length, today = todayStr();
+    PLAN.services = PLAN.services.filter((s) => !s.date || s.date >= today);
+    const cleared = PLAN.services.length < before;
+    if (((REF && migratePizzas()) || cleared) && canWrite) savePlan();
     renderAll();
   }, () => { $('#save-status').textContent = 'The plan couldn\'t load. Reload the page.'; }));
   unsubs.push(db.doc('plan/checks').onSnapshot((snap) => {
