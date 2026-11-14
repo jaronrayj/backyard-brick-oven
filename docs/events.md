@@ -197,30 +197,36 @@ Events from before this change show one "Added" line from `createdAt`.
 ## Poster page (/hello)
 
 `/hello` is the landing page for the QR code on event posters
-(`src/pages/Hello`). The freebie needs no sign-up; the email list is optional:
+(`src/pages/Hello`). One job: trade free Roasted Garlic Breadsticks or a
+F'Zookie for an email address, then ask for a follow.
 
-- Free Roasted Garlic Breadsticks or a F'Zookie for showing the screen at any
-  Pizza Friday (on trust, no code). Names and photos come from the menu
-  (Realtime Database `pizzas`), so a new menu photo shows up there too.
-- **Follow us!** Instagram and Facebook buttons in their brand colors, right
-  under the freebie.
-- **Email list:** email (required) and first name (optional), sent to
-  `/api/signup` (`functions/signup.js`, rules shared with the page in
-  `signupText.js`, copied byte for byte to `src/pages/Hello/`). Saved to
-  Firestore `signups/{id}` (id from the email, so signing up twice keeps the
-  first). Only the function writes; admins read the list at
-  **/admin/signups** (Email list on the team home, not a tab) with a CSV
-  download. No email per sign-up, since a busy event could bring dozens.
-- The next Pizza Fridays (`upcomingPizzaFridays`), hours and directions.
-- Add Pizza Fridays to your calendar (also the home page's "Pizza Friday
-  calendar" button): subscribes to the site's own feed,
-  `backyardbrickovenpizza.com/pizza-fridays.ics` (`functions/pizzaFridayFeed.js`,
-  `src/utils/calendarLinks.js`). Apple through `webcal://`, Google by URL.
-- Book us for your event (`/inquiries`).
+1. **The offer:** FREE breadsticks or F'Zookie with menu photos (Realtime
+   Database `pizzas`), an email box (required) and first name (optional),
+   "Get my freebie".
+2. **After signing up:** the freebie ticket to show at the counter (first name
+   and sign-up date, remembered on that phone in `localStorage`), then
+   **One more thing: follow us!** with brand-colored Instagram and Facebook buttons.
+3. One line at the bottom: Pizza Friday hours, directions, and Book us
+   (`/inquiries`).
 
-The Report shows `hello_view` (opened `/hello`), `hello_follow` (tapped Follow),
-`hello_signup` (joined the email list) and `hello_calendar` (tapped an
-add-to-calendar button).
+**Sign-ups** go to `/api/signup` (`functions/signup.js`; rules shared with the
+page in `signupText.js`, copied byte for byte to `src/pages/Hello/`). Saved to
+Firestore `signups/{id}` (id from the email, so signing up twice keeps the
+first). Only the function writes; admins read the list at **/admin/signups**
+(Email list on the team home, not a tab) with a CSV download for an email tool.
+
+**Welcome email:** a new sign-up gets one from the business Gmail
+(`functions/welcomeText.js`): the freebie, follow buttons, Book us, and
+"reply unsubscribe". At most `WELCOME_DAILY_CAP` (150) a day, counted in
+`signupStats/{day}` (Utah date), since Gmail allows about 500 sends a day for
+everything and a lockout would also stop quotes and reminders. Past the cap
+the sign-up is still saved, just without the email; `signups/{id}.welcomed`
+says whether it went. Send newsletters to the list from an email tool
+(Mailchimp or similar), never from Gmail.
+
+The Report shows `hello_view` (opened `/hello`), `hello_signup` (joined the
+list) and `hello_follow` (tapped Follow). `hello_calendar` is from the old
+add-to-calendar buttons, which are gone from this page.
 
 ## Pizza Fridays feed
 
