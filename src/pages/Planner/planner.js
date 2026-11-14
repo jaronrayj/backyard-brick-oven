@@ -1342,12 +1342,17 @@ export function mountPlanner(root, deps) {
   canCheck = deps.canCheck !== undefined ? !!deps.canCheck : !!deps.canWrite;
   if (!deps.canWrite) setReadOnly(true);
   let firstPlan = true;
+  /* The plan as this device last cached it can be out of date (another phone changed it since,
+     or this browser hasn't opened the Planner in a while). Show it right away, but never save
+     on its own (menu updates, clearing finished services) until the server has confirmed it. */
+  let planFresh = false;
   unsubs.push(db.doc('ref/snapshot').onSnapshot((snap) => {
-    if (snap.exists) { REF = snap.data(); if (PLAN && migratePizzas() && canWrite) savePlan(); renderAll(); }
+    if (snap.exists) { REF = snap.data(); if (PLAN && planFresh && migratePizzas() && canWrite) savePlan(); renderAll(); }
     showDataStatus();
   }, () => { dataProblem('The saved recipe and menu couldn\'t load. Reload the page.'); }));
   unsubs.push(db.doc('plan/current').onSnapshot((snap) => {
     if (snap.metadata.hasPendingWrites) return;
+    planFresh = !snap.metadata.fromCache;
     if (localPending) return;
     if (snap.exists && snap.data()._by === TAB && !firstPlan) return;
     if (snap.exists) { const d = JSON.parse(JSON.stringify(snap.data())); delete d._by; delete d._rev; PLAN = d; }
@@ -1359,7 +1364,7 @@ export function mountPlanner(root, deps) {
     const before = PLAN.services.length, today = todayStr();
     PLAN.services = PLAN.services.filter((s) => !s.date || s.date >= today);
     const cleared = PLAN.services.length < before;
-    if (((REF && migratePizzas()) || cleared) && canWrite) savePlan();
+    if (planFresh && ((REF && migratePizzas()) || cleared) && canWrite) savePlan();
     renderAll();
   }, () => { $('#save-status').textContent = 'The plan couldn\'t load. Reload the page.'; }));
   unsubs.push(db.doc('plan/checks').onSnapshot((snap) => {

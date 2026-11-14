@@ -25,9 +25,12 @@ const store = {
     const ref = doc(db, 'planner', DOCS[path])
     return {
       set: (data) => setDoc(ref, data),
+      // Metadata changes too, so the Planner hears when a copy from this
+      // device's cache is confirmed by the server (metadata.fromCache: false).
       onSnapshot: (next, error) =>
         onSnapshot(
           ref,
+          { includeMetadataChanges: true },
           (snap) => next({ exists: snap.exists(), data: () => snap.data(), metadata: snap.metadata }),
           error
         ),

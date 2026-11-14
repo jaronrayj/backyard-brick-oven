@@ -12,7 +12,7 @@ const fakeStore = (docs) => {
       },
       onSnapshot: (next) => {
         const data = docs[path]
-        next({ exists: !!data, data: () => data, metadata: { hasPendingWrites: false } })
+        next({ exists: !!data, data: () => data, metadata: { hasPendingWrites: false, fromCache: false } })
         return () => {}
       },
     }),
@@ -59,6 +59,41 @@ test('nothing finished: nothing is saved', async () => {
   jest.advanceTimersByTime(1000)
   for (let i = 0; i < 5; i += 1) await Promise.resolve() // let the save finish
   expect(store.saved['plan/current']).toBeUndefined()
+  if (typeof stop === 'function') stop()
+  jest.useRealTimers()
+})
+
+test("a copy from this device's cache is never saved over the server's plan", async () => {
+  jest.useFakeTimers()
+  const saved = {}
+  let deliver = null
+  const store = {
+    doc: (path) => ({
+      set: (data) => {
+        saved[path] = data
+        return Promise.resolve()
+      },
+      onSnapshot: (next) => {
+        if (path === 'plan/current') deliver = next
+        else next({ exists: false, data: () => undefined, metadata: { hasPendingWrites: false, fromCache: false } })
+        return () => {}
+      },
+    }),
+  }
+  const root = document.createElement('div')
+  const stop = mountPlanner(root, { store, canWrite: true, pizzas: () => () => {} })
+  // An old cached plan with a finished service: shown, but not saved.
+  const old = { services: [{ id: 'last-week', date: iso(-8), type: 'pf' }, { id: 'next', date: iso(6), type: 'pf' }] }
+  deliver({ exists: true, data: () => old, metadata: { hasPendingWrites: false, fromCache: true } })
+  jest.advanceTimersByTime(1000)
+  for (let i = 0; i < 5; i += 1) await Promise.resolve()
+  expect(saved['plan/current']).toBeUndefined()
+  // The server answers with the real plan: now finished services are cleared and saved.
+  const real = { services: [{ id: 'last-week', date: iso(-8), type: 'pf' }, { id: 'new', date: iso(2), type: 'wedding' }] }
+  deliver({ exists: true, data: () => real, metadata: { hasPendingWrites: false, fromCache: false } })
+  jest.advanceTimersByTime(1000)
+  for (let i = 0; i < 5; i += 1) await Promise.resolve()
+  expect(saved['plan/current'].services.map((s) => s.id)).toEqual(['new'])
   if (typeof stop === 'function') stop()
   jest.useRealTimers()
 })
