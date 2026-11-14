@@ -22,7 +22,7 @@ import { GMAIL_APP_PASSWORD, GMAIL_USER, sendMail } from "./mail.js";
 import { sendPush } from "./push.js";
 import { requireRole } from "./team.js";
 import { accessToken } from "./google.js";
-import { DEFAULT_CALENDAR } from "./wrapup.js";
+import { calendarIdNow } from "./wrapup.js";
 import { eventLink } from "./links.js";
 import { DEFAULT_TASTING, renderTastingEmail, tastingWhen } from "./replyText.js";
 
@@ -145,8 +145,7 @@ export const tastingInfo = onCall({ invoker: "public" }, async (request) => {
 
 // Calendar entry for a picked tasting (needs "Make changes to events" sharing).
 const addTastingToCalendar = async (token, t, at, place) => {
-  const settings = (await getFirestore().doc("eventSettings/wrapUp").get()).data() || {};
-  const calendarId = settings.calendarId || DEFAULT_CALENDAR;
+  const calendarId = await calendarIdNow();
   const start = new Date(at);
   const end = new Date(start.getTime() + (Number(t.minutes) || 60) * 60000);
   const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`, {

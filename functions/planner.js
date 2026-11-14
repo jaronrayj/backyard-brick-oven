@@ -223,12 +223,13 @@ export const plannerCalendar = onCall({ invoker: "public" }, async (request) => 
     ({ from, to } = want);
   }
   try {
-    // Tastings too, so they show on the Calendar tab; "From your calendar" leaves them out.
-    const { items } = await calendarBetween(from, to, { tastings: true });
+    // Tentative (quoted) entries and tastings too, so held dates and tastings show
+    // on the Calendar tab; the Plan tab's "From your calendar" leaves both out.
+    const { items } = await calendarBetween(from, to, { tentative: true, tastings: true });
     return {
       items: items
         .filter((c) => c.date >= from && c.date <= to)
-        .map(({ id, title, date, time, location, notes, tasting }) => ({ id, title, date, time, location, notes: notes.slice(0, 500), tasting })),
+        .map(({ id, title, date, time, location, notes, tentative, tasting }) => ({ id, title, date, time, location, notes: notes.slice(0, 500), tentative, tasting })),
     };
   } catch (e) {
     logger.error("Planner calendar read failed", e);

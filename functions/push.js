@@ -173,7 +173,9 @@ export const runMorningSummary = async () => {
     const lines = [];
     try {
       const { items } = await calendarBetween(today, today, { tastings: true });
-      for (const c of items.filter((x) => x.date === today)) {
+      // Entries the app made for booked events are listed below as "Event today"
+      // (tastings carry their event too, but aren't listed there, so keep them).
+      for (const c of items.filter((x) => x.date === today && (!x.eventId || x.tasting))) {
         lines.push(`${c.time || "All day"}: ${c.title || "(no title)"}${c.location ? ` · ${c.location}` : ""}`);
       }
     } catch (e) {

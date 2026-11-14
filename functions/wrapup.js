@@ -92,15 +92,19 @@ export const calendarItem = (e) => {
     location: String(e.location || "").trim(),
     notes: stripHtml(e.description),
     endsAt: (e.end && e.end.dateTime) || "", // ISO; blank for all-day entries
+    // Quoted events the app put on the calendar (calendarSync.js), or anything marked tentative.
+    tentative: e.status === "tentative" || /^\(tentative\)/i.test(String(e.summary || "").trim()),
+    eventId: (e.extendedProperties && e.extendedProperties.private && e.extendedProperties.private.byboEvent) || "", // set by calendarSync.js and tasting.js
     // A tasting booked from a quote email (functions/tasting.js).
     tasting: !!(e.extendedProperties && e.extendedProperties.private && e.extendedProperties.private.byboTasting),
   };
 };
 
-// Tastings are left out unless asked for: they aren't services, so wrap-up, the
-// Planner's suggestions and the Pizza Fridays feed skip them. The morning
-// summary and the Planner's Calendar tab show them.
-const readCalendar = async (token, calendarId, fromISO, toISO, { tastings = false } = {}) => {
+// Tentative entries (quoted, not booked) and tastings are left out unless asked
+// for: they aren't services, so the Planner's suggestions, wrap-up and the Pizza
+// Fridays feed skip them. The Planner's Calendar tab shows both; the morning
+// summary shows tastings.
+const readCalendar = async (token, calendarId, fromISO, toISO, { tentative = false, tastings = false } = {}) => {
   const params = new URLSearchParams({
     timeMin: `${fromISO}T00:00:00-07:00`,
     timeMax: `${toISO}T23:59:59-07:00`,
@@ -115,13 +119,15 @@ const readCalendar = async (token, calendarId, fromISO, toISO, { tastings = fals
   return (data.items || [])
     .filter((e) => e.status !== "cancelled")
     .map(calendarItem)
-    .filter((c) => tastings || !c.tasting);
+    .filter((c) => (tentative || !c.tentative) && (tastings || !c.tasting));
 };
 
 // Business calendar entries from..to (YYYY-MM-DD), for the morning summary.
+// The business calendar's id: eventSettings/wrapUp.calendarId, or "pizza events".
+export const calendarIdNow = async () => ((await getFirestore().doc("eventSettings/wrapUp").get()).data() || {}).calendarId || DEFAULT_CALENDAR;
+
 export const calendarBetween = async (fromISO, toISO, options) => {
-  const settings = (await getFirestore().doc("eventSettings/wrapUp").get()).data() || {};
-  const calendarId = settings.calendarId || DEFAULT_CALENDAR;
+  const calendarId = await calendarIdNow();
   return { calendarId, items: await readCalendar(await accessToken(), calendarId, fromISO, toISO, options) };
 };
 
