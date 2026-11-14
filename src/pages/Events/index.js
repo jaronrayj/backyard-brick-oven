@@ -18,6 +18,7 @@ import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 import ComboBox from '../../components/ComboBox'
 import Report from './Report'
 import Emails from './Emails'
+import QuoteEmail from './QuoteEmail'
 import FollowUp from './FollowUp'
 import ReviewAsk from './ReviewAsk'
 import CalendarLine from './CalendarLine'
@@ -410,6 +411,9 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
       delete fields.reviewAskSkip
       // Written by the calendar sync (functions/calendarSync.js) and its buttons.
       delete fields.calendar
+      // Written by the quote email and the tasting page (functions/tasting.js).
+      delete fields.tasting
+      delete fields.quoteEmailedAt
       const numOr = (v) => (v === '' || v == null ? '' : Number(v))
       let data = {
         ...fields,
@@ -584,6 +588,9 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
         <h3 className="font-semibold">Quote</h3>
         <QuoteEditor event={event} pricing={pricing} onChange={(quote) => set({ quote })} />
       </section>
+
+      {/* Sending changes the event on the server (Quoted, history), so the editor closes after. */}
+      <QuoteEmail id={id} event={event} initial={initial} onSent={() => onClose()} />
 
       {error && <p className="text-sm text-red-700">{error}</p>}
       <div className="flex flex-wrap gap-2 justify-between">

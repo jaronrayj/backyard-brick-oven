@@ -20,7 +20,7 @@ if (!getApps().length) initializeApp();
 
 const TRACKER = "1osNU39tVU3GrkrgSiR7Mw1kdE6ErDxnu5R3nu0K0izQ"; // money tracker
 const TAB = "Form Responses";
-const DEFAULT_CALENDAR = "9c2393d979144f8e78849fe80c79ccb0c6b45a0c2748dce33725e181a1fdd343@group.calendar.google.com"; // "pizza events" (owned by jj.backyardbrickoven@gmail.com)
+export const DEFAULT_CALENDAR = "9c2393d979144f8e78849fe80c79ccb0c6b45a0c2748dce33725e181a1fdd343@group.calendar.google.com"; // "pizza events" (owned by jj.backyardbrickoven@gmail.com)
 const TZ = "America/Denver";
 const SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets",
@@ -94,14 +94,17 @@ export const calendarItem = (e) => {
     endsAt: (e.end && e.end.dateTime) || "", // ISO; blank for all-day entries
     // Quoted events the app put on the calendar (calendarSync.js), or anything marked tentative.
     tentative: e.status === "tentative" || /^\(tentative\)/i.test(String(e.summary || "").trim()),
-    eventId: (e.extendedProperties && e.extendedProperties.private && e.extendedProperties.private.byboEvent) || "", // set by calendarSync.js
+    eventId: (e.extendedProperties && e.extendedProperties.private && e.extendedProperties.private.byboEvent) || "", // set by calendarSync.js and tasting.js
+    // A tasting booked from a quote email (functions/tasting.js).
+    tasting: !!(e.extendedProperties && e.extendedProperties.private && e.extendedProperties.private.byboTasting),
   };
 };
 
-// Tentative entries (quoted, not booked) are left out unless asked for: they
-// aren't work yet, so the Planner, wrap-up, morning summary and Pizza Fridays
-// feed skip them. The Planner's Calendar tab shows them.
-const readCalendar = async (token, calendarId, fromISO, toISO, { tentative = false } = {}) => {
+// Tentative entries (quoted, not booked) and tastings are left out unless asked
+// for: they aren't services, so the Planner's suggestions, wrap-up and the Pizza
+// Fridays feed skip them. The Planner's Calendar tab shows both; the morning
+// summary shows tastings.
+const readCalendar = async (token, calendarId, fromISO, toISO, { tentative = false, tastings = false } = {}) => {
   const params = new URLSearchParams({
     timeMin: `${fromISO}T00:00:00-07:00`,
     timeMax: `${toISO}T23:59:59-07:00`,
@@ -116,7 +119,7 @@ const readCalendar = async (token, calendarId, fromISO, toISO, { tentative = fal
   return (data.items || [])
     .filter((e) => e.status !== "cancelled")
     .map(calendarItem)
-    .filter((c) => tentative || !c.tentative);
+    .filter((c) => (tentative || !c.tentative) && (tastings || !c.tasting));
 };
 
 // Business calendar entries from..to (YYYY-MM-DD), for the morning summary.
