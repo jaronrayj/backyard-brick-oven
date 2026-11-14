@@ -1,5 +1,5 @@
 import { money, totals } from './quote'
-import { DEFAULT_QUOTE_EMAIL, replyEventWords, tastingWhen } from './replyText'
+import { DEFAULT_QUOTE_EMAIL, dropOldSignOff, replyEventWords, tastingWhen } from './replyText'
 import { reviewGreetingName } from './reviewAskText'
 
 // The quote email, built in the event editor so the preview is exactly what's
@@ -67,7 +67,9 @@ const button = (href, label) =>
 
 // The email: { subject, text, html }. times: ISO strings offered for a tasting.
 export const renderQuoteEmail = ({ template, event, quote, times = [] }) => {
-  const t = { ...DEFAULT_QUOTE_EMAIL, ...(template || {}) }
+  const saved = { ...DEFAULT_QUOTE_EMAIL, ...(template || {}) }
+  // The signature is added after (appendSignature); drop an old "Jaron / phone" sign-off.
+  const t = { ...saved, body: dropOldSignOff(saved.body) }
   const fill = (s) =>
     String(s || '')
       .replace(/\{name\}/g, reviewGreetingName(event && event.name))

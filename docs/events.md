@@ -357,3 +357,24 @@ address appears only in those two emails.
 Tasting entries carry `byboTasting`. Wrap-up, the Planner's "From your
 calendar" and the Pizza Fridays feed skip them; the morning summary and the
 Planner's Calendar tab show them.
+
+## Signature
+
+Every email the app sends ends with your email signature: the automatic
+reply, the quote email, both tasting emails and the review email. It's the
+same one as in Gmail (logo, name, title, phone, website and links), from the
+"Email Signature" page. The wording above it ends with just "Talk soon," /
+"See you soon," / "Thanks again,", since the signature carries your name and
+phone. `appendSignature` in `replyText.js` adds it. The server adds it for the
+auto-reply, tasting emails and review email; the event editor adds it to the
+quote email so the preview is exact.
+
+It's edited under **Events → Emails → Signature** (on/off, the plain-text
+version, and the HTML under "advanced"), saved as
+`eventSettings/emails.signature`. Turned off, emails end with "Jaron /
+Backyard Brick Oven · (801) 872-3439". Wording saved before the signature
+existed loses its old "Jaron" sign-off lines (`dropOldSignOff`), so they aren't
+there twice.
+
+The Emails screen shows one email at a time (tabs: Auto-reply, Quote, Tasting
+confirmation, Tasting reminder, Signature). **Save** keeps all of them.

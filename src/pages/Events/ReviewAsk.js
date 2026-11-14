@@ -3,6 +3,7 @@ import { ui } from '../../components/TeamPage'
 import { prettyDate } from './quote'
 import { toMillis } from './history'
 import { REVIEW_HOUR, reviewEmail, reviewSendDate, reviewState } from './reviewAskText'
+import { appendSignature } from './replyText'
 
 // Review email panel in the event editor: when the thank-you + Google review
 // email goes out (9 am the day after a booked event), exactly what it says,
@@ -14,7 +15,8 @@ const ReviewAsk = ({ event, isNew, onSkip }) => {
   const [busy, setBusy] = useState(false)
   const state = reviewState(event)
   if (isNew || state === 'notBooked') return null
-  const mail = reviewEmail(event)
+  // Shown with the standard signature (your saved one is used when it's sent).
+  const mail = appendSignature(reviewEmail(event))
   const on = reviewSendDate(event.date)
   const sentAt = event.reviewAsk && toMillis(event.reviewAsk.sentAt)
 
