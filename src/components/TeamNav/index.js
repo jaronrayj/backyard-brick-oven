@@ -6,11 +6,13 @@ import {
   ChartBarIcon,
   ClipboardListIcon,
   CurrencyDollarIcon,
+  EyeIcon,
   GlobeAltIcon,
   LogoutIcon,
 } from '@heroicons/react/outline'
 import logo from '../../assets/BrickovenLogo.png'
 import useTeamAccess from '../../utils/useTeamAccess'
+import { setViewAsCrew } from '../../utils/useTeamRole'
 import { logout } from '../../utils/firebase'
 import Notifications from '../Notifications'
 import { markTeamBrowser } from '../../utils/track'
@@ -47,7 +49,7 @@ export const ToolLink = ({ tool, children, ...rest }) =>
 
 const TeamNav = () => {
   const path = useLocation().pathname.replace(/\/$/, '') || '/'
-  const { user, role, tools: all } = useTeamAccess()
+  const { user, role, realRole, viewingAsCrew, tools: all } = useTeamAccess()
   const tools = all.filter((t) => t.tab !== false)
   const current = currentKey(tools, path)
   const showTabs = tools.length > 1
@@ -93,6 +95,17 @@ const TeamNav = () => {
               <GlobeAltIcon className="h-5 w-5" aria-hidden="true" />
               <span>Website</span>
             </Link>
+            {realRole === 'admin' && !viewingAsCrew && (
+              <button
+                type="button"
+                onClick={() => setViewAsCrew(true)}
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100"
+                title="See the team pages the way your crew (staff) see them"
+              >
+                <EyeIcon className="h-5 w-5" aria-hidden="true" />
+                <span className="hidden sm:inline">View as crew</span>
+              </button>
+            )}
             {role === 'admin' && <Notifications />}
             {user && (
               <button
@@ -107,6 +120,18 @@ const TeamNav = () => {
             )}
           </div>
         </div>
+        {viewingAsCrew && (
+          <div className="bg-amber-100 border-t border-amber-200 text-amber-900 text-sm">
+            <div className="max-w-4xl mx-auto px-4 py-1.5 flex items-center justify-between gap-3">
+              <span>
+                <b>Viewing as crew.</b> This is what your staff see.
+              </span>
+              <button type="button" onClick={() => setViewAsCrew(false)} className="font-semibold underline whitespace-nowrap">
+                Back to admin
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {showTabs && (

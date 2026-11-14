@@ -22,9 +22,9 @@ export const TEAM_TOOLS = [
 export { TEAM_PATHS, isTeamPath } from './teamPaths'
 
 const useTeamAccess = () => {
-  const { user, loading, role } = useTeamRole()
+  const { user, loading, role, realRole, viewingAsCrew } = useTeamRole()
   const tools = role ? TEAM_TOOLS.filter((t) => t.roles.includes(role)) : []
-  return { user, loading, role, tools }
+  return { user, loading, role, realRole, viewingAsCrew, tools }
 }
 
 export default useTeamAccess

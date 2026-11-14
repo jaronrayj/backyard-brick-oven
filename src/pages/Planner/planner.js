@@ -6,7 +6,8 @@
  *
  * deps.store     - {doc(path) -> {set(data), onSnapshot(next, error)}} over Firestore
  *                  (paths: 'ref/snapshot', 'plan/current', 'plan/checks')
- * deps.canWrite  - whether this person may change the plan
+ * deps.canWrite  - whether this person may change the plan (admins)
+ * deps.canCheck  - whether they may check things off (Shopping, Prep, Bring); defaults to canWrite
  * deps.pizzas    - (onChange) => unsubscribe; the website's pizzas, live
  * deps.isAdmin   - shows "Refresh now" (under Yeast, water and timing)
  * deps.refresh   - async () => re-read the Google Sheets on the server
@@ -35,7 +36,7 @@ export function mountPlanner(root, deps) {
   let MENU = null;     /* live website pizzas (deps.pizzas), on and off the menu */
   let PLAN = null;     /* shared plan */
   let CHECKED = [];    /* shared shopping checkmarks */
-  let db = null, canWrite = true, step = 5;
+  let db = null, canWrite = true, canCheck = true, step = 5;
   const $ = (s) => root.querySelector(s);
 
   /* ---------- Helpers ---------- */
@@ -197,21 +198,27 @@ export function mountPlanner(root, deps) {
   const savePlan = () => { localPending = true; clearTimeout(planTimer); planTimer = setTimeout(flushPlan, 600); };
   let checkWriting = Promise.resolve();
   const saveChecks = () => {
-    if (!db || !canWrite) return;
+    if (!db || !canCheck) return;
     checkRev += 1;
     const body = {checked: CHECKED.slice(), _by: TAB, _rev: checkRev};
     checkWriting = checkWriting.then(() => db.doc('plan/checks').set(body)).catch(handleWriteError);
   };
   const handleWriteError = (e) => {
-    if (e && (e.code === 'invalid_argument' || e.code === 'permission-denied')) { setReadOnly(true); $('#save-status').textContent = ''; return; }
+    if (e && (e.code === 'invalid_argument' || e.code === 'permission-denied')) { canCheck = false; setReadOnly(true); $('#save-status').textContent = ''; return; }
     if (e && e.code === 'quota_exceeded') { $('#save-status').textContent = 'Not saved: storage is full.'; return; }
     $('#save-status').textContent = 'Not saved. Check your connection and try again.';
   };
   const setReadOnly = (ro) => {
     canWrite = !ro;
     $('#readonly').hidden = !ro;
-    root.querySelectorAll('#page-plan input, #page-plan select, #page-plan button, #uncheck, #prep-uncheck, #bring-uncheck, #shop-new, #shop-qty, #shop-add, #prep-new, #prep-qty, #prep-day, #prep-add, #bring-new, #bring-add, #bring-for, #bring-per, #bring-every').forEach((x) => { x.disabled = ro; });
-    root.querySelectorAll('.item input, .item .rm').forEach((x) => { x.disabled = ro; });
+    /* Crew: everything is view-only except checking things off. */
+    $('#readonly').textContent = canCheck
+      ? 'Only admins change the plan. You can check things off on Shopping, Prep and Bring.'
+      : 'You can look but not change this plan. Ask Jaron to add your account to the staff list.';
+    root.querySelectorAll('#uncheck, #prep-uncheck, #bring-uncheck').forEach((x) => { x.disabled = !canCheck; });
+    root.querySelectorAll('#page-plan input, #page-plan select, #page-plan button, #shop-new, #shop-qty, #shop-add, #prep-new, #prep-qty, #prep-day, #prep-add, #bring-new, #bring-add, #bring-for, #bring-per, #bring-every').forEach((x) => { x.disabled = ro; });
+    root.querySelectorAll('.item input').forEach((x) => { x.disabled = !canCheck; });
+    root.querySelectorAll('.item .rm').forEach((x) => { x.disabled = ro; });
   };
 
   /* ---------- Rendering ---------- */
@@ -682,7 +689,7 @@ export function mountPlanner(root, deps) {
   };
   const checkRow = (key, name, sub, amt) => {
     const lab = el('label', 'item' + (CHECKED.includes(key) ? ' done' : ''));
-    const cb = el('input'); cb.type = 'checkbox'; cb.checked = CHECKED.includes(key); cb.disabled = !canWrite;
+    const cb = el('input'); cb.type = 'checkbox'; cb.checked = CHECKED.includes(key); cb.disabled = !canCheck;
     cb.addEventListener('change', () => {
       CHECKED = cb.checked ? [...new Set([...CHECKED, key])] : CHECKED.filter((x) => x !== key);
       lab.classList.toggle('done', cb.checked); saveChecks();
@@ -756,7 +763,7 @@ export function mountPlanner(root, deps) {
     const some = keys.some((k) => CHECKED.includes(k));
     const wrap = el('div', 'group');
     const lab = el('label', 'item parent' + (all ? ' done' : ''));
-    const cb = el('input'); cb.type = 'checkbox'; cb.checked = all; cb.indeterminate = some && !all; cb.disabled = !canWrite;
+    const cb = el('input'); cb.type = 'checkbox'; cb.checked = all; cb.indeterminate = some && !all; cb.disabled = !canCheck;
     cb.addEventListener('change', () => {
       CHECKED = cb.checked ? [...new Set([...CHECKED, ...keys])] : CHECKED.filter((x) => !keys.includes(x));
       saveChecks(); renderBring();
@@ -899,7 +906,7 @@ export function mountPlanner(root, deps) {
     PLAN.extras.forEach((item) => {
       const key = 'buy|extra|' + item.id;
       const lab = el('label', 'item' + (CHECKED.includes(key) ? ' done' : ''));
-      const cb = el('input'); cb.type = 'checkbox'; cb.checked = CHECKED.includes(key); cb.disabled = !canWrite;
+      const cb = el('input'); cb.type = 'checkbox'; cb.checked = CHECKED.includes(key); cb.disabled = !canCheck;
       cb.addEventListener('change', () => {
         CHECKED = cb.checked ? [...new Set([...CHECKED, key])] : CHECKED.filter((x) => x !== key);
         lab.classList.toggle('done', cb.checked); saveChecks();
@@ -995,7 +1002,7 @@ export function mountPlanner(root, deps) {
       rows.forEach(([name, amt, note, miss]) => {
         const key = keyPrefix + '|' + name;
         const lab = el('label', 'item' + (CHECKED.includes(key) ? ' done' : ''));
-        const cb = el('input'); cb.type = 'checkbox'; cb.checked = CHECKED.includes(key); cb.disabled = !canWrite;
+        const cb = el('input'); cb.type = 'checkbox'; cb.checked = CHECKED.includes(key); cb.disabled = !canCheck;
         cb.addEventListener('change', () => {
           CHECKED = cb.checked ? [...new Set([...CHECKED, key])] : CHECKED.filter((x) => x !== key);
           lab.classList.toggle('done', cb.checked); saveChecks();
@@ -1169,7 +1176,7 @@ export function mountPlanner(root, deps) {
       }).forEach((x) => {
         const key = 'prep|' + d + '|' + x.key;
         const lab = el('label', 'item' + (CHECKED.includes(key) ? ' done' : ''));
-        const cb = el('input'); cb.type = 'checkbox'; cb.checked = CHECKED.includes(key); cb.disabled = !canWrite;
+        const cb = el('input'); cb.type = 'checkbox'; cb.checked = CHECKED.includes(key); cb.disabled = !canCheck;
         cb.addEventListener('change', () => {
           CHECKED = cb.checked ? [...new Set([...CHECKED, key])] : CHECKED.filter((k) => k !== key);
           lab.classList.toggle('done', cb.checked); saveChecks();
@@ -1328,6 +1335,7 @@ export function mountPlanner(root, deps) {
   /* ---------- Boot ---------- */
   db = deps.store;
   const unsubs = [];
+  canCheck = deps.canCheck !== undefined ? !!deps.canCheck : !!deps.canWrite;
   if (!deps.canWrite) setReadOnly(true);
   let firstPlan = true;
   unsubs.push(db.doc('ref/snapshot').onSnapshot((snap) => {

@@ -6,10 +6,27 @@ One list decides who can use the team tools: the Firestore document
 | Role | Gets |
 | --- | --- |
 | `admins` | Menu manager, planner (with "Refresh now" for the sheets), events and quotes, wrap-up, Money (Profit First transfers, [money.md](money.md)), the dashboard link |
-| `staff` | Dough planner |
+| `staff` | The Planner, mostly to look at: the dough plan, pizzas, Calendar (with details), Shopping, Prep and Bring. They can **check things off** on Shopping, Prep and Bring; only admins change the plan (services, pizzas, settings) or add and remove list items. |
 
 To add or remove someone, edit that document in the Firebase console. They
-sign in at `/team` with that Google account.
+sign in at `/team` with that Google account. It has to be a Google account,
+verified, but not necessarily Gmail: an existing email can be made into one at
+accounts.google.com ("use your existing email").
+
+## View as crew
+
+Admins have **View as crew** in the team bar: every page shows exactly what
+staff see, with a "Viewing as crew · Back to admin" banner. It only changes
+the pages (`useTeamRole` reports `role: "staff"`, with `realRole: "admin"` and
+`viewingAsCrew`). The account keeps admin access, and the rules still go by
+the real role. It's remembered on that browser until **Back to admin**.
+
+## What crew can change
+
+The Planner mounts with `canWrite` for admins only and `canCheck` for
+everyone, so crew get a view-only plan with working checkboxes. The rules
+match: `planner/plan` is written by admins only; `planner/checks` (the
+checkmarks) by the whole team.
 
 ## How the rules know
 

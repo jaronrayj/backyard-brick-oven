@@ -53,7 +53,43 @@ const remember = (uid, email, role) => {
   }
 }
 
+// "View as crew": an admin can see the team pages exactly as staff do. Only the
+// pages change (role reads "staff"); the account keeps admin access, and the
+// database rules still go by the real role. Remembered on this browser.
+const VIEW_KEY = 'bybo-view-as'
+let viewAs = (() => {
+  try {
+    return localStorage.getItem(VIEW_KEY) || ''
+  } catch (e) {
+    return ''
+  }
+})()
+const viewers = new Set()
+export const setViewAsCrew = (on) => {
+  viewAs = on ? 'staff' : ''
+  try {
+    if (on) localStorage.setItem(VIEW_KEY, 'staff')
+    else localStorage.removeItem(VIEW_KEY)
+  } catch (e) {
+    /* storage blocked: just for this visit */
+  }
+  viewers.forEach((f) => f(viewAs))
+}
+// { role, realRole, viewingAsCrew }: staff pages for an admin viewing as crew.
+export const viewedRole = (role, view = viewAs) =>
+  role === 'admin' && view === 'staff' ? { role: 'staff', realRole: 'admin', viewingAsCrew: true } : { role, realRole: role, viewingAsCrew: false }
+
 const useTeamRole = () => {
+  const [view, setView] = useState(viewAs)
+  useEffect(() => {
+    viewers.add(setView)
+    return () => viewers.delete(setView)
+  }, [])
+  const result = useRealTeamRole()
+  return { ...result, ...viewedRole(result.role, view) }
+}
+
+const useRealTeamRole = () => {
   const [user, authLoading] = useAuthState(auth)
   const [role, setRole] = useState(undefined) // undefined while checking
   const [cached] = useState(remembered)
