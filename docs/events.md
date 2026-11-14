@@ -197,20 +197,30 @@ Events from before this change show one "Added" line from `createdAt`.
 ## Poster page (/hello)
 
 `/hello` is the landing page for the QR code on event posters
-(`src/pages/Hello`). No sign-up and nothing personal collected:
+(`src/pages/Hello`). The freebie needs no sign-up; the email list is optional:
 
 - Free Roasted Garlic Breadsticks or a F'Zookie for showing the screen at any
   Pizza Friday (on trust, no code). Names and photos come from the menu
   (Realtime Database `pizzas`), so a new menu photo shows up there too.
+- **Follow us!** Instagram and Facebook buttons in their brand colors, right
+  under the freebie.
+- **Email list:** email (required) and first name (optional), sent to
+  `/api/signup` (`functions/signup.js`, rules shared with the page in
+  `signupText.js`, copied byte for byte to `src/pages/Hello/`). Saved to
+  Firestore `signups/{id}` (id from the email, so signing up twice keeps the
+  first). Only the function writes; admins read the list at
+  **/admin/signups** (Email list on the team home, not a tab) with a CSV
+  download. No email per sign-up, since a busy event could bring dozens.
 - The next Pizza Fridays (`upcomingPizzaFridays`), hours and directions.
 - Add Pizza Fridays to your calendar (also the home page's "Pizza Friday
   calendar" button): subscribes to the site's own feed,
   `backyardbrickovenpizza.com/pizza-fridays.ics` (`functions/pizzaFridayFeed.js`,
   `src/utils/calendarLinks.js`). Apple through `webcal://`, Google by URL.
-- Follow on Instagram / Facebook, and Book us for your event (`/inquiries`).
+- Book us for your event (`/inquiries`).
 
-The Report shows `hello_view` (opened `/hello`) and `hello_calendar` (tapped
-an add-to-calendar button).
+The Report shows `hello_view` (opened `/hello`), `hello_follow` (tapped Follow),
+`hello_signup` (joined the email list) and `hello_calendar` (tapped an
+add-to-calendar button).
 
 ## Pizza Fridays feed
 

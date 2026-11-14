@@ -236,5 +236,6 @@ export const notificationTimer = onSchedule(
 );
 export { countStep } from "./stats.js";
 export { pizzaFridaysCalendar } from "./pizzaFridayFeed.js";
+export { sendSignup } from "./signup.js";
 export { syncEventCalendar } from "./calendarSync.js";
 export { sendQuoteEmail, tastingInfo, pickTasting } from "./tasting.js";

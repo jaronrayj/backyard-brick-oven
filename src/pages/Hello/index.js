@@ -8,11 +8,12 @@ import googleCalendarLogo from '../../assets/google-calendar-logo.png'
 import { track } from '../../utils/track'
 import { rtdbGet } from '../../utils/publicData'
 import { APPLE_CALENDAR, GOOGLE_CALENDAR } from '../../utils/calendarLinks'
+import { EMAIL_MAX, NAME_MAX, checkSignup } from './signupText'
 
 // /hello: landing page for the QR code on event posters. A free Roasted Garlic
 // Breadsticks or F'Zookie for showing this screen at Pizza Friday (on trust:
-// no sign-up, no code), the next Pizza Fridays, add them to your calendar,
-// follow us, or book us.
+// no sign-up, no code), follow us, join the email list (functions/signup.js),
+// the next Pizza Fridays and adding them to your calendar, or book us.
 
 // Straight to the profiles (same links as the home page), so they work
 // anywhere, not only where the /instagram and /facebook forwards exist.
@@ -123,17 +124,117 @@ const PizzaFriday = ({ fridays }) => (
 )
 
 const Follow = () => (
-  <div className="space-y-3">
-    <a href={INSTAGRAM} target="_blank" rel="noopener noreferrer" className={whiteButton}>
-      <img src={instagramLogo} alt="" className="h-7 w-7" />
+  <div className="bg-white rounded-xl shadow-md p-5 space-y-3">
+    <div>
+      <h2 className="text-xl font-bold text-gray-900">Follow us!</h2>
+      <p className="text-gray-700">Pizza Friday menus, pop-ups and specials go up there first. It really helps a small business like ours.</p>
+    </div>
+    <a
+      href={INSTAGRAM}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={() => track('hello_follow', { site: 'instagram' })}
+      className={`${bigButton} text-white hover:opacity-90`}
+      style={{ background: 'linear-gradient(45deg, #f58529, #dd2a7b 50%, #8134af)' }}
+    >
+      <img src={instagramLogo} alt="" className="h-7 w-7 rounded-md bg-white p-0.5" />
       Follow on Instagram
     </a>
-    <a href={FACEBOOK} target="_blank" rel="noopener noreferrer" className={whiteButton}>
-      <img src={facebookLogo} alt="" className="h-7 w-7" />
+    <a
+      href={FACEBOOK}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={() => track('hello_follow', { site: 'facebook' })}
+      className={`${bigButton} bg-[#1877f2] text-white hover:bg-[#166fe5]`}
+    >
+      <img src={facebookLogo} alt="" className="h-7 w-7 rounded-md bg-white p-0.5" />
       Follow on Facebook
     </a>
   </div>
 )
+
+const SignUp = () => {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState(false)
+
+  const submit = async (e) => {
+    e.preventDefault()
+    const checked = checkSignup({ name, email })
+    if (checked.error) return setError(checked.error)
+    setError('')
+    setBusy(true)
+    try {
+      const res = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, _gotcha: new FormData(e.target).get('_gotcha') || '' }),
+      })
+      let data = {}
+      try {
+        data = await res.json()
+      } catch (_) {
+        /* non-JSON error: keep the default message */
+      }
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Something went wrong. Please try again.')
+      track('hello_signup')
+      setDone(true)
+    } catch (err) {
+      setError(err.message || 'Could not sign up right now. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (done) {
+    return (
+      <div className="bg-white rounded-xl shadow-md p-5 space-y-1" role="status">
+        <h2 className="text-xl font-bold text-gray-900">You're on the list{name.trim() ? `, ${name.trim().split(' ')[0]}` : ''}!</h2>
+        <p className="text-gray-700">We'll only email when there's something worth sharing.</p>
+      </div>
+    )
+  }
+  return (
+    <form onSubmit={submit} className="bg-white rounded-xl shadow-md p-5 space-y-3" noValidate>
+      <div>
+        <h2 className="text-xl font-bold text-gray-900">Get Pizza Friday news by email</h2>
+        <p className="text-gray-700">New pizzas, pop-ups and specials. No spam, just pizza.</p>
+      </div>
+      {/* Honeypot: hidden from people, bots tend to fill it */}
+      <input type="text" name="_gotcha" tabIndex="-1" autoComplete="off" className="hidden" aria-hidden="true" />
+      <label className="block">
+        <span className="text-sm text-gray-700">Email</span>
+        <input
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          required
+          maxLength={EMAIL_MAX}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full mt-1 p-3 rounded-lg border text-gray-800 text-lg"
+        />
+      </label>
+      <label className="block">
+        <span className="text-sm text-gray-700">First name (optional)</span>
+        <input
+          type="text"
+          autoComplete="given-name"
+          maxLength={NAME_MAX}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full mt-1 p-3 rounded-lg border text-gray-800 text-lg"
+        />
+      </label>
+      {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
+      <button type="submit" disabled={busy} className={`${bigButton} bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-60`}>
+        {busy ? 'Signing up…' : 'Sign me up'}
+      </button>
+    </form>
+  )
+}
 
 const Hello = () => {
   const photos = useTreatPhotos()
@@ -155,8 +256,9 @@ const Hello = () => {
           </div>
           <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">Thanks for eating with us!</h1>
           <Freebie photos={photos} />
-          <PizzaFriday fridays={fridays} />
           <Follow />
+          <SignUp />
+          <PizzaFriday fridays={fridays} />
           <a href="/inquiries" className={`${bigButton} bg-amber-600 text-white hover:bg-amber-700`}>
             Book us for your event
           </a>

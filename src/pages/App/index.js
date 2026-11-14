@@ -18,6 +18,7 @@ const Planner = lazy(() => import('../Planner'))
 const Team = lazy(() => import('../Team'))
 const Events = lazy(() => import('../Events'))
 const Money = lazy(() => import('../Money'))
+const Signups = lazy(() => import('../Signups'))
 const TeamNav = lazy(() => import('../../components/TeamNav'))
 
 export const isSiteReadyForOrders = true
@@ -71,6 +72,7 @@ const Shell = () => {
           <Route exact path="/hello" element={<Hello />} />
           <Route exact path="/tasting" element={<Tasting />} />
           <Route exact path="/admin/menu" element={<MenuAdmin />} />
+          <Route exact path="/admin/signups" element={<Signups />} />
           <Route exact path="/planner" element={<Planner />} />
           <Route exact path="/team" element={<Team />} />
           <Route exact path="/events" element={<Events />} />

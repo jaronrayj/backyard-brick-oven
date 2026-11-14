@@ -47,7 +47,8 @@ export const ToolLink = ({ tool, children, ...rest }) =>
 
 const TeamNav = () => {
   const path = useLocation().pathname.replace(/\/$/, '') || '/'
-  const { user, role, tools } = useTeamAccess()
+  const { user, role, tools: all } = useTeamAccess()
+  const tools = all.filter((t) => t.tab !== false)
   const current = currentKey(tools, path)
   const showTabs = tools.length > 1
   // A team member's browser: leave it out of the visitor counts.

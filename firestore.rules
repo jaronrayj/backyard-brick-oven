@@ -45,6 +45,12 @@ service cloud.firestore {
     match /siteStats/{month} {
       allow read: if isAdmin();
     }
+    // /hello email sign-ups. Written only by the sendSignup function; admins
+    // see them at /admin/signups.
+    match /signups/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
     // Wedding tastings offered in quote emails. Only the functions in
     // functions/tasting.js read and write them; the /tasting page goes through those.
     match /tastings/{token} {

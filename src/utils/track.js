@@ -35,6 +35,8 @@ export const EXTRA = [
 export const POSTER = [
   { step: 'hello_view', label: 'Opened the poster page (/hello)' },
   { step: 'hello_calendar', label: 'Added Pizza Friday to their calendar' },
+  { step: 'hello_signup', label: 'Joined the email list' },
+  { step: 'hello_follow', label: 'Tapped Follow on Instagram or Facebook' },
 ]
 const ONCE = new Set([...FUNNEL, ...POSTER].map((f) => f.step))
 const ALL = new Set([...ONCE, ...EXTRA.map((f) => f.step)])
