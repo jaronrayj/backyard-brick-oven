@@ -124,7 +124,11 @@ const Planner = () => {
       {wrapSlot &&
         createPortal(
           <Suspense fallback={<p className="note">Loading…</p>}>
-            <WrapUp bare onChange={() => rootRef.current && rootRef.current.dispatchEvent(new Event('wrapups-changed'))} />
+            <WrapUp
+              bare
+              fromPlanner={(c) => (rootRef.current && rootRef.current.plannerWrapInfo ? rootRef.current.plannerWrapInfo(c) : null)}
+              onChange={() => rootRef.current && rootRef.current.dispatchEvent(new Event('wrapups-changed'))}
+            />
           </Suspense>,
           wrapSlot
         )}

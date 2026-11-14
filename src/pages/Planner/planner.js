@@ -1375,6 +1375,30 @@ export function mountPlanner(root, deps) {
     $('#refresh').addEventListener('click', refreshFromSheets);
   }
 
+  /* For the Wrap up form (index.js): the dough the Planner had for a wrap-up's date.
+     A "Prep" wrap-up on a dough day gets everything mixed that day; an event gets its
+     services on that date (all of the mix when it had the mix to itself, else its share).
+     Bread is left out (it's loaves, not balls). Null when the Planner has nothing for it. */
+  root.plannerWrapInfo = ({date, name}) => {
+    if (!PLAN || !REF || !ISO.test(date || '')) return null;
+    const lead = Math.max(0, Math.min(5, Number(tweaks().lead) || 0));
+    const svcs = PLAN.services.filter((s) => s.date && !isBread(s)).map((s) => ({...s, use: doughFor(s), mix: mixDayOf(s, lead)})).filter((s) => s.use > 0);
+    const mixed = (list) => { const b = list.reduce((a, s) => a + s.use, 0); const n = Math.max(1, Math.ceil(b / mixerCap())); return n * Math.ceil(b / n); };
+    const prep = /^prep/i.test(String(name || '').trim());
+    let these = svcs.filter((s) => (prep ? s.mix === date : s.date === date));
+    /* Two services on one date: keep the one this wrap-up names, if any does. */
+    const want = String(name || '').trim().toLowerCase();
+    const named = prep ? [] : these.filter((s) => (/pizza friday/.test(want) ? s.type === 'pf' : svcName(s).trim().toLowerCase() === want));
+    if (named.length) these = named;
+    if (!these.length) return null;
+    let balls = 0;
+    new Set(these.map((s) => s.mix)).forEach((m) => {
+      const all = svcs.filter((s) => s.mix === m), mine = these.filter((s) => s.mix === m);
+      balls += mine.length === all.length ? mixed(all) : Math.round(mine.reduce((a, s) => a + s.use, 0));
+    });
+    return {balls, for: these.map((s) => svcName(s) + (prep ? ' · ' + day(s.date) : '')).join(' + ')};
+  };
+
   return () => {
     unsubs.forEach((u) => { try { u(); } catch (e) { /* already closed */ } });
     root.removeEventListener('focusout', onFocusOut);

@@ -67,6 +67,13 @@ the same columns the form filled. The fields follow that tab's header row, so
 a new "Name hours" column shows up as a new field. A tracker event that is
 wrapped up is marked Done; a calendar-only entry is remembered in Firestore `wrapUps/{calendar id}` (server only), so both show "Wrapped up" and stop the reminder. **Skip** (next to each entry) closes one out without a wrap-up: `wrapUpSkipped` on the event, or `wrapUps/{calendar id}` with `skipped: true`; it drops off the list and its reminders stop. A wrap-up started from "Prep day" or "Something else" also closes the calendar entries on that date whose title matches its name (a "Prep" wrap-up closes the day's prep entry).
 
+From the Planner's Wrap up tab, **Dough made** starts filled from the Planner
+(`plannerWrapInfo` in `planner.js`): a "Prep" wrap-up gets everything mixed on that
+day; an event gets its services on that date (by name when there are several), the
+whole mix when it had the mix to itself, else its share. Bread is left out. Once
+sold (and comped) are in, the form shows the dough left over. Clearing finished
+services on the Planner first means there's nothing to fill from.
+
 It writes the first empty row by column A rather than appending, because the
 year formula in the last column runs far below the data and an append would
 land under it. That formula column is never written.
