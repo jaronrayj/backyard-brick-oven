@@ -627,9 +627,47 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
 
 // ---------- Settings ----------
 
-const Settings = ({ pricing, onClose }) => {
+// Ask the calendar sync to redo these events' entries (functions/calendarSync.js).
+const refreshCalendarEntries = (events) =>
+  Promise.all(
+    events
+      .filter((e) => e.calendar && e.calendar.sig && !e.calendar.manual && e.date >= todayISO())
+      .map((e) => updateDoc(doc(db, 'events', e.id), { 'calendar.revive': true }))
+  )
+
+// Redo the calendar entries for upcoming events (after changing the times
+// above, or to pick up a new drive estimate).
+const RefreshEntries = ({ events }) => {
+  const [state, setState] = useState('')
+  const count = events.filter((e) => e.calendar && e.calendar.sig && !e.calendar.manual && e.date >= todayISO()).length
+  if (!count) return null
+  return (
+    <p className="text-sm text-gray-600">
+      {count} upcoming {count === 1 ? 'event is' : 'events are'} on your calendar.{' '}
+      <button
+        type="button"
+        className="underline"
+        disabled={state === 'busy'}
+        onClick={async () => {
+          setState('busy')
+          try {
+            await refreshCalendarEntries(events)
+            setState('done')
+          } catch (e) {
+            setState('error')
+          }
+        }}
+      >
+        {state === 'done' ? 'Updating them now.' : state === 'error' ? "Couldn't update; try again." : 'Update calendar entries now'}
+      </button>
+    </p>
+  )
+}
+
+const Settings = ({ pricing, events = [], onClose }) => {
   const [p, setP] = useState(() => ({
     ...pricing,
+    eventDay: { ...DEFAULT_PRICING.eventDay, ...(pricing.eventDay || {}) },
     addOns: (pricing.addOns || []).map((a) => ({ ...a, name: addOnName(a.name) })),
     travel: { zones: travelZones(pricing) },
   }))
@@ -658,11 +696,16 @@ const Settings = ({ pricing, onClose }) => {
         travel: { zones: travelZones({ travel: { zones: p.travel.zones.map((z) => ({ upTo: num(z.upTo), fee: num(z.fee) })) } }) },
         taxRate: num(p.taxRate),
         depositPct: num(p.depositPct),
+        eventDay: Object.fromEntries(Object.entries(p.eventDay).map(([k, v]) => [k, num(v)])),
       }
       await Promise.all([
         setDoc(doc(db, 'eventSettings', 'pricing'), clean),
         setDoc(doc(db, 'publicSettings', 'site'), publicPricing(clean)),
       ])
+      // New event-day times: update the calendar entries already made.
+      if (JSON.stringify(clean.eventDay) !== JSON.stringify({ ...DEFAULT_PRICING.eventDay, ...(pricing.eventDay || {}) })) {
+        await refreshCalendarEntries(events).catch(() => {})
+      }
       onClose()
     } catch (e) {
       console.error(e)
@@ -766,6 +809,28 @@ const Settings = ({ pricing, onClose }) => {
         >
           + Zone
         </button>
+      </section>
+
+      <section className="space-y-2">
+        <h3 className="font-semibold">Event day (calendar entries)</h3>
+        <p className="text-xs text-gray-500">
+          Booked and quoted events go on your calendar from the time you leave home to the end of cleanup, with the service time
+          in the title. The drive uses the event's miles, or its town when there are no miles.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
+          {[
+            ['setup', 'Set up before service (min)'],
+            ['pack', 'Pack up after (min)'],
+            ['cleanup', 'Clean up at home (min)'],
+            ['serviceMinutes', 'Service length if only a start time (min)'],
+            ['mph', 'Average driving speed (mph)'],
+          ].map(([k, label]) => (
+            <Field key={k} label={label}>
+              <input className={input} type="number" min="0" value={p.eventDay[k]} onChange={(e) => setP({ ...p, eventDay: { ...p.eventDay, [k]: e.target.value } })} />
+            </Field>
+          ))}
+        </div>
+        <RefreshEntries events={events} />
       </section>
 
       <section className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -940,7 +1005,7 @@ const Events = () => {
   if (editing === 'settings') {
     return (
       <Shell>
-        <Settings pricing={pricing} onClose={() => setEditing(null)} />
+        <Settings pricing={pricing} events={events} onClose={() => setEditing(null)} />
       </Shell>
     )
   }
