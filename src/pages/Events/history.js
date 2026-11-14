@@ -37,12 +37,49 @@ export const timeline = (event) => {
 
 // What moments count as reaching out (or hearing from) the customer.
 const CONTACT_TYPES = ['created', 'contact', 'followup', 'quote-sent']
+// Emails the app sends by itself don't count as you getting in touch.
+export const isAutomatic = (h) => /^(Automatic reply sent|Review email sent)/.test(String((h && h.text) || ''))
 
 export const lastContactAt = (event) => {
   const times = timeline(event)
-    .filter((h) => CONTACT_TYPES.includes(h.type))
+    .filter((h) => CONTACT_TYPES.includes(h.type) && !isAutomatic(h))
     .map((h) => toMillis(h.at))
   return times.length ? Math.max(...times) : null
+}
+
+// When you last got in touch (or heard back), not counting the inquiry
+// arriving or automatic emails. null: you haven't yet.
+export const contactedAt = (event) => {
+  const times = timeline(event)
+    .filter((h) => ['contact', 'followup', 'quote-sent'].includes(h.type) && !isAutomatic(h))
+    .map((h) => toMillis(h.at))
+  return times.length ? Math.max(...times) : null
+}
+
+// When the inquiry came in (or the event was added).
+export const receivedAt = (event) => {
+  const created = timeline(event).find((h) => h.type === 'created')
+  return toMillis((event && event.createdAt) || (created && created.at))
+}
+
+// Which part of the Open list: booked, new (you haven't replied), contacted
+// (you've been in touch, no quote yet; they may have replied), quoted.
+export const openGroup = (event) => {
+  const s = event && event.status
+  if (s === 'booked') return 'booked'
+  if (s === 'quoted') return 'quoted'
+  if (s === 'inquiry') return contactedAt(event) != null ? 'contacted' : 'new'
+  return null
+}
+
+// Order within each part, by what needs you next.
+const dateOf = (e) => String(e.date || '9999')
+const oldestFirst = (f) => (a, b) => (f(a) ?? Infinity) - (f(b) ?? Infinity)
+export const OPEN_ORDER = {
+  booked: (a, b) => dateOf(a).localeCompare(dateOf(b)), // soonest event first
+  new: oldestFirst(receivedAt), // waiting longest for your reply first
+  contacted: oldestFirst(lastContactAt), // quiet the longest first
+  quoted: oldestFirst(lastContactAt), // most overdue follow-up first
 }
 
 export const daysSince = (at, now = Date.now()) => {

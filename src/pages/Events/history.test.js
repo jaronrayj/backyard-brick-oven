@@ -49,3 +49,42 @@ test('ago reads naturally', () => {
   expect(ago(NOW - 3 * DAY, NOW)).toBe('3 days ago')
   expect(ago(NOW - DAY, NOW)).toBe('yesterday')
 })
+
+describe('open list: groups and order by what needs you next', () => {
+  // eslint-disable-next-line global-require
+  const { OPEN_ORDER, contactedAt, openGroup } = require('./history')
+  const day = 86400000
+  const now = Date.parse('2026-11-14T18:00:00Z')
+  const at = (daysAgo) => now - daysAgo * day
+  const inquiry = (over) => ({ status: 'inquiry', history: [{ at: at(5), type: 'created', text: 'Inquiry came in' }], ...over })
+
+  test('new until you get in touch; the automatic reply does not count', () => {
+    const fresh = inquiry({ history: [{ at: at(2), type: 'created', text: 'x' }, { at: at(2), type: 'followup', text: 'Automatic reply sent to a@b.com' }] })
+    expect(openGroup(fresh)).toBe('new')
+    expect(contactedAt(fresh)).toBe(null)
+    expect(openGroup(inquiry({ history: [{ at: at(5), type: 'created', text: 'x' }, { at: at(3), type: 'followup', text: 'Follow-up email' }] }))).toBe('contacted')
+    expect(openGroup(inquiry({ history: [{ at: at(5), type: 'created', text: 'x' }, { at: at(1), type: 'contact', text: 'They replied' }] }))).toBe('contacted')
+    // A note to yourself isn't contact.
+    expect(openGroup(inquiry({ history: [{ at: at(5), type: 'created', text: 'x' }, { at: at(1), type: 'note', text: 'check date' }] }))).toBe('new')
+    expect(openGroup({ status: 'quoted' })).toBe('quoted')
+    expect(openGroup({ status: 'booked' })).toBe('booked')
+    expect(openGroup({ status: 'lost' })).toBe(null)
+  })
+
+  test('order within each part', () => {
+    const names = (list, key) => list.slice().sort(OPEN_ORDER[key]).map((e) => e.name)
+    expect(names([{ name: 'Dec', date: '2026-12-05' }, { name: 'none' }, { name: 'Nov', date: '2026-11-21' }], 'booked')).toEqual(['Nov', 'Dec', 'none'])
+    expect(
+      names(
+        [
+          { name: 'yesterday', createdAt: at(1) },
+          { name: 'last week', createdAt: at(7) },
+          { name: 'three days', createdAt: at(3) },
+        ],
+        'new'
+      )
+    ).toEqual(['last week', 'three days', 'yesterday'])
+    const touched = (name, daysAgo) => ({ name, status: 'inquiry', history: [{ at: at(daysAgo), type: 'followup', text: 'Follow-up text' }] })
+    expect(names([touched('2 days', 2), touched('9 days', 9), touched('5 days', 5)], 'contacted')).toEqual(['9 days', '5 days', '2 days'])
+  })
+})

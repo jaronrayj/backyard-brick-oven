@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocation } from 'react-router-dom'
+import { onTabHome } from '../../utils/tabHome'
 import { doc, onSnapshot, setDoc } from 'firebase/firestore'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { onValue, ref as rtdbRef } from 'firebase/database'
@@ -68,6 +69,15 @@ const Planner = () => {
   // 'loading', 'admin', 'staff' or 'denied'
   const access = loading || !user ? 'loading' : role || 'denied'
   const rootRef = useRef(null)
+  // Tapping the Planner tab again: back to the Plan tab (TeamNav scrolls to the top).
+  useEffect(
+    () =>
+      onTabHome('planner', () => {
+        const plan = rootRef.current && rootRef.current.querySelector('.tabs [data-tab="plan"]')
+        if (plan) plan.click()
+      }),
+    []
+  )
   const [awakeSlot, setAwakeSlot] = useState(null)
   const [wrapSlot, setWrapSlot] = useState(null)
 

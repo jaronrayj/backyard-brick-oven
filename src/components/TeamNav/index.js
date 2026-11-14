@@ -13,6 +13,7 @@ import {
 import logo from '../../assets/BrickovenLogo.png'
 import useTeamAccess from '../../utils/useTeamAccess'
 import { setViewAsCrew } from '../../utils/useTeamRole'
+import { goTabHome } from '../../utils/tabHome'
 import { logout } from '../../utils/firebase'
 import Notifications from '../Notifications'
 import { markTeamBrowser } from '../../utils/track'
@@ -36,13 +37,23 @@ const currentKey = (tools, path) =>
     .sort((a, b) => b.href.length - a.href.length)[0]?.key
 
 // In-app tools use the router (no page reload); the dashboard opens in a new tab.
+// Tapping the tab you're already on: back to that page's main view, at the top.
 export const ToolLink = ({ tool, children, ...rest }) =>
   tool.external ? (
     <a href={tool.href} target="_blank" rel="noopener noreferrer" {...rest}>
       {children}
     </a>
   ) : (
-    <Link to={tool.href} {...rest}>
+    <Link
+      to={tool.href}
+      {...rest}
+      onClick={(e) => {
+        if (rest['aria-current'] === 'page') {
+          e.preventDefault()
+          goTabHome(tool.key)
+        }
+      }}
+    >
       {children}
     </Link>
   )
