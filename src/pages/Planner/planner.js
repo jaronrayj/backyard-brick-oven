@@ -7,7 +7,8 @@
  * deps.store     - {doc(path) -> {set(data), onSnapshot(next, error)}} over Firestore
  *                  (paths: 'ref/snapshot', 'plan/current', 'plan/checks')
  * deps.canWrite  - whether this person may change the plan (admins)
- * deps.canCheck  - whether they may check things off (Shopping, Prep, Bring); defaults to canWrite
+ * deps.canCheck  - whether they may check things off (Prep, Bring, and Shopping when shown); defaults to canWrite
+ * deps.shopping  - show the Shopping tab (admins; crew don't get it). Defaults to true
  * deps.pizzas    - (onChange) => unsubscribe; the website's pizzas, live
  * deps.isAdmin   - shows "Refresh now" (under Yeast, water and timing)
  * deps.refresh   - async () => re-read the Google Sheets on the server
@@ -213,7 +214,7 @@ export function mountPlanner(root, deps) {
     $('#readonly').hidden = !ro;
     /* Crew: everything is view-only except checking things off. */
     $('#readonly').textContent = canCheck
-      ? 'Only admins change the plan. You can check things off on Shopping, Prep and Bring.'
+      ? 'Only admins change the plan. You can check things off on ' + (deps.shopping === false ? 'Prep and Bring.' : 'Shopping, Prep and Bring.')
       : 'You can look but not change this plan. Ask Jaron to add your account to the staff list.';
     root.querySelectorAll('#uncheck, #prep-uncheck, #bring-uncheck').forEach((x) => { x.disabled = !canCheck; });
     root.querySelectorAll('#page-plan input, #page-plan select, #page-plan button, #shop-new, #shop-qty, #shop-add, #prep-new, #prep-qty, #prep-day, #prep-add, #bring-new, #bring-add, #bring-for, #bring-per, #bring-every').forEach((x) => { x.disabled = ro; });
@@ -1252,7 +1253,10 @@ export function mountPlanner(root, deps) {
     page.classList.add(dx < 0 ? 'swipe-in-left' : 'swipe-in-right');
     page.addEventListener('animationend', () => page.classList.remove('swipe-in-left', 'swipe-in-right'), {once: true});
   }, {passive: true});
-  if (['#shop', '#bring', '#prep'].includes(window.location.hash) || (window.location.hash === '#wrapup' && deps.wrapUps) || (window.location.hash === '#calendar' && deps.calendar)) root.querySelector('.tabs [data-tab="' + window.location.hash.slice(1) + '"]').click();
+  /* Crew don't get the Shopping tab. */
+  const showShopping = deps.shopping !== false;
+  $('#tab-shop').hidden = !showShopping;
+  if ((window.location.hash === '#shop' && showShopping) || ['#bring', '#prep'].includes(window.location.hash) || (window.location.hash === '#wrapup' && deps.wrapUps) || (window.location.hash === '#calendar' && deps.calendar)) root.querySelector('.tabs [data-tab="' + window.location.hash.slice(1) + '"]').click();
   /* Between rounds: drop services whose day has passed (their prep goes with them). Upcoming
      services, picked pizzas, your own lists and all checkmarks stay. */
   $('#clear-done').addEventListener('click', () => {
