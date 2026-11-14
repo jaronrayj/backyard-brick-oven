@@ -346,7 +346,12 @@ const blankEvent = () => ({
 // Set by the open event editor: whether it has unsaved changes.
 const editorDirty = { current: false }
 
-const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => {
+const EventEditor = ({ id: openedId, initial: opened, pricing, mixLead, plannerRef, onClose }) => {
+  // "Email the quote" saves without closing, so the editor keeps its own idea of
+  // what's saved: the event's id (a new event gets one on its first save) and
+  // the saved copy (to tell what changed since).
+  const [id, setId] = useState(openedId)
+  const [initial, setInitial] = useState(opened)
   // Older events say "Pasta"; show and save them as "Pasta salad".
   const [event, setEvent] = useState(() => ({ ...initial, addOns: (initial.addOns || []).map(addOnName) }))
   const [busy, setBusy] = useState(false)
@@ -407,10 +412,12 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
   const toggleAddOn = (name) =>
     set({ addOns: event.addOns.includes(name) ? event.addOns.filter((a) => a !== name) : [...event.addOns, name] })
 
-  const save = async () => {
+  // Save; close the editor unless { close: false } (then it stays open, up to date).
+  // Returns the event's id, or null when it couldn't save.
+  const save = async ({ close = true } = {}) => {
     if (!event.name.trim()) {
       setError('Add a name first.')
-      return
+      return null
     }
     setBusy(true)
     setError('')
@@ -447,11 +454,11 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
         data.geo = geo ? { ...geo, from: data.location } : null
       }
       if (!data.location) data.geo = null
-      if (data.quote && event.status === 'inquiry' && initial.status === 'inquiry' && !initial.quote) {
-        data.status = 'quoted'
-      }
+      // A quote alone doesn't move it to Quoted: sending it does (Email the quote),
+      // or tap Quoted when you send it some other way.
       const lines = changeEntries(initial, data)
       if (data.status !== event.status) lines.push(entry('stage', `Moved to ${statusLabel(data.status)}`))
+      let savedId = id
       if (id) {
         // Append, so lines logged from another device aren't overwritten.
         delete data.history
@@ -459,13 +466,24 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
         await updateDoc(doc(db, 'events', id), data)
       } else {
         data = { ...data, history: [...lines, ...(event.history || [])], createdAt: serverTimestamp() }
-        await addDoc(collection(db, 'events'), data)
+        savedId = (await addDoc(collection(db, 'events'), data)).id
       }
-      onClose()
+      if (close) {
+        onClose()
+        return savedId
+      }
+      // Staying open: this is now the saved version.
+      const now = { ...event, guests: data.guests, miles: data.miles, quote: data.quote, geo: data.geo, status: data.status }
+      setId(savedId)
+      setInitial(now)
+      setEvent(now)
+      setBusy(false)
+      return savedId
     } catch (e) {
       console.error(e)
       setError("Couldn't save. Check you're signed in as an admin.")
       setBusy(false)
+      return null
     }
   }
 
@@ -601,7 +619,7 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
       </section>
 
       {/* Sending changes the event on the server (Quoted, history), so the editor closes after. */}
-      <QuoteEmail id={id} event={event} initial={initial} onSent={() => onClose()} />
+      <QuoteEmail id={id} event={event} initial={initial} onSave={() => save({ close: false })} onSent={() => onClose()} />
 
       {error && <p className="text-sm text-red-700">{error}</p>}
       <div className="flex flex-wrap gap-2 justify-between">
@@ -627,7 +645,7 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
           <button type="button" className={btnQuiet} onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className={btnPrimary} disabled={busy} onClick={save}>
+          <button type="button" className={btnPrimary} disabled={busy} onClick={() => save()}>
             {busy ? 'Saving…' : 'Save'}
           </button>
         </div>
