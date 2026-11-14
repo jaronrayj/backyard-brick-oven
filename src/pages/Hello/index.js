@@ -14,6 +14,8 @@ import { EMAIL_MAX, NAME_MAX, checkSignup } from './signupText'
 //   2. After signing up (functions/signup.js, which also sends a welcome
 //      email): the freebie ticket to show at the counter, then Follow us.
 // The ticket is remembered on this phone, so reopening the page shows it again.
+// Small Instagram and Facebook links sit at the bottom for everyone; the email
+// box is the main ask, and the big follow ask comes after signing up.
 
 // Straight to the profiles (same links as the home page), so they work
 // anywhere, not only where the /instagram and /facebook forwards exist.
@@ -207,10 +209,10 @@ const Follow = () => (
       target="_blank"
       rel="noopener noreferrer"
       onClick={() => track('hello_follow', { site: 'facebook' })}
-      className={`${bigButton} bg-[#1877f2] text-white hover:bg-[#166fe5]`}
+      className="flex items-center justify-center gap-2 w-full py-3 px-5 rounded-xl font-semibold border-2 border-[#1877f2] text-[#1877f2] bg-white hover:bg-blue-50"
     >
-      <img src={facebookLogo} alt="" className="h-7 w-7 rounded-md bg-white p-0.5" />
-      Follow on Facebook
+      <img src={facebookLogo} alt="" className="h-5 w-5" />
+      Or follow on Facebook
     </a>
   </div>
 )
@@ -261,6 +263,16 @@ const Hello = () => {
               Book us for your event
             </a>
           </p>
+          <div className="flex justify-center gap-5 text-sm text-gray-700">
+            <a href={INSTAGRAM} target="_blank" rel="noopener noreferrer" onClick={() => track('hello_follow', { site: 'instagram' })} className="flex items-center gap-1.5 underline">
+              <img src={instagramLogo} alt="" className="h-5 w-5" />
+              Instagram
+            </a>
+            <a href={FACEBOOK} target="_blank" rel="noopener noreferrer" onClick={() => track('hello_follow', { site: 'facebook' })} className="flex items-center gap-1.5 underline">
+              <img src={facebookLogo} alt="" className="h-5 w-5" />
+              Facebook
+            </a>
+          </div>
         </div>
       </div>
     </>

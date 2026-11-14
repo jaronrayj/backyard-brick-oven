@@ -206,8 +206,10 @@ F'Zookie for an email address, then ask for a follow.
 2. **After signing up:** the freebie ticket to show at the counter (first name
    and sign-up date, remembered on that phone in `localStorage`), then
    **One more thing: follow us!** with brand-colored Instagram and Facebook buttons.
-3. One line at the bottom: Pizza Friday hours, directions, and Book us
-   (`/inquiries`).
+3. At the bottom, for everyone: Pizza Friday hours, directions, Book us
+   (`/inquiries`), and small Instagram and Facebook links. The email box stays
+   the main ask; after signing up, Instagram is the big button and Facebook a
+   smaller one.
 
 **Sign-ups** go to `/api/signup` (`functions/signup.js`; rules shared with the
 page in `signupText.js`, copied byte for byte to `src/pages/Hello/`). Saved to
