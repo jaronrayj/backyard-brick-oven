@@ -12,7 +12,8 @@ import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 // Google Calendar, and writes the answers into the next row of the money
 // tracker's Form Responses tab. The fields come from that tab's header row,
 // so adding a column (a new person's hours, say) adds a field here. Wrap-ups
-// from the last few days can be edited, which updates their row in place.
+// from the last few days can be edited by tapping their entry (marked Wrapped up),
+// which updates their row in place.
 
 const { input, btnPrimary, btnQuiet } = ui
 
@@ -259,6 +260,8 @@ const WrapUp = ({ bare = true, onChange = () => {}, fromPlanner = () => null }) 
   const [recentError, setRecentError] = useState('')
   const [editing, setEditing] = useState(null)
   const [notice, setNotice] = useState('')
+  // Saved rows sharing a wrapped-up entry's date when its name matches none (or several): pick one.
+  const [dayRows, setDayRows] = useState([])
   const wanted = new URLSearchParams(useLocation().search).get('key')
 
   const loadOptions = () =>
@@ -305,6 +308,7 @@ const WrapUp = ({ bare = true, onChange = () => {}, fromPlanner = () => null }) 
   // one would add a second row for the same event.
   const open = useCallback((c) => {
     setNotice('')
+    setDayRows([])
     if (!c.wrappedUp) {
       setChoice(c)
       return
@@ -315,7 +319,10 @@ const WrapUp = ({ bare = true, onChange = () => {}, fromPlanner = () => null }) 
     }
     const { row, sameDay } = findRow(recent.rows, c)
     if (row) setEditing(row)
-    else if (sameDay) setNotice('Pick the one to change under "Edit a recent wrap-up" below.')
+    else if (sameDay) {
+      setNotice(`Which wrap-up from ${prettyDate(c.date)} do you want to change?`)
+      setDayRows(recent.rows.filter((r) => r.date === c.date))
+    }
     else setNotice(`That wrap-up isn't in the last ${recent.days} days of the money tracker. Change older ones in its Form Responses tab.`)
   }, [recent, recentError])
 
@@ -446,7 +453,21 @@ const WrapUp = ({ bare = true, onChange = () => {}, fromPlanner = () => null }) 
           {data.headers.length > 0 && (
             <>
               <p className="text-gray-700">Which one are you wrapping up?</p>
-              {notice && <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-3">{notice}</p>}
+              {notice && (
+                <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-3 space-y-2">
+                  <p>{notice}</p>
+                  {dayRows.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {dayRows.map((r) => (
+                        <button key={r.row} type="button" className={btnQuiet} onClick={() => { setNotice(''); setDayRows([]); setEditing(r) }}>
+                          {r.name || 'Wrap-up'}
+                          {moneyIn(data.headers, r.values) > 0 ? ` · ${dollars(moneyIn(data.headers, r.values))}` : ''}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               <ul className="space-y-2">
                 {choices.filter((c) => !hidden.includes(c.key)).map((c) => (
                   <li key={c.key} className="flex gap-2 items-stretch">
@@ -484,31 +505,6 @@ const WrapUp = ({ bare = true, onChange = () => {}, fromPlanner = () => null }) 
                 </button>
               </div>
               {recentError && <p className="text-sm text-red-700">{recentError}</p>}
-              {recent && recent.rows.length > 0 && (
-                <section className="border-t border-gray-200 pt-4 space-y-2">
-                  <h3 className="font-semibold text-gray-900">Edit a recent wrap-up</h3>
-                  <p className="text-xs text-gray-500">From the last {recent.days} days. Change older ones in the money tracker's Form Responses tab.</p>
-                  <ul className="space-y-2">
-                    {recent.rows.map((r) => (
-                      <li key={r.row}>
-                        <button
-                          type="button"
-                          onClick={() => { setNotice(''); setEditing(r) }}
-                          className="w-full text-left bg-white rounded-xl shadow-sm border border-gray-200 hover:border-amber-500 p-4"
-                        >
-                          <span className="flex justify-between gap-2">
-                            <span className="font-semibold">{r.name || 'Wrap-up'}</span>
-                            {moneyIn(data.headers, r.values) > 0 && (
-                              <span className="text-sm text-gray-700">{dollars(moneyIn(data.headers, r.values))}</span>
-                            )}
-                          </span>
-                          <span className="block text-sm text-gray-600">{prettyDate(r.date)}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
             </>
           )}
         </>
