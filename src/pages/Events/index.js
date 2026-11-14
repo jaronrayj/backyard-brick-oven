@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { onTabHome } from '../../utils/tabHome'
 import {
   addDoc,
   arrayUnion,
@@ -342,6 +343,9 @@ const blankEvent = () => ({
   source: 'manual',
 })
 
+// Set by the open event editor: whether it has unsaved changes.
+const editorDirty = { current: false }
+
 const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => {
   // Older events say "Pasta"; show and save them as "Pasta salad".
   const [event, setEvent] = useState(() => ({ ...initial, addOns: (initial.addOns || []).map(addOnName) }))
@@ -349,6 +353,13 @@ const EventEditor = ({ id, initial, pricing, mixLead, plannerRef, onClose }) => 
   const [error, setError] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const set = (patch) => setEvent((e) => ({ ...e, ...patch }))
+  // Unsaved changes? (So tapping the Events tab can ask before closing.)
+  useEffect(() => {
+    editorDirty.current = JSON.stringify(event) !== JSON.stringify(initial)
+    return () => {
+      editorDirty.current = false
+    }
+  }, [event, initial])
 
   // Stage buttons save right away on an existing event (the rest waits for Save).
   const [stageNote, setStageNote] = useState('')
@@ -928,6 +939,18 @@ const Events = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const wantedEvent = new URLSearchParams(location.search).get('event')
+
+  // Tapping the Events tab again: back to the list (asks first if an event
+  // has unsaved changes).
+  useEffect(
+    () =>
+      onTabHome('events', () => {
+        if (editorDirty.current && !window.confirm('Leave this event without saving your changes?')) return
+        setEditing(null)
+        if (location.search) navigate(location.pathname, { replace: true })
+      }),
+    [location.pathname, location.search, navigate]
+  )
 
   // /events?event=<id> (from a notification) opens that event once it has
   // loaded, then drops the ?event so closing it goes back to the list.
