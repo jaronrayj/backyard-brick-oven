@@ -73,16 +73,21 @@ const Field = ({ label: text, children, className = '' }) => (
 )
 
 // edit: a saved row from recentWrapUps, to change it rather than add a new one.
-const WrapUpForm = ({ headers, choice, edit = null, today, onDone, onBack }) => {
+// planned: {balls, for} from the Planner (dough made for this date), or null.
+const WrapUpForm = ({ headers, choice, edit = null, today, planned = null, onDone, onBack }) => {
   const nameH = headers.find((h) => kindOf(h) === 'name')
   const dateH = headers.find((h) => kindOf(h) === 'date')
   const notesH = headers.find((h) => kindOf(h) === 'notes')
+  const doughH = headers.find((h) => /dough made/i.test(h))
+  const soldH = headers.find((h) => /how many sold/i.test(h))
+  const compedH = headers.find((h) => /comped/i.test(h))
   const [values, setValues] = useState(() =>
     edit
       ? edit.values
       : {
           ...(nameH ? { [nameH]: choice.name || '' } : {}),
           ...(dateH ? { [dateH]: choice.date || today } : {}),
+          ...(doughH && planned ? { [doughH]: String(planned.balls) } : {}),
         }
   )
   const [busy, setBusy] = useState(false)
@@ -119,6 +124,9 @@ const WrapUpForm = ({ headers, choice, edit = null, today, onDone, onBack }) => 
     }))
     .filter((g) => g.headers.length)
   const takenIn = moneyIn(headers, values)
+  // Dough left over once sold and comped are in.
+  const num = (h) => (h && values[h] !== '' && values[h] != null ? Number(values[h]) : null)
+  const leftover = num(doughH) != null && num(soldH) != null ? num(doughH) - num(soldH) - (num(compedH) || 0) : null
 
   const control = (h) => {
     const kind = kindOf(h)
@@ -191,7 +199,17 @@ const WrapUpForm = ({ headers, choice, edit = null, today, onDone, onBack }) => 
               </span>
             )}
             {g.key === 'labor' && <span className="text-xs text-gray-500">Hours each person worked</span>}
+            {g.key === 'pizzas' && leftover != null && (
+              <span className={`text-sm ${leftover < 0 ? 'text-red-700' : 'text-gray-600'}`}>
+                {leftover < 0 ? `${-leftover} more than the dough made` : <>Dough left over: <strong>{leftover}</strong></>}
+              </span>
+            )}
           </div>
+          {g.key === 'pizzas' && !edit && planned && doughH && (
+            <p className="text-xs text-gray-500 -mt-1 mb-2">
+              Dough made is from the Planner: {planned.balls} balls for {planned.for}. Change it if you made a different amount.
+            </p>
+          )}
           <div className={`grid ${g.cols} gap-3`}>
             {g.headers.map((h) => (
               <Field key={h} label={label(h)}>
@@ -227,7 +245,8 @@ const OPTIONS_KEY = 'bybo-wrapup-options'
 const todayHere = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' })
 
 // Lives only in the Planner's Wrap up tab (/events/wrapup redirects there).
-const WrapUp = ({ bare = true, onChange = () => {} }) => {
+// fromPlanner(choice): {balls, for} when the Planner had dough for that date (Planner tab only).
+const WrapUp = ({ bare = true, onChange = () => {}, fromPlanner = () => null }) => {
   const Shell = bare ? Bare : TeamPage
   const Header = bare ? () => null : PageHeader
   const { user, loading, access } = useEventAdmin()
@@ -399,6 +418,7 @@ const WrapUp = ({ bare = true, onChange = () => {} }) => {
         <WrapUpForm
           headers={data.headers}
           choice={choice}
+          planned={fromPlanner(choice)}
           today={data.today}
           onDone={finished}
           onBack={() => setChoice(null)}
