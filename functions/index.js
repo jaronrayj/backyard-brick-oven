@@ -5,6 +5,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { saveInquiryEvent, runDoughReminders } from "./events.js";
 import { sendPush, runMorningSummary, runWrapUpReminder } from "./push.js";
 import { runReviewAsks } from "./reviewAsk.js";
+import { sendAutoReply } from "./autoReply.js";
 import { runMoneyDay } from "./money.js";
 import { eventLink } from "./links.js";
 
@@ -196,6 +197,8 @@ export const sendInquiry = onRequest(
           .join(" · "),
         link: eventLink(eventId),
       });
+      // Thank them right away with what they sent (wording under Events > Emails).
+      await sendAutoReply(body, eventId);
       logger.info("Inquiry email sent");
       return res.status(200).json({ ok: true });
     } catch (err) {

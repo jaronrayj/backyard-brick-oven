@@ -17,6 +17,7 @@ import useEventAdmin from './useEventAdmin'
 import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 import ComboBox from '../../components/ComboBox'
 import Report from './Report'
+import Emails from './Emails'
 import FollowUp from './FollowUp'
 import ReviewAsk from './ReviewAsk'
 import CalendarLine from './CalendarLine'
@@ -922,6 +923,13 @@ const Events = () => {
       </Shell>
     )
   }
+  if (editing === 'emails') {
+    return (
+      <Shell>
+        <Emails onClose={() => setEditing(null)} />
+      </Shell>
+    )
+  }
   if (editing === 'settings') {
     return (
       <Shell>
@@ -945,6 +953,9 @@ const Events = () => {
         </button>
         <button type="button" className={btnQuiet} onClick={() => setEditing('settings')}>
           Pricing
+        </button>
+        <button type="button" className={btnQuiet} onClick={() => setEditing('emails')}>
+          Emails
         </button>
         <button type="button" className={btnPrimary} onClick={() => setEditing({ id: null, event: blankEvent() })}>
           + New event
