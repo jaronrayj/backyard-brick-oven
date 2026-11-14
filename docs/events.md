@@ -347,7 +347,7 @@ to Quoted, adds "Quote emailed to …" (and the offered times) to the history,
 and sets `quoteEmailedAt`. The button waits until the event is saved, has a
 quote and has an email address. The editor closes after sending.
 
-**Tastings.** Offering times makes `tastings/{token}` (server only). Each
+**Tastings** (weddings only: the composer shows tasting times only for wedding events, and `sendQuoteEmail` refuses times for anything else). Offering times makes `tastings/{token}` (server only). Each
 button links to `/tasting?t=<token>&i=<n>` (`src/pages/Tasting`), where they
 confirm a time (`tastingInfo` / `pickTasting`). Past times can't be picked,
 and the first pick wins. A pick:

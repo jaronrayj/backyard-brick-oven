@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { cleanTimes, fillTastingLinks, tastingsToRemind } from "./tasting.js";
+import { cleanTimes, fillTastingLinks, isWedding, tastingsToRemind } from "./tasting.js";
 import { DEFAULT_TASTING, renderTastingEmail, tastingLength, tastingWhen } from "./replyText.js";
 
 const now = Date.parse("2026-11-14T18:00:00Z");
@@ -48,4 +48,12 @@ test("reminders go out the day before, once", () => {
     { t: {} },
   ];
   assert.deepEqual(tastingsToRemind(docs, morning), [docs[0]]);
+});
+
+test("free tastings are for weddings only", () => {
+  assert.equal(isWedding({ eventType: "Wedding" }), true);
+  assert.equal(isWedding({ eventType: "Wedding reception" }), true);
+  assert.equal(isWedding({ eventType: "Birthday or family party" }), false);
+  assert.equal(isWedding({ eventType: "" }), false);
+  assert.equal(isWedding(null), false);
 });

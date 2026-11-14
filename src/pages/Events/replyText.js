@@ -98,7 +98,7 @@ export const QUOTE_PLACEHOLDERS = [
   ["{name}", "their first name"],
   ["{event}", "\"your wedding on Saturday, June 12, 2027\" (just \"your wedding\" with no date)"],
   ["{quote}", "the quote: each line, tax, total and deposit"],
-  ["{tasting}", "the tasting block below, only when you offer tasting times"],
+  ["{tasting}", "the tasting invite below: weddings only, and only when you offer tasting times"],
 ];
 
 export const DEFAULT_QUOTE_EMAIL = {
@@ -214,12 +214,20 @@ export const renderTastingEmail = (template, { name, at, place, minutes }) => {
 
 export const DEFAULT_SIGNATURE = {
   on: true,
-  html: "<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"color:#222222;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.45;border-collapse:collapse\"><tbody><tr><td style=\"padding-right:14px;vertical-align:top\"><a href=\"https://backyardbrickovenpizza.com/\" target=\"_blank\"><img src=\"https://backyardbrickovenpizza.com/icon-192.png\" width=\"64\" height=\"64\" alt=\"Backyard Brick Oven\" style=\"display:block;border:0;width:64px;height:64px;border-radius:8px\"></a></td><td style=\"border-left:3px solid #c2410c;padding-left:14px;vertical-align:top\"><div style=\"font-size:16px;font-weight:bold;color:#222222\">Jaron Johnson</div><div style=\"color:#555555\">Owner, Backyard Brick Oven</div><div style=\"color:#777777;font-size:13px\">Neapolitan-style pizza for weddings, events &amp; Pizza Fridays · Bountiful, UT</div><div style=\"padding-top:6px\"><a href=\"tel:+18018723439\" style=\"color:#222222;text-decoration:none\" target=\"_blank\">(801) 872-3439</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href=\"https://backyardbrickovenpizza.com/\" style=\"color:#c2410c;text-decoration:none\" target=\"_blank\">backyardbrickovenpizza.com</a></div><div style=\"padding-top:6px;font-size:13px\"><a href=\"https://backyardbrickovenpizza.com/inquiries\" style=\"color:#c2410c;text-decoration:none;font-weight:bold\" target=\"_blank\">Book an event</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href=\"https://backyardbrickovenpizza.com/\" style=\"color:#c2410c;text-decoration:none\" target=\"_blank\">See the menu</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href=\"https://www.instagram.com/backyard_brick_oven/\" style=\"color:#c2410c;text-decoration:none\" target=\"_blank\">Instagram</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href=\"https://share.google/KUHCVmwmo8qqqA64r\" style=\"color:#c2410c;text-decoration:none\" target=\"_blank\">★ Leave us a Google review</a></div></td></tr></tbody></table>",
+  html: "<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"color:#222222;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.45;border-collapse:collapse\"><tbody><tr><td style=\"padding-right:14px;vertical-align:top\"><a href=\"https://backyardbrickovenpizza.com/\" target=\"_blank\"><img src=\"https://backyardbrickovenpizza.com/icon-192.png\" width=\"64\" height=\"64\" alt=\"Backyard Brick Oven\" style=\"display:block;border:0;width:64px;height:64px;border-radius:8px\"></a></td><td style=\"border-left:3px solid #c2410c;padding-left:14px;vertical-align:top\"><div style=\"font-size:16px;font-weight:bold;color:#222222\">Jaron Johnson</div><div style=\"color:#555555\">Owner, Backyard Brick Oven</div><div style=\"color:#777777;font-size:13px\">Neapolitan-style pizza for weddings, events &amp; Pizza Fridays · Bountiful, UT</div><div style=\"padding-top:6px\"><a href=\"tel:+18018723439\" style=\"color:#222222;text-decoration:none\" target=\"_blank\">(801) 872-3439</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href=\"https://backyardbrickovenpizza.com/\" style=\"color:#c2410c;text-decoration:none\" target=\"_blank\">backyardbrickovenpizza.com</a></div><div style=\"padding-top:6px;font-size:13px\"><a href=\"https://backyardbrickovenpizza.com/inquiries\" style=\"color:#c2410c;text-decoration:none;font-weight:bold\" target=\"_blank\">Book an event</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href=\"https://backyardbrickovenpizza.com/\" style=\"color:#c2410c;text-decoration:none\" target=\"_blank\">See the menu</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href=\"https://www.instagram.com/backyard_brick_oven/\" style=\"color:#c2410c;text-decoration:none\" target=\"_blank\">Instagram</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href=\"https://backyardbrickovenpizza.com/review\" style=\"color:#c2410c;text-decoration:none\" target=\"_blank\">★ Leave us a Google review</a></div></td></tr></tbody></table>",
   text: "Jaron Johnson\nOwner, Backyard Brick Oven\nNeapolitan-style pizza for weddings, events & Pizza Fridays · Bountiful, UT\n(801) 872-3439 · backyardbrickovenpizza.com\nBook an event: https://backyardbrickovenpizza.com/inquiries\nInstagram: https://www.instagram.com/backyard_brick_oven/",
 };
 const SHORT_SIGN_OFF = "Jaron\nBackyard Brick Oven · (801) 872-3439";
 
-export const signatureFrom = (settings) => ({ ...DEFAULT_SIGNATURE, ...((settings && settings.signature) || {}) });
+// The review link goes through your own site (backyardbrickovenpizza.com/review,
+// which forwards to Google): link shorteners like share.google are a mild spam
+// signal, so a saved signature that still has one gets your link instead.
+const OLD_REVIEW_LINK = /https?:\/\/share\.google\/[A-Za-z0-9]+/g;
+export const signatureFrom = (settings) => {
+  const sig = { ...DEFAULT_SIGNATURE, ...((settings && settings.signature) || {}) };
+  return { ...sig, html: String(sig.html || "").replace(OLD_REVIEW_LINK, REVIEW_LINK), text: String(sig.text || "").replace(OLD_REVIEW_LINK, REVIEW_LINK) };
+};
+const REVIEW_LINK = "https://backyardbrickovenpizza.com/review";
 
 // Wording saved before the signature existed ends with "Jaron" (and the phone
 // line). The signature has both, so drop them rather than say them twice.

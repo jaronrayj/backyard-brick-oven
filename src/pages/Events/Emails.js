@@ -268,7 +268,7 @@ const Emails = ({ onClose }) => {
           <Text label="Subject" value={s.quoteEmail.subject} onChange={(v) => setPart('quoteEmail', { subject: v })} />
           <Text label="Message" rows={11} value={s.quoteEmail.body} onChange={(v) => setPart('quoteEmail', { body: v })} />
           <Placeholders list={QUOTE_PLACEHOLDERS} />
-          <Text label="Tasting invite (only when you offer tasting times; {times} becomes a button per time)" rows={5} value={s.quoteEmail.tasting} onChange={(v) => setPart('quoteEmail', { tasting: v })} />
+          <Text label="Tasting invite (weddings only, when you offer tasting times; {times} becomes a button per time)" rows={5} value={s.quoteEmail.tasting} onChange={(v) => setPart('quoteEmail', { tasting: v })} />
           <Reset onClick={() => setPart('quoteEmail', { ...DEFAULT_QUOTE_EMAIL })} />
           {previewHead()}
           <Preview mail={signed(renderQuoteEmail({ template: s.quoteEmail, event: ev, quote: ev.quote, times: sample === 'Wedding' ? times : [] }))} />

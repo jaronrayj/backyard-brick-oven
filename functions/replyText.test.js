@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { DEFAULT_AUTO_REPLY, DEFAULT_SIGNATURE, appendSignature, detailRows, dropOldSignOff, renderAutoReply, replyEventWords } from "./replyText.js";
+import { DEFAULT_AUTO_REPLY, DEFAULT_SIGNATURE, appendSignature, signatureFrom, detailRows, dropOldSignOff, renderAutoReply, replyEventWords } from "./replyText.js";
 import { inquiryToEvent } from "./events.js";
 
 test("the Emails page preview uses the same code as the email", () => {
@@ -98,4 +98,12 @@ test("wording saved before the signature loses its old sign-off", () => {
   assert.equal(dropOldSignOff("Thanks, Jaron is great"), "Thanks, Jaron is great");
   const old = { ...DEFAULT_AUTO_REPLY, body: DEFAULT_AUTO_REPLY.body + "\nJaron\nBackyard Brick Oven · (801) 872-3439" };
   assert.doesNotMatch(renderAutoReply(old, inquiryToEvent(form)).text, /Jaron/);
+});
+
+test("the signature's review link is your own, not a shortener", () => {
+  assert.doesNotMatch(DEFAULT_SIGNATURE.html, /share\.google/);
+  assert.match(DEFAULT_SIGNATURE.html, /href="https:\/\/backyardbrickovenpizza\.com\/review"[^>]*>★ Leave us a Google review/);
+  const saved = signatureFrom({ signature: { html: '<a href="https://share.google/KUHCVmwmo8qqqA64r">review</a>', text: "Review: https://share.google/KUHCVmwmo8qqqA64r" } });
+  assert.equal(saved.html, '<a href="https://backyardbrickovenpizza.com/review">review</a>');
+  assert.equal(saved.text, "Review: https://backyardbrickovenpizza.com/review");
 });
