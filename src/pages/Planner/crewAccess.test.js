@@ -12,7 +12,7 @@ const fakeStore = (docs) => {
       },
       onSnapshot: (next) => {
         const data = docs[path]
-        next({ exists: !!data, data: () => data, metadata: { hasPendingWrites: false } })
+        next({ exists: !!data, data: () => data, metadata: { hasPendingWrites: false, fromCache: false } })
         return () => {}
       },
     }),
