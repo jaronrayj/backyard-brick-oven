@@ -78,9 +78,12 @@ It writes the first empty row by column A rather than appending, because the
 year formula in the last column runs far below the data and an append would
 land under it. That formula column is never written.
 
-**Editing.** Wrap-ups whose event date is in the last 3 days (`EDIT_DAYS` in
-`functions/wrapupRows.js`) are listed under "Edit a recent wrap-up", read fresh
-from the sheet; a "Wrapped up" entry opens its row too. Saving updates that row
+**Editing.** There's one list: tap an entry marked "Wrapped up" to open its saved row
+(wrap-ups whose event date is in the last 3 days, `EDIT_DAYS` in
+`functions/wrapupRows.js`), read fresh
+from the sheet. When the entry's name matches none or several of that date's rows,
+it asks which one, with a button for each. A "Something else" wrap-up with no
+calendar entry isn't in the list, so change it in the Form Responses tab. Saving updates that row
 in place and never adds one. The server first re-reads the row and refuses if
 its timestamp, date or event name changed, or if the event is now too old, and
 writes only the cells whose value changed, so a sum typed into a cell
