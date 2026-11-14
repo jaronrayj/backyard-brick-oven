@@ -231,3 +231,21 @@ If the calendar can't be read, the feed answers 503 rather than an empty
 calendar, so subscribers' apps keep the Fridays they already have.
 
 The old public "Pizza Fridays" Google Calendar is no longer used.
+
+## Automatic reply to inquiries
+
+A minute after a website inquiry with an email address comes in,
+`functions/autoReply.js` (called from `sendInquiry`) emails them from the
+business Gmail, with Reply-To set to that Gmail. The email thanks them, lists
+what they sent (type, date, service time, place, guests, extras, their note,
+leaving out anything blank) and says the quote is coming within a day or two.
+The event's history gets "Automatic reply sent to …". If the reply fails, the
+inquiry still goes through. Inquiries with only a phone number get nothing.
+
+The wording is edited under **Events → Emails**: on/off, subject and message,
+with a live preview for a wedding and a party. `{name}` (same greeting as the
+review email), `{event}` ("your wedding" / "your party" / "your pizza class" /
+"your event") and `{details}` (the list) fill in for each inquiry. It's saved
+in `eventSettings/emails.autoReply`; with nothing saved, the defaults in
+`replyText.js` are used. `functions/replyText.js` is copied byte for byte to
+`src/pages/Events/replyText.js` for the preview, and a test checks they match.
