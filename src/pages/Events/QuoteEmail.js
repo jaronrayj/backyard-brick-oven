@@ -44,7 +44,9 @@ const QuoteEmail = ({ id, event, initial, onSent }) => {
       .catch(() => setError("Couldn't load the email wording."))
   }, [open, template, event])
 
-  const isoTimes = useMemo(() => times.map(toIso).filter(Boolean), [times])
+  // Free tastings are for weddings only; other events never offer times.
+  const wedding = /wedding/i.test(event.eventType || '')
+  const isoTimes = useMemo(() => (wedding ? times.map(toIso).filter(Boolean) : []), [times, wedding])
   const mail = useMemo(
     () =>
       template ? appendSignature(renderQuoteEmail({ template: { ...template, subject, body }, event, quote: event.quote, times: isoTimes }), signature) : null,
@@ -107,11 +109,12 @@ const QuoteEmail = ({ id, event, initial, onSent }) => {
             <textarea className={`${ui.input} mt-1 font-mono`} rows={12} value={body} onChange={(e) => setBody(e.target.value)} />
           </label>
           <p className="text-xs text-gray-500">
-            <code>{'{quote}'}</code> is the quote and <code>{'{tasting}'}</code> the tasting invite (only when you add times below).
+            <code>{'{quote}'}</code> is the quote{wedding ? <> and <code>{'{tasting}'}</code> the tasting invite (only when you add times below)</> : ''}.
           </p>
 
+          {wedding && (
           <div className="space-y-2">
-            <p className="text-sm font-semibold text-gray-800">Tasting times to offer {/wedding/i.test(event.eventType || '') ? '' : '(optional)'}</p>
+            <p className="text-sm font-semibold text-gray-800">Tasting times to offer (free tasting, weddings only)</p>
             {times.map((v, i) => (
               <div key={i} className="flex gap-2 items-center">
                 <input type="datetime-local" className={ui.input} value={v} onChange={(e) => setTimes(times.map((x, j) => (j === i ? e.target.value : x)))} />
@@ -125,6 +128,7 @@ const QuoteEmail = ({ id, event, initial, onSent }) => {
             </button>
             {past && <p className="text-sm text-red-700">One of the times has already passed.</p>}
           </div>
+          )}
 
           <div className="space-y-1">
             <p className="text-sm font-semibold text-gray-800">Preview</p>

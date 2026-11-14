@@ -32,6 +32,9 @@ const SITE = "https://backyardbrickovenpizza.com";
 const TZ = "America/Denver";
 const MAX_TIMES = 8;
 
+// Free tastings are offered for weddings only.
+export const isWedding = (event) => /wedding/i.test(String((event && event.eventType) || ""));
+
 const emailOf = (v) => (/[^\s/<>,;]+@[^\s/<>,;]+\.[^\s/<>,;]+/.exec(String(v || "")) || [""])[0];
 const utahDay = (d) => new Date(d).toLocaleDateString("en-CA", { timeZone: TZ });
 const utahHour = (d) => Number(new Date(d).toLocaleString("en-US", { timeZone: TZ, hour: "numeric", hourCycle: "h23" }));
@@ -75,6 +78,9 @@ export const sendQuoteEmail = onCall({ invoker: "public", secrets: [GMAIL_APP_PA
 
   // The editor sends times in the order the buttons were built; keep that order.
   const offered = (Array.isArray(times) ? times : []).slice(0, MAX_TIMES);
+  if (offered.length && !isWedding(event)) {
+    throw new HttpsError("invalid-argument", "Free tastings are for weddings only. Remove the tasting times.");
+  }
   if (offered.length && cleanTimes(offered).length !== offered.length) {
     throw new HttpsError("invalid-argument", "Each tasting time needs to be in the future, with no repeats.");
   }

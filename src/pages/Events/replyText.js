@@ -98,7 +98,7 @@ export const QUOTE_PLACEHOLDERS = [
   ["{name}", "their first name"],
   ["{event}", "\"your wedding on Saturday, June 12, 2027\" (just \"your wedding\" with no date)"],
   ["{quote}", "the quote: each line, tax, total and deposit"],
-  ["{tasting}", "the tasting block below, only when you offer tasting times"],
+  ["{tasting}", "the tasting invite below: weddings only, and only when you offer tasting times"],
 ];
 
 export const DEFAULT_QUOTE_EMAIL = {
