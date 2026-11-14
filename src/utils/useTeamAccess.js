@@ -7,6 +7,8 @@ export const TEAM_TOOLS = [
   { key: 'events', roles: ['admin'], name: 'Events', href: '/events', blurb: 'Inquiries, quotes and bookings.' },
   { key: 'menu', roles: ['admin'], name: 'Menu', href: '/admin/menu', blurb: 'The pizzas and photos on the website.' },
   { key: 'money', roles: ['admin'], name: 'Money', href: '/money', blurb: 'Profit First transfers on the 10th and 25th.' },
+  // tab: false — on the team home list only, not in the tab bar.
+  { key: 'signups', roles: ['admin'], name: 'Email list', href: '/admin/signups', blurb: 'Sign-ups from the /hello poster page, with a CSV download.', tab: false },
   {
     key: 'admin',
     roles: ['admin'],

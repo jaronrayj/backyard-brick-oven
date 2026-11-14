@@ -19,6 +19,8 @@ const STEPS = new Set([
   "contact_text",
   "hello_view",
   "hello_calendar",
+  "hello_signup",
+  "hello_follow",
 ]);
 
 export const monthKey = (d = new Date()) =>
