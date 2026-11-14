@@ -6,6 +6,7 @@ import { saveInquiryEvent, runDoughReminders } from "./events.js";
 import { sendPush, runMorningSummary, runWrapUpReminder } from "./push.js";
 import { runReviewAsks } from "./reviewAsk.js";
 import { sendAutoReply } from "./autoReply.js";
+import { runTastingReminders } from "./tasting.js";
 import { runMoneyDay } from "./money.js";
 import { eventLink } from "./links.js";
 
@@ -224,7 +225,7 @@ export { moneyToMove, markMoneyMoved } from "./money.js";
 export const notificationTimer = onSchedule(
   { schedule: "*/15 * * * *", timeZone: "America/Denver", secrets: [GMAIL_APP_PASSWORD], region: "us-central1" },
   async () => {
-    for (const [name, run] of [["dough reminders", runDoughReminders], ["morning summary", runMorningSummary], ["wrap-up reminder", runWrapUpReminder], ["review emails", runReviewAsks], ["money day", runMoneyDay]]) {
+    for (const [name, run] of [["dough reminders", runDoughReminders], ["morning summary", runMorningSummary], ["wrap-up reminder", runWrapUpReminder], ["review emails", runReviewAsks], ["tasting reminders", runTastingReminders], ["money day", runMoneyDay]]) {
       try {
         await run();
       } catch (err) {
@@ -235,3 +236,4 @@ export const notificationTimer = onSchedule(
 );
 export { countStep } from "./stats.js";
 export { pizzaFridaysCalendar } from "./pizzaFridayFeed.js";
+export { sendQuoteEmail, tastingInfo, pickTasting } from "./tasting.js";

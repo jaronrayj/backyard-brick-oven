@@ -45,6 +45,11 @@ service cloud.firestore {
     match /siteStats/{month} {
       allow read: if isAdmin();
     }
+    // Wedding tastings offered in quote emails. Only the functions in
+    // functions/tasting.js read and write them; the /tasting page goes through those.
+    match /tastings/{token} {
+      allow read, write: if false;
+    }
     match /publicSettings/{doc} {
       allow read: if true;
       allow write: if isAdmin();

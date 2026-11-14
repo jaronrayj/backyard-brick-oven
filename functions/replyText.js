@@ -88,3 +88,125 @@ export const renderAutoReply = (template, event) => {
     .join("\n")}</div>`;
   return { subject, text: `${text}\n`, html };
 };
+
+// ---------- Quote email (sent from the event editor) ----------
+//
+// The editor fills these in; {quote} becomes the quote table and {tasting} the
+// tasting block (left out when no tasting times are offered). {times} inside
+// the tasting block becomes a button per time.
+
+export const QUOTE_PLACEHOLDERS = [
+  ["{name}", "their first name"],
+  ["{event}", "\"your wedding on Saturday, June 12, 2027\" (just \"your wedding\" with no date)"],
+  ["{quote}", "the quote: each line, tax, total and deposit"],
+  ["{tasting}", "the tasting block below, only when you offer tasting times"],
+];
+
+export const DEFAULT_QUOTE_EMAIL = {
+  subject: "Your Backyard Brick Oven quote 🍕",
+  body: [
+    "Hi {name},",
+    "",
+    "Here's your quote for {event}:",
+    "",
+    "{quote}",
+    "",
+    "{tasting}",
+    "",
+    "Your date is held once the deposit is paid. Reply to this email when you're ready and I'll send you how to pay.",
+    "",
+    "Talk soon,",
+    "Jaron",
+    "Backyard Brick Oven · (801) 872-3439",
+  ].join("\n"),
+  tasting: [
+    "Come try the pizza first! We'd love to have you over for a free tasting. Tap a time that works:",
+    "",
+    "{times}",
+    "",
+    "None of those work? Just reply with a couple of times that do.",
+  ].join("\n"),
+};
+
+// ---------- Tasting emails (sent when they pick a time, and the day before) ----------
+
+export const TASTING_PLACEHOLDERS = [
+  ["{name}", "their first name"],
+  ["{when}", "\"Tuesday, November 17 at 7:00 pm\""],
+  ["{place}", "the tasting address (below)"],
+  ["{length}", "\"about an hour\" (from the tasting length below)"],
+];
+
+export const DEFAULT_TASTING = {
+  place: "",
+  minutes: 60,
+  confirm: {
+    subject: "Your pizza tasting is set! 🍕",
+    body: [
+      "Hi {name},",
+      "",
+      "You're all set for a pizza tasting on {when}.",
+      "",
+      "Where: {place}",
+      "It takes {length}.",
+      "",
+      "If something comes up, just reply to this email and we'll find another time.",
+      "",
+      "See you soon,",
+      "Jaron",
+      "Backyard Brick Oven · (801) 872-3439",
+    ].join("\n"),
+  },
+  reminder: {
+    subject: "See you tomorrow for your pizza tasting!",
+    body: [
+      "Hi {name},",
+      "",
+      "Just a reminder: your pizza tasting is tomorrow, {when}.",
+      "",
+      "Where: {place}",
+      "",
+      "If something came up, just reply to this email.",
+      "",
+      "See you soon,",
+      "Jaron",
+    ].join("\n"),
+  },
+};
+
+const TZ = "America/Denver";
+
+// ISO time -> "Tuesday, November 17 at 7:00 pm" (Utah time).
+export const tastingWhen = (iso, { short = false } = {}) => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const day = d.toLocaleDateString("en-US", short ? { weekday: "short", month: "short", day: "numeric", timeZone: TZ } : { weekday: "long", month: "long", day: "numeric", timeZone: TZ });
+  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: TZ }).replace(" AM", " am").replace(" PM", " pm");
+  return short ? `${day} · ${time}` : `${day} at ${time}`;
+};
+
+export const tastingLength = (minutes) => {
+  const m = Number(minutes) || 60;
+  if (m === 60) return "about an hour";
+  if (m % 60 === 0) return `about ${m / 60} hours`;
+  if (m > 60) return `about ${Math.floor(m / 60)} hour${m >= 120 ? "s" : ""} ${m % 60} minutes`;
+  return `about ${m} minutes`;
+};
+
+const paragraphsHtml = (text) =>
+  `<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#111827;max-width:560px">${text
+    .split(/\n{2,}/)
+    .map((p) => `<p>${linkify(esc(p)).replace(/\n/g, "<br>")}</p>`)
+    .join("\n")}</div>`;
+
+// A tasting email ({ subject, body } template): { subject, text, html }.
+export const renderTastingEmail = (template, { name, at, place, minutes }) => {
+  const fill = (s) =>
+    String(s || "")
+      .replace(/\{name\}/g, reviewGreetingName(name))
+      .replace(/\{when\}/g, tastingWhen(at))
+      .replace(/\{place\}/g, String(place || "").trim() || "(we'll send the address)")
+      .replace(/\{length\}/g, tastingLength(minutes));
+  const text = fill(template.body).replace(/\n{3,}/g, "\n\n").trim();
+  return { subject: fill(template.subject).replace(/\s+/g, " ").trim(), text: `${text}\n`, html: paragraphsHtml(text) };
+};

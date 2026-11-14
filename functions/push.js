@@ -172,7 +172,7 @@ export const runMorningSummary = async () => {
 
     const lines = [];
     try {
-      const { items } = await calendarBetween(today, today);
+      const { items } = await calendarBetween(today, today, { tastings: true });
       for (const c of items.filter((x) => x.date === today)) {
         lines.push(`${c.time || "All day"}: ${c.title || "(no title)"}${c.location ? ` · ${c.location}` : ""}`);
       }

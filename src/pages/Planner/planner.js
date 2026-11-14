@@ -318,7 +318,7 @@ export function mountPlanner(root, deps) {
     box.replaceChildren();
     if (!CAL || !PLAN) return;
     const skipped = PLAN.calSkipped || [];
-    const list = CAL.items.filter((c) => c.date && !/\bprep\b/i.test(c.title) && !skipped.includes(c.id) && !isPlanned(c));
+    const list = CAL.items.filter((c) => c.date && !c.tasting && !/\bprep\b/i.test(c.title) && !skipped.includes(c.id) && !isPlanned(c));
     if (CAL.problem) box.append(el('p', 'note', CAL.problem));
     if (!list.length) return;
     const head = el('div', 'svc-head');
