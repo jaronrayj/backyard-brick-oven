@@ -70,7 +70,7 @@ const Planner = () => {
 
   useEffect(() => {
     if ((access !== 'admin' && access !== 'staff') || !rootRef.current) return undefined
-    const unmount = mountPlanner(rootRef.current, { store, canWrite: access === 'admin', canCheck: true, isAdmin: access === 'admin', refresh, calendar, pizzas,
+    const unmount = mountPlanner(rootRef.current, { store, canWrite: access === 'admin', canCheck: true, shopping: access === 'admin', isAdmin: access === 'admin', refresh, calendar, pizzas,
       wrapUps: access === 'admin' ? wrapUps : null,
     })
     setAwakeSlot(rootRef.current.querySelector('#keep-awake-slot'))

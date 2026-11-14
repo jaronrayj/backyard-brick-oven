@@ -6,7 +6,7 @@ One list decides who can use the team tools: the Firestore document
 | Role | Gets |
 | --- | --- |
 | `admins` | Menu manager, planner (with "Refresh now" for the sheets), events and quotes, wrap-up, Money (Profit First transfers, [money.md](money.md)), the dashboard link |
-| `staff` | The Planner, mostly to look at: the dough plan, pizzas, Calendar (with details), Shopping, Prep and Bring. They can **check things off** on Shopping, Prep and Bring; only admins change the plan (services, pizzas, settings) or add and remove list items. |
+| `staff` | The Planner, mostly to look at: the dough plan, pizzas, Calendar (with details), Prep and Bring (no Shopping tab). They can **check things off** on Prep and Bring; only admins change the plan (services, pizzas, settings) or add and remove list items. |
 
 To add or remove someone, edit that document in the Firebase console. They
 sign in at `/team` with that Google account. It has to be a Google account,

@@ -37,14 +37,17 @@ test('crew: the plan is view-only, but checking things off still saves', async (
   })
   const root = document.createElement('div')
   document.body.appendChild(root)
-  const stop = mountPlanner(root, { store, canWrite: false, canCheck: true, pizzas: () => () => {} })
+  const stop = mountPlanner(root, { store, canWrite: false, canCheck: true, shopping: false, pizzas: () => () => {} })
   jest.advanceTimersByTime(1000)
   for (let i = 0; i < 5; i += 1) await Promise.resolve()
 
   // Nothing about the plan is saved by crew, not even clearing old services.
   expect(store.saved['plan/current']).toBeUndefined()
   expect(root.querySelector('#readonly').hidden).toBe(false)
-  expect(root.querySelector('#readonly').textContent).toMatch(/check things off/)
+  expect(root.querySelector('#readonly').textContent).toBe('Only admins change the plan. You can check things off on Prep and Bring.')
+  // No Shopping tab for crew.
+  expect(root.querySelector('#tab-shop').hidden).toBe(true)
+  expect(root.querySelector('#tab-prep').hidden).toBe(false)
   expect(root.querySelector('#add-svc').disabled).toBe(true)
   expect(root.querySelector('#shop-add').disabled).toBe(true)
 
