@@ -160,7 +160,8 @@ export const totals = (quote) => {
   const taxable = subtotal - discount
   const tax = round2((taxable * n(q.taxRate)) / 100)
   const total = round2(taxable + tax)
-  const deposit = round2((total * n(q.depositPct)) / 100)
+  // The deposit is a share of the price before tax; all the tax goes in the balance.
+  const deposit = round2((taxable * n(q.depositPct)) / 100)
   return { subtotal, discount, tax, total, deposit, balance: round2(total - deposit) }
 }
 
@@ -206,7 +207,7 @@ export const quoteText = (event, quote) => {
   if (t.discount) out.push(`Subtotal: ${money(t.subtotal)}`, `Discount: −${money(t.discount)}`)
   if (t.tax) out.push(`Tax (${n(quote.taxRate)}%): ${money(t.tax)}`)
   out.push(`Total: ${money(t.total)}`)
-  if (t.deposit) out.push(`Deposit to book (${n(quote.depositPct)}%): ${money(t.deposit)}`, `Balance due: ${money(t.balance)}`)
+  if (t.deposit) out.push(`Deposit to book (${n(quote.depositPct)}% before tax): ${money(t.deposit)}`, `Balance due (with tax): ${money(t.balance)}`)
   if (quote.footer) out.push('', quote.footer)
   return out.join('\n')
 }

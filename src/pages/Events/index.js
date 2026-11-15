@@ -197,7 +197,7 @@ ${event.location ? `<p>${esc(event.location)}</p>` : ''}${event.guests ? `<p>${e
 ${t.discount ? sum('Subtotal', money(t.subtotal)) + sum('Discount', `−${money(t.discount)}`) : ''}
 ${t.tax ? sum(`Tax (${quote.taxRate}%)`, money(t.tax)) : ''}
 <tr class="sum total"><td colspan="3">Total</td><td class="r">${money(t.total)}</td></tr>
-${t.deposit ? sum(`Deposit to book (${quote.depositPct}%)`, money(t.deposit)) + sum('Balance due', money(t.balance)) : ''}
+${t.deposit ? sum(`Deposit to book (${quote.depositPct}% before tax)`, money(t.deposit)) + sum(t.tax ? 'Balance due (with tax)' : 'Balance due', money(t.balance)) : ''}
 </table>${quote.footer ? `<p class="muted">${esc(quote.footer)}</p>` : ''}
 <p class="muted">Quoted ${prettyDate(todayISO())}</p></body></html>`
   const w = window.open('', '_blank')
@@ -286,7 +286,7 @@ const QuoteEditor = ({ event, pricing, onChange }) => {
         <Field label="Tax (%)">
           <input className={input} type="number" step="0.01" value={quote.taxRate} onChange={(e) => onChange({ ...quote, taxRate: e.target.value })} />
         </Field>
-        <Field label="Deposit (%)">
+        <Field label="Deposit (% before tax)">
           <input className={input} type="number" value={quote.depositPct} onChange={(e) => onChange({ ...quote, depositPct: e.target.value })} />
         </Field>
       </div>
@@ -300,7 +300,7 @@ const QuoteEditor = ({ event, pricing, onChange }) => {
         <p className="text-lg font-bold">Total {money(t.total)}</p>
         {t.deposit > 0 && (
           <p>
-            Deposit {money(t.deposit)} · Balance {money(t.balance)}
+            Deposit {money(t.deposit)} (before tax) · Balance {money(t.balance)}{t.tax > 0 ? ' with tax' : ''}
           </p>
         )}
       </div>
@@ -866,7 +866,7 @@ const Settings = ({ pricing, events = [], onClose }) => {
         <Field label="Sales tax (%)">
           <input className={input} type="number" step="0.01" value={p.taxRate} onChange={(e) => setP({ ...p, taxRate: e.target.value })} />
         </Field>
-        <Field label="Deposit (%)">
+        <Field label="Deposit (% before tax)">
           <input className={input} type="number" value={p.depositPct} onChange={(e) => setP({ ...p, depositPct: e.target.value })} />
         </Field>
       </section>
