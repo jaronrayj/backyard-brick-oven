@@ -16,11 +16,24 @@ import { reviewGreetingName } from './reviewAskText'
 const emailOf = (v) => (/[^\s/<>,;]+@[^\s/<>,;]+\.[^\s/<>,;]+/.exec(String(v || '')) || [''])[0]
 // What the quote email depends on; any unsaved change to these means Save first.
 const sentFields = (e) => JSON.stringify([e.name, e.email, e.eventType, e.date, e.quote])
-// datetime-local value ("2026-11-17T19:00") -> ISO, in this device's time zone (Utah).
+// "2026-11-17T17:00" -> ISO, in this device's time zone (Utah).
 const toIso = (v) => {
   const d = new Date(v)
   return v && !Number.isNaN(d.getTime()) ? d.toISOString() : ''
 }
+
+// Tasting times: a date plus a time in 15-minute steps, 7:00 am to 10:00 pm.
+const DEFAULT_TASTING_TIME = '17:00' // 5 pm
+export const TASTING_CLOCK = Array.from({ length: (22 - 7) * 4 + 1 }, (_, i) => {
+  const mins = 7 * 60 + i * 15
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  return {
+    value: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`,
+    label: `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`,
+  }
+})
+const blankTime = (time = DEFAULT_TASTING_TIME) => ({ date: '', time })
 
 const QuoteEmail = ({ id, event, initial, onSave, onSent }) => {
   const [open, setOpen] = useState(false)
@@ -28,7 +41,7 @@ const QuoteEmail = ({ id, event, initial, onSave, onSent }) => {
   const [signature, setSignature] = useState(null)
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
-  const [times, setTimes] = useState([''])
+  const [times, setTimes] = useState([blankTime()])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -48,7 +61,8 @@ const QuoteEmail = ({ id, event, initial, onSave, onSent }) => {
 
   // Free tastings are for weddings only; other events never offer times.
   const wedding = /wedding/i.test(event.eventType || '')
-  const isoTimes = useMemo(() => (wedding ? times.map(toIso).filter(Boolean) : []), [times, wedding])
+  const isoTimes = useMemo(() => (wedding ? times.map((t) => (t.date ? toIso(`${t.date}T${t.time}`) : '')).filter(Boolean) : []), [times, wedding])
+  const setTime = (i, patch) => setTimes(times.map((x, j) => (j === i ? { ...x, ...patch } : x)))
   const mail = useMemo(
     () =>
       template ? appendSignature(renderQuoteEmail({ template: { ...template, subject, body }, event, quote: event.quote, times: isoTimes }), signature) : null,
@@ -133,15 +147,23 @@ const QuoteEmail = ({ id, event, initial, onSave, onSent }) => {
           {wedding && (
           <div className="space-y-2">
             <p className="text-sm font-semibold text-gray-800">Tasting times to offer (free tasting, weddings only)</p>
-            {times.map((v, i) => (
+            {times.map((t, i) => (
               <div key={i} className="flex gap-2 items-center">
-                <input type="datetime-local" className={ui.input} value={v} onChange={(e) => setTimes(times.map((x, j) => (j === i ? e.target.value : x)))} />
-                <button type="button" aria-label="Remove this time" className="text-gray-400 hover:text-red-700" onClick={() => setTimes(times.length > 1 ? times.filter((_, j) => j !== i) : [''])}>
+                <input type="date" aria-label={`Tasting ${i + 1} date`} className={ui.input} value={t.date} onChange={(e) => setTime(i, { date: e.target.value })} />
+                <select aria-label={`Tasting ${i + 1} time`} className={`${ui.input} w-32 shrink-0`} value={t.time} onChange={(e) => setTime(i, { time: e.target.value })}>
+                  {TASTING_CLOCK.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+                <button type="button" aria-label="Remove this time" className="text-gray-400 hover:text-red-700" onClick={() => setTimes(times.length > 1 ? times.filter((_, j) => j !== i) : [blankTime()])}>
                   ✕
                 </button>
               </div>
             ))}
-            <button type="button" className={ui.btnQuiet} onClick={() => setTimes([...times, ''])}>
+            {/* A new row starts at the last row's time (5 pm the first time). */}
+            <button type="button" className={ui.btnQuiet} onClick={() => setTimes([...times, blankTime(times[times.length - 1].time)])}>
               + Add a time
             </button>
             {past && <p className="text-sm text-red-700">One of the times has already passed.</p>}
