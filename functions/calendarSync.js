@@ -27,6 +27,7 @@ import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { accessToken } from "./google.js";
 import { calendarIdNow } from "./wrapup.js";
+import { cancelTastingsFor, shouldCancelTastings } from "./tasting.js";
 
 if (!getApps().length) initializeApp();
 
@@ -342,6 +343,22 @@ export const syncEventCalendar = onDocumentWritten({ document: "events/{id}", re
   const id = change.params.id;
   const before = change.data && change.data.before && change.data.before.exists ? change.data.before.data() : null;
   const after = change.data && change.data.after && change.data.after.exists ? change.data.after.data() : null;
+  // Lost or deleted: close its tastings and take a booked one off the calendar.
+  if (shouldCancelTastings(before, after)) {
+    try {
+      const n = await cancelTastingsFor(id);
+      if (n && after) {
+        await getFirestore()
+          .doc(`events/${id}`)
+          .update({
+            "tasting.cancelled": true,
+            history: FieldValue.arrayUnion({ at: Date.now(), type: "note", text: "Tasting cancelled (marked Lost)" }),
+          });
+      }
+    } catch (e) {
+      logger.error(`Couldn't cancel the tastings for event ${id}`, e);
+    }
+  }
   try {
     if (!after) {
       // Deleted in the app: take its entry off too (never a hand-made one).
