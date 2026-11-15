@@ -68,6 +68,7 @@ export const openGroup = (event) => {
   const s = event && event.status
   if (s === 'booked') return 'booked'
   if (s === 'quoted') return 'quoted'
+  if (s === 'contacted') return 'contacted'
   if (s === 'inquiry') return contactedAt(event) != null ? 'contacted' : 'new'
   return null
 }
@@ -105,7 +106,7 @@ export const stamp = (at) => {
 }
 
 // How long to wait before nudging, by stage.
-export const FOLLOW_UP_DAYS = { inquiry: 2, quoted: 5 }
+export const FOLLOW_UP_DAYS = { inquiry: 2, contacted: 3, quoted: 5 }
 
 // Is this event due a follow-up? Only inquiries and quotes wait on the customer.
 export const followUpDue = (event, now = Date.now()) => {

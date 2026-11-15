@@ -22,7 +22,7 @@ export const calendarState = (event) => {
   if (cal.adopt) return { text: 'Updating your calendar entry…' }
   if (cal.optOut && !cal.revive) return { text: 'Off your calendar: the entry was deleted there.', action: 'Put it back on my calendar' }
   if (!onCalendar) {
-    if (e.status === 'inquiry') return { text: 'Goes on your calendar as tentative once it’s quoted and has a date.' }
+    if (e.status === 'inquiry' || e.status === 'contacted') return { text: 'Goes on your calendar as tentative once it’s quoted and has a date.' }
     if (e.status === 'lost') return { text: cal.id && !cal.removed ? 'Coming off your calendar.' : 'Not on your calendar.' }
     return { text: 'Goes on your calendar once it has a date.' }
   }

@@ -88,6 +88,7 @@ const { input, btnPrimary, btnQuiet } = ui
 const statusLabel = (key) => (STATUSES.find((s) => s.key === key) || { label: key }).label
 const STATUS_COLORS = {
   inquiry: 'bg-sky-100 text-sky-800',
+  contacted: 'bg-violet-100 text-violet-800',
   quoted: 'bg-amber-100 text-amber-800',
   booked: 'bg-green-100 text-green-800',
   done: 'bg-gray-200 text-gray-700',
@@ -892,8 +893,8 @@ const Settings = ({ pricing, events = [], onClose }) => {
 
 // Two lists: what's still in play (grouped by stage) and what's finished.
 const FILTERS = [
-  { key: 'open', label: 'Open', test: (e) => ['inquiry', 'quoted', 'booked'].includes(e.status) },
-  { key: 'past', label: 'Done & lost', test: (e) => !['inquiry', 'quoted', 'booked'].includes(e.status) },
+  { key: 'open', label: 'Open', test: (e) => ['inquiry', 'contacted', 'quoted', 'booked'].includes(e.status) },
+  { key: 'past', label: 'Done & lost', test: (e) => !['inquiry', 'contacted', 'quoted', 'booked'].includes(e.status) },
 ]
 // Open events by what needs you next (history.js openGroup and OPEN_ORDER).
 const OPEN_GROUPS = [
@@ -923,7 +924,11 @@ const EventRow = ({ event, mixLead, plannerRef, onOpen }) => {
               {[event.eventType, isWedding(event) ? event.weddingPart : '', event.guests ? `${event.guests} guests` : ''].filter(Boolean).join(' · ')}
             </p>
           </div>
-          <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${STATUS_COLORS[event.status] || ''}`}>{statusLabel(event.status)}</span>
+          {/* An inquiry you've been in touch with shows as Contacted, like the section it's in. */}
+          {(() => {
+            const shown = openGroup(event) === 'contacted' ? 'contacted' : event.status
+            return <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${STATUS_COLORS[shown] || ''}`}>{statusLabel(shown)}</span>
+          })()}
         </div>
         <p className="text-sm text-gray-800">
           {event.date ? prettyDate(event.date) : 'No date'}
@@ -964,10 +969,39 @@ const Events = () => {
   const [mixLead, setMixLead] = useState(2)
   const [plannerRef, setPlannerRef] = useState(null)
   const [filter, setFilter] = useState('open')
-  const [editing, setEditing] = useState(null) // { id, event } | 'settings' | null
+  const [editing, setEditing] = useState(null) // { id, event } | 'report' | 'settings' | 'emails' | null
   const location = useLocation()
   const navigate = useNavigate()
-  const wantedEvent = new URLSearchParams(location.search).get('event')
+  const params = new URLSearchParams(location.search)
+  const wantedEvent = params.get('event')
+  const wantedView = params.get('view') // new | report | pricing | emails
+
+  // Every view has its own address, so the phone's or browser's Back button
+  // goes back to the list: /events?event=<id>, /events?view=new|report|pricing|emails.
+  // Opening one adds a step to the history; closing goes back a step (or to the
+  // list, when the view was opened straight from a link or notification).
+  const open = (query) => navigate(`/events?${query}`, { state: { fromList: true } })
+  const backToList = () => {
+    if (location.state && location.state.fromList) navigate(-1)
+    else navigate('/events', { replace: true })
+  }
+
+  // The address decides what's showing.
+  useEffect(() => {
+    if (wantedEvent) {
+      const e = events.find((x) => x.id === wantedEvent)
+      if (!e) return // still loading (or gone)
+      setEditing((cur) => (cur && cur.id === e.id ? cur : { id: e.id, event: { ...blankEvent(), ...e } }))
+    } else if (wantedView === 'new') {
+      setEditing((cur) => (cur && typeof cur === 'object' && !cur.id ? cur : { id: null, event: blankEvent() }))
+    } else if (wantedView === 'report' || wantedView === 'emails') {
+      setEditing(wantedView)
+    } else if (wantedView === 'pricing') {
+      setEditing('settings')
+    } else {
+      setEditing(null)
+    }
+  }, [wantedEvent, wantedView, events])
 
   // Tapping the Events tab again: back to the list (asks first if an event
   // has unsaved changes).
@@ -975,21 +1009,10 @@ const Events = () => {
     () =>
       onTabHome('events', () => {
         if (editorDirty.current && !window.confirm('Leave this event without saving your changes?')) return
-        setEditing(null)
-        if (location.search) navigate(location.pathname, { replace: true })
+        if (location.search) navigate(location.pathname)
       }),
     [location.pathname, location.search, navigate]
   )
-
-  // /events?event=<id> (from a notification) opens that event once it has
-  // loaded, then drops the ?event so closing it goes back to the list.
-  useEffect(() => {
-    if (!wantedEvent) return
-    const e = events.find((x) => x.id === wantedEvent)
-    if (!e) return
-    setEditing({ id: e.id, event: { ...blankEvent(), ...e } })
-    navigate(location.pathname, { replace: true })
-  }, [wantedEvent, events, location.pathname, navigate])
 
   useEffect(() => {
     if (access !== true) return undefined
@@ -1016,7 +1039,7 @@ const Events = () => {
   }, [events, filter])
 
   const row = (e) => (
-    <EventRow key={e.id} event={e} mixLead={mixLead} plannerRef={plannerRef} onOpen={() => setEditing({ id: e.id, event: { ...blankEvent(), ...e } })} />
+    <EventRow key={e.id} event={e} mixLead={mixLead} plannerRef={plannerRef} onOpen={() => open(`event=${encodeURIComponent(e.id)}`)} />
   )
 
   if (loading) return <Shell><p className="text-gray-500">Loading…</p></Shell>
@@ -1043,28 +1066,29 @@ const Events = () => {
   if (editing === 'report') {
     return (
       <Shell>
-        <Report events={events} onClose={() => setEditing(null)} />
+        <Report events={events} onClose={backToList} />
       </Shell>
     )
   }
   if (editing === 'emails') {
     return (
       <Shell>
-        <Emails onClose={() => setEditing(null)} />
+        <Emails onClose={backToList} />
       </Shell>
     )
   }
   if (editing === 'settings') {
     return (
       <Shell>
-        <Settings pricing={pricing} events={events} onClose={() => setEditing(null)} />
+        <Settings pricing={pricing} events={events} onClose={backToList} />
       </Shell>
     )
   }
   if (editing) {
     return (
       <Shell>
-        <EventEditor id={editing.id} initial={editing.event} pricing={pricing} mixLead={mixLead} plannerRef={plannerRef} onClose={() => setEditing(null)} />
+        {/* Keyed by event, so Back/Forward between two events never shows the wrong one. */}
+        <EventEditor key={editing.id || 'new'} id={editing.id} initial={editing.event} pricing={pricing} mixLead={mixLead} plannerRef={plannerRef} onClose={backToList} />
       </Shell>
     )
   }
@@ -1072,16 +1096,16 @@ const Events = () => {
   return (
     <Shell>
       <PageHeader title="Events" sub="Inquiries, quotes and bookings">
-        <button type="button" className={btnQuiet} onClick={() => setEditing('report')}>
+        <button type="button" className={btnQuiet} onClick={() => open('view=report')}>
           Report
         </button>
-        <button type="button" className={btnQuiet} onClick={() => setEditing('settings')}>
+        <button type="button" className={btnQuiet} onClick={() => open('view=pricing')}>
           Pricing
         </button>
-        <button type="button" className={btnQuiet} onClick={() => setEditing('emails')}>
+        <button type="button" className={btnQuiet} onClick={() => open('view=emails')}>
           Emails
         </button>
-        <button type="button" className={btnPrimary} onClick={() => setEditing({ id: null, event: blankEvent() })}>
+        <button type="button" className={btnPrimary} onClick={() => open('view=new')}>
           + New event
         </button>
       </PageHeader>

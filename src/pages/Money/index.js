@@ -17,7 +17,7 @@ const callable = (name) => httpsCallable(getFunctions(), name)
 const dollars = (n) => `$${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 const GROUP_INFO = {
-  pizza: { title: 'Pizza', note: 'Ingredients come off first; the other percentages are of what’s left.' },
+  pizza: { title: 'Pizza', note: '' },
   enb: { title: 'ENB', note: 'Wrap-ups whose event name starts with “ENB”.' },
 }
 const PARTS = [
@@ -26,6 +26,8 @@ const PARTS = [
   { key: 'owner', label: "Owner's Pay" },
   { key: 'tax', label: 'Tax' },
 ]
+// Real revenue (money in minus ingredients) splits into these plus Operating, to 100%.
+const REAL_PARTS = PARTS.filter((p) => p.key !== 'materials')
 
 const Line = ({ label, value, strong }) => (
   <div className={`flex justify-between gap-3 ${strong ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
@@ -69,9 +71,28 @@ const Percentages = ({ settings, onSaved }) => {
       {Object.keys(GROUP_INFO).map((g) => (
         <div key={g} className="space-y-2">
           <h3 className="text-sm font-semibold text-gray-800">{GROUP_INFO[g].title}</h3>
-          <p className="text-xs text-gray-500">{GROUP_INFO[g].note}</p>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-            {PARTS.map((p) => (
+          {GROUP_INFO[g].note && <p className="text-xs text-gray-500">{GROUP_INFO[g].note}</p>}
+          {/* Step 1: ingredients off the top. Step 2: the rest ("real revenue") splits to 100%. */}
+          <div className="grid grid-cols-[auto_6rem_1fr] items-center gap-2 text-sm">
+            <span className="text-gray-500">1.</span>
+            <input
+              aria-label={`${GROUP_INFO[g].title} ingredients %`}
+              className={input}
+              type="number"
+              inputMode="decimal"
+              min="0"
+              max="100"
+              step="0.5"
+              value={splits[g].materials}
+              onChange={(e) => set(g, 'materials', e.target.value)}
+            />
+            <span className="text-gray-700">% of money in goes to <b>Ingredients</b> first. What's left is real revenue.</span>
+          </div>
+          <p className="text-sm text-gray-700">
+            <span className="text-gray-500">2.</span> Real revenue splits to 100%:
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
+            {REAL_PARTS.map((p) => (
               <label key={p.key} className="block text-xs text-gray-600">
                 <span className="block mb-1">{p.label} %</span>
                 <input
@@ -87,9 +108,15 @@ const Percentages = ({ settings, onSaved }) => {
               </label>
             ))}
             <div className="text-xs text-gray-600">
-              <span className="block mb-1">Operating %</span>
+              <span className="block mb-1">Operating % (the rest)</span>
               <span className={`block px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm ${opexOf(splits[g]) < 0 ? 'text-red-700' : 'text-gray-800'}`}>
                 {opexOf(splits[g])}
+              </span>
+            </div>
+            <div className="text-xs text-gray-600">
+              <span className="block mb-1">Total</span>
+              <span className={`block px-3 py-2 text-sm font-semibold ${opexOf(splits[g]) < 0 ? 'text-red-700' : 'text-gray-900'}`}>
+                {opexOf(splits[g]) < 0 ? `${100 - opexOf(splits[g])}%, over 100` : '100%'}
               </span>
             </div>
           </div>
@@ -185,13 +212,21 @@ const Money = () => {
                   <Line label="To Owner's Pay" value={t.owner} strong />
                   <Line label="To Tax" value={t.tax} strong />
                 </div>
-                <div className="border-t border-gray-200 pt-2 space-y-1 text-sm">
-                  <Line
-                    label="Stays in checking (ingredients + operating)"
-                    value={data.split.stays}
-                  />
-                  <Line label="Money in (Venmo, cash, card; no tips)" value={data.split.groups.pizza.deposits + data.split.groups.enb.deposits} />
-                </div>
+                {/* How it got there, in the same order as the percentages. */}
+                {(() => {
+                  const sum = (k) => (data.split.groups.pizza[k] || 0) + (data.split.groups.enb[k] || 0)
+                  const moneyIn = sum('deposits')
+                  const ingredients = sum('materials')
+                  return (
+                    <div className="border-t border-gray-200 pt-2 space-y-1 text-sm">
+                      <Line label="Money in (Venmo, cash, card; no tips)" value={moneyIn} />
+                      <Line label="− Ingredients (stays in checking)" value={ingredients} />
+                      <Line label="= Real revenue" value={moneyIn - ingredients} strong />
+                      <Line label="Profit + Owner's Pay + Tax (move, above)" value={t.profit + t.owner + t.tax} />
+                      <Line label="Operating (stays in checking)" value={sum('opex')} />
+                    </div>
+                  )
+                })()}
                 <button type="button" className="text-sm underline text-gray-600" onClick={() => setShowRows((v) => !v)}>
                   {showRows ? 'Hide' : 'Show'} the {data.rows.length} wrap-up{data.rows.length === 1 ? '' : 's'} this covers
                 </button>

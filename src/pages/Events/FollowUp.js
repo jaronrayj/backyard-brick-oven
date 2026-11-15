@@ -27,7 +27,7 @@ const FollowUp = ({ event, isNew, onLog }) => {
   const items = timeline(event)
   const last = lastContactAt(event)
   const due = followUpDue(event)
-  const waiting = ['inquiry', 'quoted'].includes(event.status)
+  const waiting = ['inquiry', 'contacted', 'quoted'].includes(event.status)
   const msg = followUpMessage(event)
 
   const copy = async () => {

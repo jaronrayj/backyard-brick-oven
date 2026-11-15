@@ -113,7 +113,7 @@ export const sendQuoteEmail = onCall({ invoker: "public", secrets: [GMAIL_APP_PA
   const lines = [{ at: Date.now(), type: "quote-sent", text: `Quote emailed to ${to}` }];
   if (offered.length) lines.push({ at: Date.now(), type: "note", text: `Offered tasting times: ${offered.map((t) => tastingWhen(t, { short: true })).join(", ")}` });
   await ref.update({
-    ...(event.status === "inquiry" ? { status: "quoted" } : {}),
+    ...(["inquiry", "contacted"].includes(event.status) ? { status: "quoted" } : {}),
     quoteEmailedAt: FieldValue.serverTimestamp(),
     ...(token ? { "tasting.token": token, "tasting.offered": offered, "tasting.picked": FieldValue.delete() } : {}),
     history: FieldValue.arrayUnion(...lines),
