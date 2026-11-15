@@ -8,6 +8,7 @@ import {
   deleteDoc,
   doc,
   onSnapshot,
+  runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -23,7 +24,7 @@ import QuoteEmail from './QuoteEmail'
 import FollowUp from './FollowUp'
 import ReviewAsk from './ReviewAsk'
 import CalendarLine from './CalendarLine'
-import { OPEN_ORDER, changeEntries, daysSince, entry, followUpDue, openGroup, receivedAt } from './history'
+import { changeEntries, daysSince, entry, followUpDue, OPEN_ORDER, openGroup, receivedAt, toMillis } from './history'
 import { DEFAULT_PRICING, STATUSES, addOnName, money, newQuote, prettyDate, publicPricing, quoteText, totals, travelZones } from './quote'
 import {
   FORECAST_DAYS,
@@ -398,6 +399,34 @@ const EventEditor = ({ id: openedId, initial: opened, pricing, mixLead, plannerR
     }
   }
 
+  // Fix a history line (when it happened, what it says) or remove it. Saves right
+  // away, against the event as it is now, so lines added elsewhere aren't lost.
+  const sameLine = (a, b) => toMillis(a.at) === toMillis(b.at) && a.type === b.type && a.text === b.text
+  const editHistory = async (old, next) => {
+    const swap = (list) => {
+      const out = [...(list || [])]
+      const i = out.findIndex((h) => sameLine(h, old))
+      if (i < 0) return null
+      if (next) out[i] = next
+      else out.splice(i, 1)
+      return out
+    }
+    const local = swap(event.history)
+    if (local) set({ history: local })
+    if (!id) return
+    try {
+      await runTransaction(db, async (tx) => {
+        const ref = doc(db, 'events', id)
+        const snap = await tx.get(ref)
+        const updated = swap((snap.data() || {}).history)
+        if (!updated) throw new Error('That line changed on another device. Close and reopen the event.')
+        tx.update(ref, { history: updated, updatedAt: serverTimestamp() })
+      })
+    } catch (e) {
+      setError(e.message && /another device/.test(e.message) ? e.message : "Couldn't save that change to the history. Check you're signed in as an admin.")
+    }
+  }
+
   // Review email: Don't send / Send it after all saves right away (functions/reviewAsk.js reads it).
   const skipReview = async (skip) => {
     const line = entry('note', skip ? "Review email: won't send" : 'Review email: will send')
@@ -592,7 +621,7 @@ const EventEditor = ({ id: openedId, initial: opened, pricing, mixLead, plannerR
         </section>
       )}
 
-      <FollowUp event={event} isNew={!id} onLog={log} />
+      <FollowUp event={event} isNew={!id} onLog={log} onEdit={editHistory} />
 
       <ReviewAsk event={event} isNew={!id} onSkip={skipReview} />
 
