@@ -58,3 +58,27 @@ test('no quote or no email: says what is missing', () => {
   rerender(<QuoteEmail id="e1" event={{ ...event, email: '' }} initial={event} onSave={() => {}} onSent={() => {}} />)
   expect(screen.getByText('Add their email address to send it.')).toBeInTheDocument()
 })
+
+test('tasting times: a date and a time in 15-minute steps, starting at 5 pm', async () => {
+  // eslint-disable-next-line global-require
+  const { TASTING_CLOCK } = require('./QuoteEmail')
+  expect(TASTING_CLOCK[0]).toEqual({ value: '07:00', label: '7:00 am' })
+  expect(TASTING_CLOCK[TASTING_CLOCK.length - 1]).toEqual({ value: '22:00', label: '10:00 pm' })
+  expect(TASTING_CLOCK.every((c) => Number(c.value.slice(3)) % 15 === 0)).toBe(true)
+  expect(TASTING_CLOCK.map((c) => c.label)).toContain('5:15 pm')
+
+  const wedding = { ...event, name: 'Kate and Ryan', eventType: 'Wedding' }
+  render(<QuoteEmail id="e1" event={wedding} initial={wedding} onSave={() => Promise.resolve('e1')} onSent={() => {}} />)
+  fireEvent.click(screen.getByText('Email the quote…'))
+  const time = await screen.findByLabelText('Tasting 1 time')
+  expect(time.value).toBe('17:00')
+  fireEvent.change(screen.getByLabelText('Tasting 1 date'), { target: { value: '2030-06-04' } })
+  fireEvent.change(time, { target: { value: '18:45' } })
+  fireEvent.click(screen.getByText('+ Add a time'))
+  expect(screen.getByLabelText('Tasting 2 time').value).toBe('18:45')
+  fireEvent.click(screen.getByText('Send to mike@example.com'))
+  await waitFor(() => expect(mockCall).toHaveBeenCalled())
+  const sent = mockCall.mock.calls[mockCall.mock.calls.length - 1][0].times
+  expect(sent).toHaveLength(1) // the second row has no date yet
+  expect(new Date(sent[0]).getMinutes()).toBe(45)
+})
