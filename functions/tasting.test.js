@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { cleanTimes, fillTastingLinks, isWedding, tastingsToRemind } from "./tasting.js";
+import { cleanTimes, fillTastingLinks, isWedding, pickProblem, shouldCancelTastings, tastingView, tastingsToRemind } from "./tasting.js";
 import { DEFAULT_TASTING, renderTastingEmail, tastingLength, tastingWhen } from "./replyText.js";
 
 const now = Date.parse("2026-11-14T18:00:00Z");
@@ -56,4 +56,23 @@ test("free tastings are for weddings only", () => {
   assert.equal(isWedding({ eventType: "Birthday or family party" }), false);
   assert.equal(isWedding({ eventType: "" }), false);
   assert.equal(isWedding(null), false);
+});
+
+test("lost or deleted events cancel their tastings", () => {
+  assert.equal(shouldCancelTastings({ status: "quoted" }, { status: "lost" }), true);
+  assert.equal(shouldCancelTastings({ status: "booked" }, null), true); // deleted
+  assert.equal(shouldCancelTastings({ status: "lost" }, { status: "lost" }), false); // already lost
+  assert.equal(shouldCancelTastings({ status: "quoted" }, { status: "booked" }), false);
+  assert.equal(shouldCancelTastings(null, { status: "lost" }), false); // created as lost: nothing offered
+});
+
+test("a cancelled tasting: page says so, no picking, no reminder", () => {
+  const t = { name: "Kate and Ryan", times: ["2026-11-18T02:00:00.000Z"], picked: "2026-11-18T02:00:00.000Z", cancelled: true, minutes: 60 };
+  assert.deepEqual(tastingView(t, now), { name: "Kate and Ryan", picked: null, cancelled: true, minutes: 60, times: [] });
+  assert.match(pickProblem(t, "2026-11-18T02:00:00.000Z", now), /isn't scheduled anymore/);
+  assert.equal(pickProblem({ times: ["2026-11-18T02:00:00.000Z"] }, "2026-11-18T02:00:00.000Z", now), "");
+  assert.match(pickProblem({ times: ["2026-11-18T02:00:00.000Z"] }, "2026-11-19T02:00:00.000Z", now), /isn't available anymore/);
+  const morning = new Date("2026-11-16T16:00:00Z");
+  assert.deepEqual(tastingsToRemind([{ t }], morning), []);
+  assert.equal(tastingView({ ...t, cancelled: false }, now).picked, "2026-11-18T02:00:00.000Z");
 });

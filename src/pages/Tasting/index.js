@@ -62,7 +62,14 @@ const Tasting = () => {
           {!info && !error && <p className="text-center text-gray-600">Loading…</p>}
           {error && !info && <p className="bg-white rounded-xl shadow-md p-5 text-gray-800">{error}</p>}
 
-          {info && done && (
+          {info && info.cancelled && (
+            <div className="bg-white rounded-xl shadow-md p-6 space-y-2 text-center">
+              <p className="text-xl font-bold text-gray-900">This tasting isn't scheduled anymore.</p>
+              <p className="text-gray-600">If you have questions, just reply to the email.</p>
+            </div>
+          )}
+
+          {info && done && !info.cancelled && (
             <div className="bg-white rounded-xl shadow-md p-6 space-y-3 text-center">
               <p className="text-xl font-bold text-gray-900">You're all set{info.name ? `, ${info.name}` : ''}!</p>
               <p className="text-gray-800">
@@ -72,7 +79,7 @@ const Tasting = () => {
             </div>
           )}
 
-          {info && !done && (
+          {info && !done && !info.cancelled && (
             <div className="bg-white rounded-xl shadow-md p-6 space-y-4">
               <p className="text-gray-800">
                 {info.name ? `Hi ${info.name}! ` : ''}Pick a time for your free pizza tasting. It takes about {info.minutes === 60 ? 'an hour' : `${info.minutes} minutes`}.

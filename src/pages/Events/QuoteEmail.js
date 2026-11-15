@@ -74,7 +74,10 @@ const QuoteEmail = ({ id, event, initial, onSave, onSent }) => {
   const dirty = !id || sentFields(event) !== sentFields(initial)
   const picked = event.tasting && event.tasting.picked
   const offered = (event.tasting && event.tasting.offered) || []
-  const status = picked ? (
+  const cancelled = event.tasting && event.tasting.cancelled
+  const status = cancelled ? (
+    <p className="text-sm text-gray-600">Tasting cancelled: the event was marked Lost.</p>
+  ) : picked ? (
     <p className="text-sm text-green-800">Tasting booked: {tastingWhen(picked)}.</p>
   ) : offered.length ? (
     <p className="text-sm text-gray-600">Tasting times offered: {offered.map((t) => tastingWhen(t, { short: true })).join(', ')}. Waiting for them to pick.</p>

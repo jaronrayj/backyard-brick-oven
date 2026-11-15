@@ -138,18 +138,31 @@ const firstName = (name) => {
   return /\s(and|&)\s/i.test(n) ? n : n.split(/\s+/)[0] || "";
 };
 
-export const tastingInfo = onCall({ invoker: "public" }, async (request) => {
-  const { t } = await tastingDoc((request.data || {}).token);
-  // In the order they were offered (the email's buttons use the same index);
-  // past times are marked closed.
-  const open = new Set(cleanTimes(t.times));
+// What the /tasting page shows. Times in the order they were offered (the
+// email's buttons use the same index); past times are closed, and a cancelled
+// tasting (the event was marked Lost or deleted) has none.
+export const tastingView = (t, now = Date.now()) => {
+  const open = new Set(cleanTimes(t.times, now));
   return {
     name: firstName(t.name),
-    picked: t.picked || null,
+    picked: t.cancelled ? null : t.picked || null,
+    cancelled: !!t.cancelled,
     minutes: t.minutes || 60,
-    times: (t.times || []).map((at) => ({ at, open: !t.picked && open.has(at) })),
+    times: t.cancelled ? [] : (t.times || []).map((at) => ({ at, open: !t.picked && open.has(at) })),
   };
+};
+
+export const tastingInfo = onCall({ invoker: "public" }, async (request) => {
+  const { t } = await tastingDoc((request.data || {}).token);
+  return tastingView(t);
 });
+
+// Why a pick can't go through, or "" when it can.
+export const pickProblem = (cur, iso, now = Date.now()) => {
+  if (cur.cancelled) return "This tasting isn't scheduled anymore. Reply to the email if you have questions.";
+  if (!iso || !cleanTimes(cur.times, now).includes(iso)) return "That time isn't available anymore. Reply to the email and we'll find another.";
+  return "";
+};
 
 // Calendar entry for a picked tasting (needs "Make changes to events" sharing).
 const addTastingToCalendar = async (token, t, at, place) => {
@@ -182,8 +195,9 @@ export const pickTasting = onCall({ invoker: "public", secrets: [GMAIL_APP_PASSW
 
   const picked = await db.runTransaction(async (tx) => {
     const cur = (await tx.get(ref)).data();
-    if (cur.picked) return { already: cur.picked };
-    if (!iso || !cleanTimes(cur.times).includes(iso)) throw new HttpsError("failed-precondition", "That time isn't available anymore. Reply to the email and we'll find another.");
+    if (cur.picked && !cur.cancelled) return { already: cur.picked };
+    const problem = pickProblem(cur, iso);
+    if (problem) throw new HttpsError("failed-precondition", problem);
     tx.update(ref, { picked: iso, pickedAt: FieldValue.serverTimestamp() });
     tx.update(db.doc(`events/${cur.eventId}`), {
       "tasting.picked": iso,
@@ -210,7 +224,7 @@ export const pickTasting = onCall({ invoker: "public", secrets: [GMAIL_APP_PASSW
 
 export const tastingsToRemind = (docs, now = new Date()) => {
   const tomorrow = utahDay(new Date(now.getTime() + 24 * 3600000));
-  return docs.filter(({ t }) => t.picked && !t.reminderSent && utahDay(t.picked) === tomorrow);
+  return docs.filter(({ t }) => t.picked && !t.reminderSent && !t.cancelled && utahDay(t.picked) === tomorrow);
 };
 
 export const runTastingReminders = async (now = new Date()) => {
@@ -225,4 +239,42 @@ export const runTastingReminders = async (now = new Date()) => {
     await ref.update({ reminderSent: FieldValue.serverTimestamp() });
     logger.info(`Tasting reminder sent for ${t.eventId}`);
   }
+};
+
+// ---------- Event lost or deleted: cancel its tastings ----------
+
+// Called by syncEventCalendar (calendarSync.js) when an event becomes Lost or
+// is deleted. Every tasting offered for it is closed (the link says it isn't
+// scheduled anymore and the day-before reminder won't go out), and a booked
+// one comes off the calendar. Nothing is emailed to the couple.
+export const shouldCancelTastings = (before, after) => {
+  if (!before) return false;
+  if (!after) return true; // deleted
+  return after.status === "lost" && before.status !== "lost";
+};
+
+export const cancelTastingsFor = async (eventId) => {
+  const db = getFirestore();
+  const snap = await db.collection("tastings").where("eventId", "==", eventId).get();
+  const open = snap.docs.filter((d) => !d.data().cancelled);
+  if (!open.length) return 0;
+  let token = null;
+  for (const d of open) {
+    const t = d.data();
+    await d.ref.update({ cancelled: true, cancelledAt: FieldValue.serverTimestamp() });
+    if (t.picked) {
+      try {
+        token = token || (await accessToken(["https://www.googleapis.com/auth/calendar.events"]));
+        const calendarId = await calendarIdNow();
+        const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/ta${d.id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok && ![404, 410].includes(res.status)) throw new Error(`calendar ${res.status}`);
+      } catch (e) {
+        logger.error(`Couldn't take tasting ${d.id} off the calendar`, e);
+      }
+    }
+  }
+  return open.length;
 };
