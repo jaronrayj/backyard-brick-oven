@@ -6,6 +6,7 @@
 
 export const STATUSES = [
   { key: 'inquiry', label: 'Inquiry' },
+  { key: 'contacted', label: 'Contacted' },
   { key: 'quoted', label: 'Quoted' },
   { key: 'booked', label: 'Booked' },
   { key: 'done', label: 'Done' },
