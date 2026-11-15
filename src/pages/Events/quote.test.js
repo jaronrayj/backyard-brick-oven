@@ -31,7 +31,8 @@ describe('quote', () => {
 
   test('discount, tax and deposit', () => {
     const t = totals({ lines: [{ qty: 1, price: 1000 }], discount: 100, taxRate: 7.25, depositPct: 25 })
-    expect(t).toEqual({ subtotal: 1000, discount: 100, tax: 65.25, total: 965.25, deposit: 241.31, balance: 723.94 })
+    // Deposit: 25% of the 900 before tax; the balance carries all the tax.
+    expect(t).toEqual({ subtotal: 1000, discount: 100, tax: 65.25, total: 965.25, deposit: 225, balance: 740.25 })
   })
 
   test('travel by zone', () => {

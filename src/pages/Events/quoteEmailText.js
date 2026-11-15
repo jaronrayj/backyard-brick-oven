@@ -37,7 +37,11 @@ export const quoteRows = (quote) => {
   if (t.tax) rows.push({ label: `Tax (${n(q.taxRate)}%)`, amount: money(t.tax) })
   rows.push({ label: 'Total', amount: money(t.total), strong: true })
   // Just the amount: a percent like 24.51% (set to land on $500) reads oddly to a customer.
-  if (t.deposit) rows.push({ label: 'Deposit to hold your date', amount: money(t.deposit) })
+  if (t.deposit) {
+    rows.push({ label: 'Deposit to hold your date', amount: money(t.deposit) })
+    // The deposit is before tax, so say where the tax goes.
+    rows.push({ label: t.tax ? 'Balance due (includes the tax)' : 'Balance due', amount: money(t.balance) })
+  }
   return rows
 }
 

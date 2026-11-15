@@ -24,7 +24,8 @@ test('event words and quote rows', () => {
     'Salad (85 × $3.00): $255.00',
     'Tax (7.25%): $127.24',
     'Total: $1,882.24',
-    'Deposit to hold your date: $470.56',
+    'Deposit to hold your date: $438.75',
+    'Balance due (includes the tax): $1,443.49',
   ])
 })
 
