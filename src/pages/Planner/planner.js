@@ -274,6 +274,18 @@ export function mountPlanner(root, deps) {
   };
   const crewLine = (s) => crewOf(s).filter((c) => (c.name || '').trim())
     .map((c) => c.name.trim() + (crewRange(c) ? ' ' + crewRange(c) : '') + (c.status === 'maybe' ? ' (maybe)' : '')).join(', ');
+  /* Finished services clear the next morning, but wrap-ups often come later: keep each cleared
+     service's crew for 30 days (PLAN.crewLog[date] = [{name, type, crew}]) for the wrap-up's hours. */
+  const archiveCrew = (gone) => {
+    const log = {...(PLAN.crewLog || {})};
+    gone.filter((x) => x.date && crewOf(x).some((c) => (c.name || '').trim())).forEach((x) => {
+      log[x.date] = [...(log[x.date] || []).filter((e) => e.id !== x.id), {id: x.id, name: svcName(x), type: x.type, crew: crewOf(x)}];
+    });
+    const keep = new Date(); keep.setDate(keep.getDate() - 30);
+    const cutoff = keep.getFullYear() + '-' + String(keep.getMonth() + 1).padStart(2, '0') + '-' + String(keep.getDate()).padStart(2, '0');
+    Object.keys(log).forEach((d) => { if (d < cutoff) delete log[d]; });
+    PLAN.crewLog = log;
+  };
   const crewNames = () => [...new Set([...(PLAN.crewNames || []), ...PLAN.services.flatMap((x) => crewOf(x).map((c) => (c.name || '').trim()))].filter(Boolean))].sort((a, b) => a.localeCompare(b));
   const crewList = () => {
     let dl = root.querySelector('#crew-names');
@@ -1344,6 +1356,7 @@ export function mountPlanner(root, deps) {
   $('#clear-done').addEventListener('click', () => {
     if (!PLAN || !canWrite) return;
     const today = todayStr();
+    archiveCrew(PLAN.services.filter((s) => s.date && s.date < today));
     PLAN.services = PLAN.services.filter((s) => !s.date || s.date >= today);
     PLAN.prepExtras = (PLAN.prepExtras || []).filter((x) => x.date >= today);
     savePlan(); renderAll(); renderPrep();
@@ -1444,6 +1457,7 @@ export function mountPlanner(root, deps) {
     /* Services clear themselves once their day is over (the morning after). Your
        own prep items stay, so unchecked ones still show under "Missed". */
     const before = PLAN.services.length, today = todayStr();
+    archiveCrew(PLAN.services.filter((s) => s.date && s.date < today));
     PLAN.services = PLAN.services.filter((s) => !s.date || s.date >= today);
     const cleared = PLAN.services.length < before;
     if (planFresh && ((REF && migratePizzas()) || cleared) && canWrite) savePlan();
@@ -1483,7 +1497,26 @@ export function mountPlanner(root, deps) {
      A "Prep" wrap-up on a dough day gets everything mixed that day; an event gets its
      services on that date (all of the mix when it had the mix to itself, else its share).
      Bread is left out (it's loaves, not balls). Null when the Planner has nothing for it. */
+  /* Crew for a wrap-up: the services on that date (or kept in crewLog after clearing); with two on
+     one date, the one the wrap-up names. Prep-day wrap-ups have none. */
+  const wrapCrew = (date, name) => {
+    if (!PLAN || /^prep/i.test(String(name || '').trim())) return [];
+    const live = PLAN.services.filter((s) => s.date === date).map((s) => ({id: s.id, name: svcName(s), type: s.type, crew: crewOf(s)}));
+    const kept = ((PLAN.crewLog || {})[date] || []).filter((e) => !live.some((l) => l.id === e.id));
+    let these = [...live, ...kept].filter((e) => (e.crew || []).length);
+    const want = String(name || '').trim().toLowerCase();
+    const named = these.filter((e) => (/pizza friday/.test(want) ? e.type === 'pf' : String(e.name).trim().toLowerCase() === want));
+    if (named.length) these = named;
+    return these.flatMap((e) => e.crew).filter((c) => (c.name || '').trim());
+  };
   root.plannerWrapInfo = ({date, name}) => {
+    if (!PLAN || !ISO.test(date || '')) return null;
+    const crew = wrapCrew(date, name);
+    const dough = plannerDough({date, name});
+    if (!dough && !crew.length) return null;
+    return {...(dough || {balls: null, for: ''}), crew};
+  };
+  const plannerDough = ({date, name}) => {
     if (!PLAN || !REF || !ISO.test(date || '')) return null;
     const lead = Math.max(0, Math.min(5, Number(tweaks().lead) || 0));
     const svcs = PLAN.services.filter((s) => s.date && !isBread(s)).map((s) => ({...s, use: doughFor(s), mix: mixDayOf(s, lead)})).filter((s) => s.use > 0);

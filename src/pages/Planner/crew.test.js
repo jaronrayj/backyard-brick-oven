@@ -83,3 +83,29 @@ test('crew see the schedule but can’t change it', async () => {
   if (typeof stop === 'function') stop()
   jest.useRealTimers()
 })
+
+test('cleared services keep their crew for the wrap-up', async () => {
+  jest.useFakeTimers()
+  const yesterday = iso(-1)
+  const store = fakeStore({
+    'ref/snapshot': REF,
+    'plan/current': {
+      services: [
+        { id: 'old', date: yesterday, type: 'pf', crew: [{ id: 'a', name: 'Libby', from: '16:00', to: '20:00', status: 'yes' }] },
+        { id: 'next', date: iso(3), type: 'pf', crew: [] },
+      ],
+    },
+  })
+  const root = document.createElement('div')
+  const stop = mountPlanner(root, { store, canWrite: true, pizzas: () => () => {} })
+  await settle()
+  const saved = store.saved['plan/current']
+  expect(saved.services.map((s) => s.id)).toEqual(['next'])
+  expect(saved.crewLog[yesterday][0].crew.map((c) => c.name)).toEqual(['Libby'])
+  // The wrap-up for yesterday's Pizza Friday gets that crew.
+  expect(root.plannerWrapInfo({ date: yesterday, name: 'Pizza Friday' }).crew.map((c) => c.name)).toEqual(['Libby'])
+  // A prep-day wrap-up has none.
+  expect(root.plannerWrapInfo({ date: yesterday, name: 'Prep day' })).toBe(null)
+  if (typeof stop === 'function') stop()
+  jest.useRealTimers()
+})

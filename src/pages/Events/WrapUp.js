@@ -60,6 +60,44 @@ const label = (h) =>
 
 const callable = (name) => httpsCallable(getFunctions(), name)
 
+// Hours from the Planner's crew schedule, for the Labor columns ("Libby hours",
+// "My hours"). Only confirmed people with both times; a column is matched by
+// the person's name, or first names on either side ("Me" also matches Jaron). Returns
+// { fill: {header: hours}, missing: [names with no column], maybes: [names] }.
+const hoursOf = (c) => {
+  const t = (v) => (/^\d{1,2}:\d{2}$/.test(String(v || '')) ? Number(v.slice(0, -3)) * 60 + Number(v.slice(-2)) : null)
+  const a = t(c.from)
+  const b = t(c.to)
+  if (a == null || b == null) return null
+  const mins = b > a ? b - a : b + 24 * 60 - a
+  return Math.round((mins / 60) * 4) / 4
+}
+export const crewHours = (headers, crew) => {
+  const labor = headers.filter((h) => kindOf(h) === 'hours').map((h) => ({ h, who: label(h).trim().toLowerCase() }))
+  const fill = {}
+  const missing = []
+  const maybes = []
+  ;(crew || []).forEach((c) => {
+    const name = String(c.name || '').trim()
+    if (!name) return
+    if (c.status === 'maybe') {
+      maybes.push(name)
+      return
+    }
+    const n = name.toLowerCase()
+    const first = n.split(/\s+/)[0]
+    // Full name first, then first names ("Ben" fills "Ben Jones hours" and the other way round).
+    const col =
+      labor.find(({ who }) => who === n) ||
+      labor.find(({ who }) => who === first || who.split(/\s+/)[0] === first) ||
+      labor.find(({ who }) => who === 'me' && ['me', 'jaron'].includes(first))
+    const hrs = hoursOf(c)
+    if (!col) missing.push(name)
+    else if (hrs != null && fill[col.h] == null) fill[col.h] = hrs
+  })
+  return { fill, missing, maybes }
+}
+
 const moneyIn = (headers, values) =>
   headers
     .filter((h) => /venmo|cash|simpleswipe/i.test(h))
@@ -82,13 +120,15 @@ const WrapUpForm = ({ headers, choice, edit = null, today, planned = null, onDon
   const doughH = headers.find((h) => /dough made/i.test(h))
   const soldH = headers.find((h) => /how many sold/i.test(h))
   const compedH = headers.find((h) => /comped/i.test(h))
+  const fromCrew = useMemo(() => crewHours(headers, (planned && planned.crew) || []), [headers, planned])
   const [values, setValues] = useState(() =>
     edit
       ? edit.values
       : {
           ...(nameH ? { [nameH]: choice.name || '' } : {}),
           ...(dateH ? { [dateH]: choice.date || today } : {}),
-          ...(doughH && planned ? { [doughH]: String(planned.balls) } : {}),
+          ...(doughH && planned && planned.balls != null ? { [doughH]: String(planned.balls) } : {}),
+          ...Object.fromEntries(Object.entries(fromCrew.fill).map(([h, v]) => [h, String(v)])),
         }
   )
   const [busy, setBusy] = useState(false)
@@ -206,7 +246,18 @@ const WrapUpForm = ({ headers, choice, edit = null, today, planned = null, onDon
               </span>
             )}
           </div>
-          {g.key === 'pizzas' && !edit && planned && doughH && (
+          {g.key === 'labor' && !edit && (Object.keys(fromCrew.fill).length > 0 || fromCrew.missing.length > 0 || fromCrew.maybes.length > 0) && (
+            <div className="text-xs text-gray-500 -mt-1 mb-2 space-y-0.5">
+              {Object.keys(fromCrew.fill).length > 0 && <p>Hours are from the Planner's crew schedule. Change them if someone worked different hours.</p>}
+              {fromCrew.missing.length > 0 && (
+                <p className="text-amber-800">
+                  No column for {fromCrew.missing.join(', ')}: add “{fromCrew.missing[0]} hours” to the money tracker sheet to record their hours.
+                </p>
+              )}
+              {fromCrew.maybes.length > 0 && <p>Marked maybe, so not filled in: {fromCrew.maybes.join(', ')}.</p>}
+            </div>
+          )}
+          {g.key === 'pizzas' && !edit && planned && planned.balls != null && doughH && (
             <p className="text-xs text-gray-500 -mt-1 mb-2">
               Dough made is from the Planner: {planned.balls} balls for {planned.for}. Change it if you made a different amount.
             </p>
