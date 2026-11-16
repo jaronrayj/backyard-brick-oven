@@ -28,6 +28,19 @@ service cloud.firestore {
       allow write: if (isAdmin() && doc in ['plan', 'checks']) || (onTeam() && doc == 'checks');
     }
 
+    // Crew sign-ups ("I'm planning to come" on a Planner service), one per
+    // person per service: crewSignups/{serviceId}__{uid}. Each person writes
+    // only their own; admins can remove any (Add to crew moves it into the plan).
+    match /crewSignups/{id} {
+      allow read: if onTeam();
+      allow create, update: if onTeam()
+        && request.resource.data.uid == request.auth.uid
+        && id == request.resource.data.serviceId + '__' + request.auth.uid
+        && request.resource.data.keys().hasOnly(['serviceId', 'date', 'uid', 'name', 'from', 'to', 'at'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 60;
+      allow delete: if isAdmin() || (onTeam() && resource.data.uid == request.auth.uid);
+    }
+
     // Events, quotes and their settings.
     match /events/{id} {
       allow read, write: if isAdmin();

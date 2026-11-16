@@ -9,6 +9,8 @@
  * deps.canWrite  - whether this person may change the plan (admins)
  * deps.canCheck  - whether they may check things off (Prep, Bring, and Shopping when shown); defaults to canWrite
  * deps.shopping  - show the Shopping tab (admins; crew don't get it). Defaults to true
+ * deps.me        - {uid, name} of whoever is signed in (for crew sign-ups)
+ * deps.signups   - {listen(next) -> unsubscribe, save(service, {from, to}), remove(id)}: crew sign-ups ("I'm planning to come")
  * deps.pizzas    - (onChange) => unsubscribe; the website's pizzas, live
  * deps.isAdmin   - shows "Refresh now" (under Yeast, water and timing)
  * deps.refresh   - async () => re-read the Google Sheets on the server
@@ -219,6 +221,8 @@ export function mountPlanner(root, deps) {
     root.querySelectorAll('#uncheck, #prep-uncheck, #bring-uncheck').forEach((x) => { x.disabled = !canCheck; });
     root.querySelectorAll('#page-plan input, #page-plan select, #page-plan button, #shop-new, #shop-qty, #shop-add, #prep-new, #prep-qty, #prep-day, #prep-add, #bring-new, #bring-add, #bring-for, #bring-per, #bring-every, #bring-where, #bring-edit').forEach((x) => { x.disabled = ro; });
     root.querySelectorAll('.item input').forEach((x) => { x.disabled = !canCheck; });
+    /* Crew can still sign themselves up for a service. */
+    root.querySelectorAll('[data-self]').forEach((x) => { x.disabled = false; });
     root.querySelectorAll('.item .rm').forEach((x) => { x.disabled = ro; });
   };
 
@@ -292,10 +296,86 @@ export function mountPlanner(root, deps) {
     if (!dl) { dl = el('datalist'); dl.id = 'crew-names'; root.append(dl); }
     dl.replaceChildren(...crewNames().map((n) => { const o = el('option'); o.value = n; return o; }));
   };
+  /* Crew sign-ups: "I'm planning to come" (crew, for themselves) and the list of who signed up
+     (admins: Add to crew moves someone into the crew list as confirmed). */
+  let SIGNUPS = [];
+  const me = deps.me || null;
+  const signupsFor = (s) => SIGNUPS.filter((x) => x.serviceId === s.id && !crewOf(s).some((c) => c.signupUid === x.uid));
+  const timeSelect = (value, label) => {
+    const sel = el('select'); sel.setAttribute('aria-label', label); sel.dataset.self = '1';
+    CREW_TIMES.forEach((v) => { const o = el('option', null, clock12(v)); o.value = v; if (value === v) o.selected = true; sel.append(o); });
+    return sel;
+  };
+  const renderSignups = (s, box) => {
+    const upcoming = !s.date || s.date >= todayStr();
+    const list = signupsFor(s);
+    const others = list.filter((x) => !me || x.uid !== me.uid || canWrite);
+    if (others.length) {
+      const wrapS = el('div', 'signups');
+      wrapS.append(el('span', 'sub', 'Signed up:'));
+      others.forEach((x) => {
+        const line = el('div', 'signup');
+        line.append(el('span', null, x.name + (crewRange(x) ? ' ' + crewRange(x) : '')));
+        if (canWrite) {
+          const take = el('button', 'btn quiet', 'Add to crew'); take.type = 'button';
+          take.addEventListener('click', () => {
+            s.crew = [...crewOf(s), {id: uid(), name: x.name, from: x.from, to: x.to, status: 'yes', signupUid: x.uid}];
+            PLAN.crewNames = [...new Set([...(PLAN.crewNames || []), x.name])].slice(-60);
+            savePlan(); deps.signups && deps.signups.remove(x.id).catch(() => {});
+            SIGNUPS = SIGNUPS.filter((y) => y.id !== x.id); renderCrew(s, box);
+          });
+          const drop = el('button', 'btn quiet rm', '✕'); drop.type = 'button'; drop.setAttribute('aria-label', 'Remove ' + x.name + "'s sign-up");
+          drop.addEventListener('click', () => { deps.signups && deps.signups.remove(x.id).catch(() => {}); SIGNUPS = SIGNUPS.filter((y) => y.id !== x.id); renderCrew(s, box); });
+          line.append(take, drop);
+        }
+        wrapS.append(line);
+      });
+      box.append(wrapS);
+    }
+    /* Crew: sign yourself up (admins manage the crew list directly). */
+    if (canWrite || !me || !deps.signups || !upcoming) return;
+    const onCrew = crewOf(s).find((c) => c.signupUid === me.uid);
+    const mine = list.find((x) => x.uid === me.uid);
+    const self = el('div', 'self');
+    const redraw = () => { if (document.activeElement && box.contains(document.activeElement)) document.activeElement.blur(); renderCrew(s, box); setReadOnly(true); };
+    if (onCrew) { self.append(el('span', 'sub', "You're on the crew" + (crewRange(onCrew) ? ': ' + crewRange(onCrew) : '') + '.')); box.append(self); return; }
+    const form = (from, to) => {
+      self.replaceChildren();
+      const a = timeSelect(from, 'From'), b = timeSelect(to, 'To');
+      const save = el('button', 'btn primary', mine ? 'Save' : "I'm coming"); save.type = 'button'; save.dataset.self = '1';
+      save.addEventListener('click', () => {
+        save.disabled = true;
+        deps.signups.save(s, {from: a.value, to: b.value}).then(redraw, () => { self.append(el('span', 'sub', "Couldn't save. Try again.")); save.disabled = false; });
+      });
+      const cancel = el('button', 'btn quiet', 'Cancel'); cancel.type = 'button'; cancel.dataset.self = '1';
+      cancel.addEventListener('click', redraw);
+      self.append(el('span', 'sub', 'I can come'), a, el('span', 'to', 'to'), b, save, cancel);
+    };
+    if (mine) {
+      self.append(el('span', 'sub', "You're planning to come: " + crewRange(mine) + '.'));
+      const change = el('button', 'btn quiet', 'Change'); change.type = 'button'; change.dataset.self = '1';
+      change.addEventListener('click', () => form(mine.from, mine.to));
+      const out = el('button', 'btn quiet', "Can't make it"); out.type = 'button'; out.dataset.self = '1';
+      out.addEventListener('click', () => { deps.signups.remove(mine.id).then(redraw, () => {}); });
+      self.append(change, out);
+    } else {
+      const join = el('button', 'btn primary', "I'm planning to come"); join.type = 'button'; join.dataset.self = '1';
+      join.addEventListener('click', () => { const last = crewOf(s)[0]; form(last ? last.from : '16:00', last ? last.to : '20:00'); });
+      self.append(join);
+    }
+    box.append(self);
+  };
+  const renderAllCrew = () => {
+    if (!PLAN) return;
+    root.querySelectorAll('.crew[data-svc]').forEach((box) => {
+      const s = PLAN.services.find((x) => x.id === box.dataset.svc);
+      if (s && !box.contains(document.activeElement)) { renderCrew(s, box); if (!canWrite) setReadOnly(true); }
+    });
+  };
   const renderCrew = (s, box) => {
     box.replaceChildren();
     const head = el('div', 'crew-head');
-    head.append(el('h4', null, 'Crew'), el('span', 'sub', crewSummary(s)));
+    head.append(el('h4', null, 'Crew'), el('span', 'sub', crewSummary(s) + (signupsFor(s).length ? ' · ' + signupsFor(s).length + ' signed up' : '')));
     box.append(head);
     crewOf(s).forEach((c) => {
       const row = el('div', 'crew-row' + (c.status === 'maybe' ? ' maybe' : ''));
@@ -322,6 +402,7 @@ export function mountPlanner(root, deps) {
       row.append(name, time('from', 'From'), el('span', 'to', 'to'), time('to', 'To'), status, rm);
       box.append(row);
     });
+    renderSignups(s, box);
     const add = el('button', 'btn quiet', '+ Add someone'); add.type = 'button';
     add.addEventListener('click', () => {
       const last = crewOf(s)[crewOf(s).length - 1];
@@ -1469,6 +1550,7 @@ export function mountPlanner(root, deps) {
     CHECKED = snap.exists && Array.isArray(snap.data().checked) ? snap.data().checked.slice() : [];
     if (!busy()) renderShop();
   }));
+  if (deps.signups) unsubs.push(deps.signups.listen((list) => { SIGNUPS = list || []; renderAllCrew(); }));
   if (deps.wrapUps) {
     $('#tab-wrapup').hidden = false;
     loadWrapCount();

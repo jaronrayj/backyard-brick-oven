@@ -102,6 +102,10 @@
   .bybo-planner .crew-row.maybe input { font-style: italic; }
   .bybo-planner .crew > .btn { justify-self: start; }
   .bybo-planner .crew-line { color: var(--fg); }
+  .bybo-planner .signups { display: grid; gap: 4px; }
+  .bybo-planner .signup { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; }
+  .bybo-planner .self { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .bybo-planner .self select { font: inherit; font-size: 15px; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px; }
   .bybo-planner .svc .pf-hist { font-size: 13px; color: var(--muted); display: grid; gap: 2px; font-variant-numeric: tabular-nums; }
   .bybo-planner .svc .sugg b { color: var(--fg); font-variant-numeric: tabular-nums; }
   .bybo-planner details.tweaks summary { cursor: pointer; font-size: 13px; color: var(--muted); }
