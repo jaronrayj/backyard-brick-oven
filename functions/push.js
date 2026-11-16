@@ -22,6 +22,7 @@ import { requireRole } from "./team.js";
 import { GMAIL_USER } from "./mail.js";
 import { dueSteps, mixLeadFrom, todayLocal, STEP_TEXT, timesFrom, minutesPast } from "./events.js";
 import { calendarBetween, notWrappedUp } from "./wrapup.js";
+import { crewToday } from "./crew.js";
 import { LINKS, wrapUpLink } from "./links.js";
 
 if (!getApps().length) initializeApp();
@@ -181,6 +182,13 @@ export const runMorningSummary = async () => {
     } catch (e) {
       logger.error("Morning summary: calendar read failed", e);
       lines.push("(Couldn't read the calendar; see /events/wrapup)");
+    }
+
+    // Who's working today (the Planner's Crew on each service).
+    try {
+      lines.push(...crewToday((await db.doc("planner/plan").get()).data(), today));
+    } catch (e) {
+      logger.error("Morning summary: crew read failed", e);
     }
 
     const mixLead = mixLeadFrom((await db.doc("planner/ref").get()).data());
