@@ -246,6 +246,93 @@ export function mountPlanner(root, deps) {
   const onFocusOut = () => setTimeout(() => { if (pending && !busy()) renderAll(); }, 0);
   root.addEventListener('focusout', onFocusOut);
 
+  /* ---------- Crew: who's working each service, and when ----------
+     s.crew = [{id, name, from: 'HH:MM', to: 'HH:MM', status: 'yes' | 'maybe'}]. Admins edit it on
+     each service; crew see it (read-only), also on the Calendar tab's day list. Names used before
+     are kept in PLAN.crewNames for quick picking. */
+  const CREW_TIMES = Array.from({ length: (24 - 6) * 4 }, (_, i) => {
+    const m = 6 * 60 + i * 15;
+    return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  });
+  const clock12 = (v, short) => {
+    if (!/^\d{1,2}:\d{2}$/.test(String(v || ''))) return ''; /* no time set */
+    const [h, m] = String(v).split(':').map(Number);
+    return (h % 12 || 12) + (short && !m ? '' : ':' + String(m || 0).padStart(2, '0')) + (h < 12 ? ' am' : ' pm');
+  };
+  const crewRange = (c) => {
+    if (!c.from && !c.to) return '';
+    const a = clock12(c.from, true), b = clock12(c.to, true);
+    if (!a || !b) return a || b;
+    return a.slice(-2) === b.slice(-2) ? a.slice(0, -3) + '–' + b : a + '–' + b;
+  };
+  const crewOf = (s) => (Array.isArray(s.crew) ? s.crew : []);
+  const crewSummary = (s) => {
+    const list = crewOf(s).filter((c) => (c.name || '').trim());
+    if (!list.length) return 'No one yet';
+    const yes = list.filter((c) => c.status !== 'maybe').length, maybe = list.length - yes;
+    return [yes ? yes + ' confirmed' : '', maybe ? maybe + ' maybe' : ''].filter(Boolean).join(' · ');
+  };
+  const crewLine = (s) => crewOf(s).filter((c) => (c.name || '').trim())
+    .map((c) => c.name.trim() + (crewRange(c) ? ' ' + crewRange(c) : '') + (c.status === 'maybe' ? ' (maybe)' : '')).join(', ');
+  /* Finished services clear the next morning, but wrap-ups often come later: keep each cleared
+     service's crew for 30 days (PLAN.crewLog[date] = [{name, type, crew}]) for the wrap-up's hours. */
+  const archiveCrew = (gone) => {
+    const log = {...(PLAN.crewLog || {})};
+    gone.filter((x) => x.date && crewOf(x).some((c) => (c.name || '').trim())).forEach((x) => {
+      log[x.date] = [...(log[x.date] || []).filter((e) => e.id !== x.id), {id: x.id, name: svcName(x), type: x.type, crew: crewOf(x)}];
+    });
+    const keep = new Date(); keep.setDate(keep.getDate() - 30);
+    const cutoff = keep.getFullYear() + '-' + String(keep.getMonth() + 1).padStart(2, '0') + '-' + String(keep.getDate()).padStart(2, '0');
+    Object.keys(log).forEach((d) => { if (d < cutoff) delete log[d]; });
+    PLAN.crewLog = log;
+  };
+  const crewNames = () => [...new Set([...(PLAN.crewNames || []), ...PLAN.services.flatMap((x) => crewOf(x).map((c) => (c.name || '').trim()))].filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const crewList = () => {
+    let dl = root.querySelector('#crew-names');
+    if (!dl) { dl = el('datalist'); dl.id = 'crew-names'; root.append(dl); }
+    dl.replaceChildren(...crewNames().map((n) => { const o = el('option'); o.value = n; return o; }));
+  };
+  const renderCrew = (s, box) => {
+    box.replaceChildren();
+    const head = el('div', 'crew-head');
+    head.append(el('h4', null, 'Crew'), el('span', 'sub', crewSummary(s)));
+    box.append(head);
+    crewOf(s).forEach((c) => {
+      const row = el('div', 'crew-row' + (c.status === 'maybe' ? ' maybe' : ''));
+      const name = el('input'); name.type = 'text'; name.value = c.name || ''; name.placeholder = 'Name'; name.autocomplete = 'off';
+      name.setAttribute('list', 'crew-names'); name.setAttribute('aria-label', 'Name');
+      name.addEventListener('input', () => { c.name = name.value; savePlan(); });
+      name.addEventListener('change', () => {
+        const n = name.value.trim();
+        if (n) PLAN.crewNames = [...new Set([...(PLAN.crewNames || []), n])].slice(-60);
+        savePlan(); crewList(); head.lastChild.textContent = crewSummary(s);
+      });
+      const time = (key, label) => {
+        const sel = el('select'); sel.setAttribute('aria-label', label);
+        const blank = el('option', null, '—'); blank.value = ''; sel.append(blank);
+        CREW_TIMES.forEach((v) => { const o = el('option', null, clock12(v)); o.value = v; if (c[key] === v) o.selected = true; sel.append(o); });
+        sel.addEventListener('change', () => { c[key] = sel.value; savePlan(); });
+        return sel;
+      };
+      const status = el('select'); status.setAttribute('aria-label', 'Confirmed or maybe');
+      [['yes', 'Confirmed'], ['maybe', 'Maybe']].forEach(([v, t]) => { const o = el('option', null, t); o.value = v; if ((c.status || 'yes') === v) o.selected = true; status.append(o); });
+      status.addEventListener('change', () => { c.status = status.value; row.classList.toggle('maybe', c.status === 'maybe'); head.lastChild.textContent = crewSummary(s); savePlan(); });
+      const rm = el('button', 'btn quiet rm', '✕'); rm.type = 'button'; rm.setAttribute('aria-label', 'Remove ' + (c.name || 'this person'));
+      rm.addEventListener('click', () => { s.crew = crewOf(s).filter((x) => x !== c); savePlan(); renderCrew(s, box); if (!canWrite) setReadOnly(true); });
+      row.append(name, time('from', 'From'), el('span', 'to', 'to'), time('to', 'To'), status, rm);
+      box.append(row);
+    });
+    const add = el('button', 'btn quiet', '+ Add someone'); add.type = 'button';
+    add.addEventListener('click', () => {
+      const last = crewOf(s)[crewOf(s).length - 1];
+      s.crew = [...crewOf(s), { id: uid(), name: '', from: last ? last.from : '16:00', to: last ? last.to : '20:00', status: 'yes' }];
+      savePlan(); renderCrew(s, box);
+      const inputs = box.querySelectorAll('.crew-row input'); if (inputs.length) inputs[inputs.length - 1].focus();
+    });
+    box.append(add);
+    crewList();
+  };
+
   const renderServices = () => {
     const box = $('#services');
     box.replaceChildren();
@@ -297,6 +384,9 @@ export function mountPlanner(root, deps) {
       const sugg = el('div', 'sugg'); sugg.dataset.svc = s.id;
       wrap.append(head, r1, r2, sugg);
       if (s.type === 'pf') { const h = pfHistory(s); if (h) wrap.append(h); }
+      const crewBox = el('div', 'crew'); crewBox.dataset.svc = s.id;
+      renderCrew(s, crewBox);
+      wrap.append(crewBox);
       /* Linked to a calendar entry whose date has moved: offer the new date. */
       const cal = s.calId && CAL && CAL.items.find((c) => c.id === s.calId);
       if (cal && cal.date !== s.date) {
@@ -428,7 +518,12 @@ export function mountPlanner(root, deps) {
       if (c.notes) info.append(el('span', 'sub notes', c.notes));
       row.append(info);
       if (PLAN && c.date >= todayStr() && !/\bprep\b/i.test(c.title)) {
-        if (isPlanned(c)) row.append(el('span', 'sub', 'On the plan'));
+        if (isPlanned(c)) {
+          row.append(el('span', 'sub', 'On the plan'));
+          /* Who's working it (from the planned service's Crew). */
+          const svc = PLAN.services.find((x) => x.calId === c.id) || PLAN.services.find((x) => !x.calId && x.date === c.date);
+          if (svc && crewLine(svc)) info.append(el('span', 'sub crew-line', 'Crew: ' + crewLine(svc)));
+        }
         else {
           const add = el('button', 'btn primary', 'Add to plan'); add.type = 'button'; add.disabled = !canWrite;
           add.addEventListener('click', () => { addFromCal(c); savePlan(); renderAll(); renderMonth(); });
@@ -1261,6 +1356,7 @@ export function mountPlanner(root, deps) {
   $('#clear-done').addEventListener('click', () => {
     if (!PLAN || !canWrite) return;
     const today = todayStr();
+    archiveCrew(PLAN.services.filter((s) => s.date && s.date < today));
     PLAN.services = PLAN.services.filter((s) => !s.date || s.date >= today);
     PLAN.prepExtras = (PLAN.prepExtras || []).filter((x) => x.date >= today);
     savePlan(); renderAll(); renderPrep();
@@ -1361,6 +1457,7 @@ export function mountPlanner(root, deps) {
     /* Services clear themselves once their day is over (the morning after). Your
        own prep items stay, so unchecked ones still show under "Missed". */
     const before = PLAN.services.length, today = todayStr();
+    archiveCrew(PLAN.services.filter((s) => s.date && s.date < today));
     PLAN.services = PLAN.services.filter((s) => !s.date || s.date >= today);
     const cleared = PLAN.services.length < before;
     if (planFresh && ((REF && migratePizzas()) || cleared) && canWrite) savePlan();
@@ -1400,7 +1497,26 @@ export function mountPlanner(root, deps) {
      A "Prep" wrap-up on a dough day gets everything mixed that day; an event gets its
      services on that date (all of the mix when it had the mix to itself, else its share).
      Bread is left out (it's loaves, not balls). Null when the Planner has nothing for it. */
+  /* Crew for a wrap-up: the services on that date (or kept in crewLog after clearing); with two on
+     one date, the one the wrap-up names. Prep-day wrap-ups have none. */
+  const wrapCrew = (date, name) => {
+    if (!PLAN || /^prep/i.test(String(name || '').trim())) return [];
+    const live = PLAN.services.filter((s) => s.date === date).map((s) => ({id: s.id, name: svcName(s), type: s.type, crew: crewOf(s)}));
+    const kept = ((PLAN.crewLog || {})[date] || []).filter((e) => !live.some((l) => l.id === e.id));
+    let these = [...live, ...kept].filter((e) => (e.crew || []).length);
+    const want = String(name || '').trim().toLowerCase();
+    const named = these.filter((e) => (/pizza friday/.test(want) ? e.type === 'pf' : String(e.name).trim().toLowerCase() === want));
+    if (named.length) these = named;
+    return these.flatMap((e) => e.crew).filter((c) => (c.name || '').trim());
+  };
   root.plannerWrapInfo = ({date, name}) => {
+    if (!PLAN || !ISO.test(date || '')) return null;
+    const crew = wrapCrew(date, name);
+    const dough = plannerDough({date, name});
+    if (!dough && !crew.length) return null;
+    return {...(dough || {balls: null, for: ''}), crew};
+  };
+  const plannerDough = ({date, name}) => {
     if (!PLAN || !REF || !ISO.test(date || '')) return null;
     const lead = Math.max(0, Math.min(5, Number(tweaks().lead) || 0));
     const svcs = PLAN.services.filter((s) => s.date && !isBread(s)).map((s) => ({...s, use: doughFor(s), mix: mixDayOf(s, lead)})).filter((s) => s.use > 0);
