@@ -9,7 +9,7 @@
  * deps.canWrite  - whether this person may change the plan (admins)
  * deps.canCheck  - whether they may check things off (Prep, Bring, and Shopping when shown); defaults to canWrite
  * deps.shopping  - show the Shopping tab (admins; crew don't get it). Defaults to true
- * deps.me        - {uid, name} of whoever is signed in (for crew sign-ups)
+ * deps.me        - {uid, name} of whoever is signed in, or a function returning it (for crew sign-ups)
  * deps.signups   - {listen(next) -> unsubscribe, save(service, {from, to}), remove(id)}: crew sign-ups ("I'm planning to come")
  * deps.pizzas    - (onChange) => unsubscribe; the website's pizzas, live
  * deps.isAdmin   - shows "Refresh now" (under Yeast, water and timing)
@@ -299,7 +299,7 @@ export function mountPlanner(root, deps) {
   /* Crew sign-ups: "I'm planning to come" (crew, for themselves) and the list of who signed up
      (admins: Add to crew moves someone into the crew list as confirmed). */
   let SIGNUPS = [];
-  const me = deps.me || null;
+  const meNow = () => (typeof deps.me === 'function' ? deps.me() : deps.me) || null;
   const signupsFor = (s) => SIGNUPS.filter((x) => x.serviceId === s.id && !crewOf(s).some((c) => c.signupUid === x.uid));
   const timeSelect = (value, label) => {
     const sel = el('select'); sel.setAttribute('aria-label', label); sel.dataset.self = '1';
@@ -309,6 +309,7 @@ export function mountPlanner(root, deps) {
   const renderSignups = (s, box) => {
     const upcoming = !s.date || s.date >= todayStr();
     const list = signupsFor(s);
+    const me = meNow();
     const others = list.filter((x) => !me || x.uid !== me.uid || canWrite);
     if (others.length) {
       const wrapS = el('div', 'signups');
@@ -372,6 +373,7 @@ export function mountPlanner(root, deps) {
       if (s && !box.contains(document.activeElement)) { renderCrew(s, box); if (!canWrite) setReadOnly(true); }
     });
   };
+  root.plannerRedrawCrew = () => renderAllCrew();
   const renderCrew = (s, box) => {
     box.replaceChildren();
     const head = el('div', 'crew-head');
@@ -628,13 +630,32 @@ export function mountPlanner(root, deps) {
 
   /* Wrap up tab (admins): the form is drawn by React into #wrapup-slot (index.js). The tab
      shows how many recent events still need one. */
+  /* The count reads the money tracker sheet (slow on a phone signal), so show the last count right
+     away and check again a few seconds after the page has loaded (or right away after a wrap-up). */
+  const WRAP_KEY = 'bybo-wrapup-count';
+  const showWrapCount = (n) => { $('#tab-wrapup').textContent = n ? 'Wrap up (' + n + ')' : 'Wrap up'; };
   const loadWrapCount = () => {
     if (!deps.wrapUps) return;
     deps.wrapUps.due().then((d) => {
       const n = ((d && d.items) || []).length;
-      $('#tab-wrapup').textContent = n ? 'Wrap up (' + n + ')' : 'Wrap up';
+      showWrapCount(n);
+      try { localStorage.setItem(WRAP_KEY, String(n)); } catch (e) { /* just no head start */ }
     }).catch(() => {});
   };
+  let wrapTimer = null;
+  const loadWrapCountSoon = () => {
+    try { showWrapCount(Number(localStorage.getItem(WRAP_KEY)) || 0); } catch (e) { /* no saved count */ }
+    wrapTimer = setTimeout(loadWrapCount, 4000);
+  };
+  /* The next two weeks of the calendar ("From your calendar"): the last copy at once, then fresh. */
+  const CAL_KEY = 'bybo-cal-2w';
+  const savedCal = () => {
+    try {
+      const v = JSON.parse(localStorage.getItem(CAL_KEY) || 'null');
+      return v && v.day === todayStr() && v.data ? v.data : null;
+    } catch (e) { return null; }
+  };
+  const saveCal = (data) => { try { localStorage.setItem(CAL_KEY, JSON.stringify({day: todayStr(), data})); } catch (e) { /* just no head start */ } };
 
   /* Pizza Friday cards: the last two nights, and the Friday closest to this date a year ago. */
   const nightLine = (r, withYear) => (withYear ? day(r.date) + ', ' + r.date.slice(0, 4) : day(r.date)) + ': ' + r.sold + ' sold' + (r.demand !== r.sold ? ' (' + r.demand + ' demand)' : '');
@@ -1393,6 +1414,8 @@ export function mountPlanner(root, deps) {
     ['plan', 'calendar', 'shop', 'prep', 'bring', 'wrapup'].forEach((p) => { $('#page-' + p).hidden = b.dataset.tab !== p; });
     if (b.dataset.tab === 'calendar') showMonth();
     try { window.history.replaceState(null, '', '#' + b.dataset.tab); } catch (e) { /* hash is optional */ }
+    /* index.js loads a tab's extra parts (the wrap-up form) only once it's opened. */
+    root.dispatchEvent(new CustomEvent('planner-tab', {detail: b.dataset.tab}));
   }));
   /* Swipe left or right anywhere in the middle of the screen to go to the next or previous tab.
      Edges are left alone (the phone's own back swipe), and so are sliders, the text box you're
@@ -1553,12 +1576,14 @@ export function mountPlanner(root, deps) {
   if (deps.signups) unsubs.push(deps.signups.listen((list) => { SIGNUPS = list || []; renderAllCrew(); }));
   if (deps.wrapUps) {
     $('#tab-wrapup').hidden = false;
-    loadWrapCount();
+    loadWrapCountSoon();
     root.addEventListener('wrapups-changed', loadWrapCount);
   }
   if (deps.calendar) {
     $('#tab-calendar').hidden = false;
-    deps.calendar().then((d) => { CAL = d || {items: []}; if (!busy()) renderAll(); else renderCal(); }).catch(() => { CAL = {items: [], problem: "Couldn't read the calendar right now."}; renderCal(); });
+    const cached = savedCal();
+    if (cached) { CAL = cached; renderCal(); }
+    deps.calendar().then((d) => { CAL = d || {items: []}; if (!d || !d.problem) saveCal(CAL); if (!busy()) renderAll(); else renderCal(); }).catch(() => { CAL = {items: [], problem: "Couldn't read the calendar right now."}; renderCal(); });
   }
   /* The pizza list straight from the website menu, so menu edits and older pizzas show right away. */
   if (deps.pizzas) {
@@ -1619,6 +1644,7 @@ export function mountPlanner(root, deps) {
   };
 
   return () => {
+    clearTimeout(wrapTimer);
     unsubs.forEach((u) => { try { u(); } catch (e) { /* already closed */ } });
     root.removeEventListener('focusout', onFocusOut);
     clearTimeout(planTimer);

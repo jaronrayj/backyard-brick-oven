@@ -92,6 +92,24 @@ const savedState = () => {
     return 'loading'
   }
 }
+// When this device last checked in with the server (re-registered or asked
+// on/off). Twice a day is plenty, and skipping it saves a slow call on a phone signal.
+const CHECKED = 'bybo-push-checked'
+const CHECK_EVERY = 12 * 60 * 60 * 1000
+const checkedRecently = () => {
+  try {
+    return Date.now() - Number(localStorage.getItem(CHECKED) || 0) < CHECK_EVERY
+  } catch (e) {
+    return false
+  }
+}
+const markChecked = () => {
+  try {
+    localStorage.setItem(CHECKED, String(Date.now()))
+  } catch (e) {
+    // fine: it just checks again next time
+  }
+}
 const saveState = (v) => {
   try {
     if (v === 'on' || v === 'off') localStorage.setItem(SAVED, v)
@@ -126,9 +144,16 @@ const Notifications = ({ className }) => {
         })
         if (!(await isSupported())) return live && setState('unsupported')
         if (Notification.permission === 'denied') return live && setState('blocked')
+        // Checked in the last 12 hours: trust what this device remembers.
+        const saved = savedState()
+        if (saved !== 'loading' && checkedRecently()) {
+          if (saved === 'on') showWhileOpen().catch(console.error)
+          if (live) setState(saved)
+          return
+        }
         const token = await deviceToken(false)
-        // Turned on here before: re-register this device's current push ID on
-        // every open. Phones get a new ID now and then (reinstall, browser
+        // Turned on here before: re-register this device's current push ID
+        // (twice a day). Phones get a new ID now and then (reinstall, browser
         // update), and the server would otherwise still hold the old one.
         let on = false
         if (token && savedState() === 'on') {
@@ -137,6 +162,7 @@ const Notifications = ({ className }) => {
         } else if (token) {
           on = (await callable('pushStatus')({ token })).data.on
         }
+        if (token) markChecked()
         if (on) showWhileOpen().catch(console.error)
         if (live) setState(on ? 'on' : 'off')
       } catch (e) {

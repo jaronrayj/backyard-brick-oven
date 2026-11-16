@@ -19,14 +19,33 @@ const listRole = (data, email) => {
   return null
 }
 
-// One sync per sign-in per page load, however many components ask.
+// One sync per sign-in per page load, however many components ask. When this
+// browser already knows the role and synced in the last 12 hours, it's skipped
+// (a slow call on a phone signal); a role change on the list syncs right away.
 const synced = new Map()
+const SYNC_KEY = 'bybo-team-synced'
+const SYNC_EVERY = 12 * 60 * 60 * 1000
+const syncedRecently = (uid) => {
+  try {
+    const v = JSON.parse(localStorage.getItem(SYNC_KEY) || 'null')
+    return !!v && v.uid === uid && Date.now() - v.at < SYNC_EVERY
+  } catch (e) {
+    return false
+  }
+}
 const syncTag = (user) => {
   if (!synced.has(user.uid)) {
     synced.set(
       user.uid,
       httpsCallable(getFunctions(), 'refreshMyAccess')()
-        .then((res) => (res.data && res.data.changed ? user.getIdToken(true) : null))
+        .then((res) => {
+          try {
+            localStorage.setItem(SYNC_KEY, JSON.stringify({ uid: user.uid, at: Date.now() }))
+          } catch (e) {
+            // fine: it syncs again next time
+          }
+          return res.data && res.data.changed ? user.getIdToken(true) : null
+        })
         .catch(() => null)
     )
   }
@@ -110,9 +129,11 @@ const useRealTeamRole = () => {
           .catch(() => null)
       : Promise.resolve(null)
     // Known on this browser: show the page now and sync the sign-in tag in
-    // the background. First time: wait for the tag so the rules see it.
-    const sync = syncTag(user)
+    // the background (twice a day). First time: wait for the tag so the rules see it.
+    const sync = known && syncedRecently(user.uid) ? null : syncTag(user)
     Promise.all([fromList, known ? null : sync]).then(([r]) => {
+      // The list says something different from what this browser knew: sync now.
+      if (known && r !== known) syncTag(user)
       remember(user.uid, user.email, r)
       if (!cancelled) setRole(r)
     })

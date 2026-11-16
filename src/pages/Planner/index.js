@@ -66,15 +66,18 @@ const Message = ({ children }) => (
 
 // Crew sign-ups ("I'm planning to come"): crewSignups/{serviceId}__{uid}, kept
 // apart from the plan so they never collide with an admin's edits.
-const crewSignups = (me) => ({
+const crewSignups = (getMe) => ({
   listen: (next) =>
     onSnapshot(
       collection(db, 'crewSignups'),
       (snap) => next(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
       () => next([])
     ),
-  save: (svc, { from, to }) =>
-    setDoc(doc(db, 'crewSignups', `${svc.id}__${me.uid}`), { serviceId: svc.id, date: svc.date || '', uid: me.uid, name: me.name, from, to, at: serverTimestamp() }),
+  save: (svc, { from, to }) => {
+    const me = getMe()
+    if (!me) return Promise.reject(new Error('Still signing in'))
+    return setDoc(doc(db, 'crewSignups', `${svc.id}__${me.uid}`), { serviceId: svc.id, date: svc.date || '', uid: me.uid, name: me.name, from, to, at: serverTimestamp() })
+  },
   remove: (id) => deleteDoc(doc(db, 'crewSignups', id)),
 })
 // "Ben" from the Google name, or the email before the @.
@@ -94,25 +97,38 @@ const Planner = () => {
       }),
     []
   )
+  // Who's signed in, for crew sign-ups. Kept in a ref so the Planner mounts once
+  // (it used to mount a second time when the sign-in finished restoring).
+  const meRef = useRef(null)
+  const meKey = user && !user.pending ? user.uid : null
+  useEffect(() => {
+    meRef.current = meKey ? { uid: user.uid, name: firstNameOf(user).slice(0, 60) } : null
+    if (rootRef.current && rootRef.current.plannerRedrawCrew) rootRef.current.plannerRedrawCrew()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meKey])
   const [awakeSlot, setAwakeSlot] = useState(null)
   const [wrapSlot, setWrapSlot] = useState(null)
+  // The wrap-up form reads the money tracker sheet, so it loads only once the Wrap up tab is opened.
+  const [wrapOpened, setWrapOpened] = useState(false)
 
   useEffect(() => {
     if ((access !== 'admin' && access !== 'staff') || !rootRef.current) return undefined
-    const me = user && user.uid && !user.pending ? { uid: user.uid, name: firstNameOf(user).slice(0, 60) } : null
+    const root = rootRef.current
+    const onTab = (e) => e.detail === 'wrapup' && setWrapOpened(true)
+    root.addEventListener('planner-tab', onTab)
     const unmount = mountPlanner(rootRef.current, { store, canWrite: access === 'admin', canCheck: true, shopping: access === 'admin', isAdmin: access === 'admin', refresh, calendar, pizzas,
-      me, signups: me ? crewSignups(me) : null,
+      me: () => meRef.current, signups: crewSignups(() => meRef.current),
       wrapUps: access === 'admin' ? wrapUps : null,
     })
     setAwakeSlot(rootRef.current.querySelector('#keep-awake-slot'))
     if (access === 'admin') setWrapSlot(rootRef.current.querySelector('#wrapup-slot'))
     return () => {
+      root.removeEventListener('planner-tab', onTab)
       setAwakeSlot(null)
       setWrapSlot(null)
       unmount()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [access, user && !user.pending && user.uid])
+  }, [access])
 
   // A notification tapped while the Planner is already open changes the link
   // (/planner#prep, say) without reloading: switch to that tab. On first load
@@ -154,6 +170,7 @@ const Planner = () => {
       <div className="bybo-planner" ref={rootRef} />
       {awakeSlot && createPortal(<KeepAwake bare className="btn quiet" />, awakeSlot)}
       {wrapSlot &&
+        wrapOpened &&
         createPortal(
           <Suspense fallback={<p className="note">Loading…</p>}>
             <WrapUp
