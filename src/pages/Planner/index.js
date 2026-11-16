@@ -2,7 +2,7 @@ import React, { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocation } from 'react-router-dom'
 import { onTabHome } from '../../utils/tabHome'
-import { doc, onSnapshot, setDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { onValue, ref as rtdbRef } from 'firebase/database'
 import { signInWithGoogle } from '../../utils/firebase'
@@ -64,6 +64,22 @@ const Message = ({ children }) => (
   </div>
 )
 
+// Crew sign-ups ("I'm planning to come"): crewSignups/{serviceId}__{uid}, kept
+// apart from the plan so they never collide with an admin's edits.
+const crewSignups = (me) => ({
+  listen: (next) =>
+    onSnapshot(
+      collection(db, 'crewSignups'),
+      (snap) => next(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      () => next([])
+    ),
+  save: (svc, { from, to }) =>
+    setDoc(doc(db, 'crewSignups', `${svc.id}__${me.uid}`), { serviceId: svc.id, date: svc.date || '', uid: me.uid, name: me.name, from, to, at: serverTimestamp() }),
+  remove: (id) => deleteDoc(doc(db, 'crewSignups', id)),
+})
+// "Ben" from the Google name, or the email before the @.
+const firstNameOf = (user) => String((user && user.displayName) || '').trim().split(/\s+/)[0] || String((user && user.email) || '').split('@')[0]
+
 const Planner = () => {
   const { user, loading, role } = useTeamRole()
   // 'loading', 'admin', 'staff' or 'denied'
@@ -83,7 +99,9 @@ const Planner = () => {
 
   useEffect(() => {
     if ((access !== 'admin' && access !== 'staff') || !rootRef.current) return undefined
+    const me = user && user.uid && !user.pending ? { uid: user.uid, name: firstNameOf(user).slice(0, 60) } : null
     const unmount = mountPlanner(rootRef.current, { store, canWrite: access === 'admin', canCheck: true, shopping: access === 'admin', isAdmin: access === 'admin', refresh, calendar, pizzas,
+      me, signups: me ? crewSignups(me) : null,
       wrapUps: access === 'admin' ? wrapUps : null,
     })
     setAwakeSlot(rootRef.current.querySelector('#keep-awake-slot'))
@@ -93,7 +111,8 @@ const Planner = () => {
       setWrapSlot(null)
       unmount()
     }
-  }, [access])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [access, user && !user.pending && user.uid])
 
   // A notification tapped while the Planner is already open changes the link
   // (/planner#prep, say) without reloading: switch to that tab. On first load

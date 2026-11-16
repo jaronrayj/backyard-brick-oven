@@ -109,3 +109,82 @@ test('cleared services keep their crew for the wrap-up', async () => {
   if (typeof stop === 'function') stop()
   jest.useRealTimers()
 })
+
+// Sign-ups: a stand-in for the crewSignups collection.
+const fakeSignups = (initial) => {
+  let listener = () => {}
+  let list = initial
+  const api = {
+    listen: (next) => {
+      listener = next
+      next(list)
+      return () => {}
+    },
+    save: jest.fn((svc, t) => {
+      list = [...list.filter((x) => !(x.serviceId === svc.id && x.uid === 'u-ben')), { id: `${svc.id}__u-ben`, serviceId: svc.id, uid: 'u-ben', name: 'Ben', ...t }]
+      listener(list)
+      return Promise.resolve()
+    }),
+    remove: jest.fn((id) => {
+      list = list.filter((x) => x.id !== id)
+      listener(list)
+      return Promise.resolve()
+    }),
+  }
+  return api
+}
+
+test("crew: I'm planning to come, change times, can't make it", async () => {
+  jest.useFakeTimers()
+  const store = fakeStore({ 'ref/snapshot': REF, 'plan/current': plan() })
+  const signups = fakeSignups([])
+  const root = document.createElement('div')
+  document.body.appendChild(root)
+  const stop = mountPlanner(root, { store, canWrite: false, canCheck: true, shopping: false, me: { uid: 'u-ben', name: 'Ben' }, signups, pizzas: () => () => {} })
+  await settle()
+  const box = () => root.querySelector('.crew[data-svc="pf1"]')
+  const button = (text) => [...box().querySelectorAll('button')].find((b) => b.textContent === text)
+
+  // Usable even though the rest of the plan is read-only for crew.
+  expect(button("I'm planning to come").disabled).toBe(false)
+  button("I'm planning to come").click()
+  const [from, to] = box().querySelectorAll('.self select')
+  expect([from.value, to.value]).toEqual(['16:00', '20:00']) // like the crew already listed
+  from.value = '17:30'
+  button("I'm coming").click()
+  await settle()
+  expect(signups.save).toHaveBeenCalledWith(expect.objectContaining({ id: 'pf1' }), { from: '17:30', to: '20:00' })
+  expect(box().textContent).toMatch(/You're planning to come: 5:30–8 pm/)
+  // Nothing about the plan itself was saved by crew.
+  expect(store.saved['plan/current']).toBeUndefined()
+
+  button("Can't make it").click()
+  await settle()
+  expect(signups.remove).toHaveBeenCalledWith('pf1__u-ben')
+  expect(button("I'm planning to come")).toBeTruthy()
+  if (typeof stop === 'function') stop()
+  jest.useRealTimers()
+})
+
+test('admins: see who signed up and add them to the crew', async () => {
+  jest.useFakeTimers()
+  const store = fakeStore({ 'ref/snapshot': REF, 'plan/current': plan() })
+  const signups = fakeSignups([{ id: 'pf1__u-ben', serviceId: 'pf1', uid: 'u-ben', name: 'Ben', from: '17:30', to: '20:00' }])
+  const root = document.createElement('div')
+  const stop = mountPlanner(root, { store, canWrite: true, me: { uid: 'u-admin', name: 'Jaron' }, signups, pizzas: () => () => {} })
+  await settle()
+  const box = root.querySelector('.crew[data-svc="pf1"]')
+  expect(box.querySelector('.crew-head .sub').textContent).toBe('1 confirmed · 1 signed up')
+  expect(box.querySelector('.signups').textContent).toMatch(/Ben 5:30–8 pm/)
+  // Admins don't get a sign-up button for themselves.
+  expect([...box.querySelectorAll('button')].some((b) => /planning to come/.test(b.textContent))).toBe(false)
+  ;[...box.querySelectorAll('button')].find((b) => b.textContent === 'Add to crew').click()
+  await settle()
+  expect(signups.remove).toHaveBeenCalledWith('pf1__u-ben')
+  expect(store.saved['plan/current'].services[0].crew.map((c) => [c.name, c.from, c.to, c.status])).toEqual([
+    ['Libby', '16:00', '20:00', 'yes'],
+    ['Ben', '17:30', '20:00', 'yes'],
+  ])
+  if (typeof stop === 'function') stop()
+  jest.useRealTimers()
+})
