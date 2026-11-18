@@ -9,6 +9,7 @@ export const TEAM_TOOLS = [
   { key: 'money', roles: ['admin'], name: 'Money', href: '/money', blurb: 'Profit First transfers on the 10th and 25th.' },
   // tab: false — on the team home list only, not in the tab bar.
   { key: 'signups', roles: ['admin'], name: 'Email list', href: '/admin/signups', blurb: 'Sign-ups from the /hello poster page, with a CSV download.', tab: false },
+  { key: 'crew', roles: ['admin'], name: 'Crew history', href: '/admin/crew', blurb: "Who said they're coming, maybe or can't make it, and when.", tab: false },
   {
     key: 'admin',
     roles: ['admin'],

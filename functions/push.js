@@ -186,7 +186,8 @@ export const runMorningSummary = async () => {
 
     // Who's working today (the Planner's Crew on each service).
     try {
-      lines.push(...crewToday((await db.doc("planner/plan").get()).data(), today));
+      const replies = (await db.collection("crewReplies").where("date", "==", today).get()).docs.map((d) => d.data());
+      lines.push(...crewToday((await db.doc("planner/plan").get()).data(), today, replies));
     } catch (e) {
       logger.error("Morning summary: crew read failed", e);
     }

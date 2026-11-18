@@ -41,6 +41,30 @@ service cloud.firestore {
       allow delete: if isAdmin() || (onTeam() && resource.data.uid == request.auth.uid);
     }
 
+    // Crew answering for their own crew row on a Planner service (Coming /
+    // Maybe / Can't make it): crewReplies/{serviceId}__{uid}, the latest answer.
+    match /crewReplies/{id} {
+      allow read: if onTeam();
+      allow create, update: if onTeam()
+        && request.resource.data.uid == request.auth.uid
+        && id == request.resource.data.serviceId + '__' + request.auth.uid
+        && request.resource.data.keys().hasOnly(['serviceId', 'date', 'uid', 'email', 'name', 'status', 'at'])
+        && request.resource.data.status in ['yes', 'maybe', 'no']
+        && request.resource.data.name is string && request.resource.data.name.size() <= 60;
+      allow delete: if isAdmin() || (onTeam() && resource.data.uid == request.auth.uid);
+    }
+    // Crew history: every answer and sign-up, written by the person themselves,
+    // never changed afterward. Admins read it at /admin/crew.
+    match /crewHistory/{id} {
+      allow read: if isAdmin();
+      allow create: if onTeam()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'name', 'email', 'serviceId', 'date', 'service', 'action', 'from', 'to', 'at'])
+        && request.resource.data.action in ['coming', 'maybe', "can't make it", 'signed up', 'cancelled sign-up']
+        && request.resource.data.name is string && request.resource.data.name.size() <= 60;
+      allow update, delete: if false;
+    }
+
     // Events, quotes and their settings.
     match /events/{id} {
       allow read, write: if isAdmin();
