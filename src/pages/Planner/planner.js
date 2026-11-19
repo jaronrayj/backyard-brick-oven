@@ -9,8 +9,11 @@
  * deps.canWrite  - whether this person may change the plan (admins)
  * deps.canCheck  - whether they may check things off (Prep, Bring, and Shopping when shown); defaults to canWrite
  * deps.shopping  - show the Shopping tab (admins; crew don't get it). Defaults to true
- * deps.me        - {uid, name} of whoever is signed in, or a function returning it (for crew sign-ups)
+ * deps.me        - {uid, name, email} of whoever is signed in, or a function returning it (for crew sign-ups)
  * deps.signups   - {listen(next) -> unsubscribe, save(service, {from, to}), remove(id)}: crew sign-ups ("I'm planning to come")
+ * deps.replies   - {listen(next) -> unsubscribe, save(service, row, status)}: crew answering for their own crew row
+ *                  (Coming / Maybe / Can't make it); each answer is also logged for admins (/admin/crew)
+ * deps.team      - () => [emails] on the team list, for linking a crew row to someone's login (admins)
  * deps.pizzas    - (onChange) => unsubscribe; the website's pizzas, live
  * deps.isAdmin   - shows "Refresh now" (under Yeast, water and timing)
  * deps.refresh   - async () => re-read the Google Sheets on the server
@@ -251,8 +254,10 @@ export function mountPlanner(root, deps) {
   root.addEventListener('focusout', onFocusOut);
 
   /* ---------- Crew: who's working each service, and when ----------
-     s.crew = [{id, name, from: 'HH:MM', to: 'HH:MM', status: 'yes' | 'maybe'}]. Admins edit it on
-     each service; crew see it (read-only), also on the Calendar tab's day list. Names used before
+     s.crew = [{id, name, from: 'HH:MM', to: 'HH:MM', status: 'yes' | 'maybe', email?, signupUid?}].
+     Admins edit it on each service; crew see it (read-only), also on the Calendar tab's day list.
+     A row tied to someone's login (email picked by an admin, or signupUid from "Add to crew") lets
+     that person answer for it themselves: REPLIES, crewReplies/{serviceId}__{uid}. Names used before
      are kept in PLAN.crewNames for quick picking. */
   const CREW_TIMES = Array.from({ length: (24 - 6) * 4 }, (_, i) => {
     const m = 6 * 60 + i * 15;
@@ -273,8 +278,10 @@ export function mountPlanner(root, deps) {
   const crewSummary = (s) => {
     const list = crewOf(s).filter((c) => (c.name || '').trim());
     if (!list.length) return 'No one yet';
-    const yes = list.filter((c) => c.status !== 'maybe').length, maybe = list.length - yes;
-    return [yes ? yes + ' confirmed' : '', maybe ? maybe + ' maybe' : ''].filter(Boolean).join(' · ');
+    /* A crew member's own answer wins over the row's Confirmed / Maybe. */
+    const st = (c) => { const r = replyFor(s, c); return r ? r.status : (c.status === 'maybe' ? 'maybe' : 'yes'); };
+    const yes = list.filter((c) => st(c) === 'yes').length, maybe = list.filter((c) => st(c) === 'maybe').length, no = list.filter((c) => st(c) === 'no').length;
+    return [yes ? yes + ' confirmed' : '', maybe ? maybe + ' maybe' : '', no ? no + " can't make it" : ''].filter(Boolean).join(' · ');
   };
   const crewLine = (s) => crewOf(s).filter((c) => (c.name || '').trim())
     .map((c) => c.name.trim() + (crewRange(c) ? ' ' + crewRange(c) : '') + (c.status === 'maybe' ? ' (maybe)' : '')).join(', ');
@@ -299,7 +306,15 @@ export function mountPlanner(root, deps) {
   /* Crew sign-ups: "I'm planning to come" (crew, for themselves) and the list of who signed up
      (admins: Add to crew moves someone into the crew list as confirmed). */
   let SIGNUPS = [];
+  let REPLIES = [];
   const meNow = () => (typeof deps.me === 'function' ? deps.me() : deps.me) || null;
+  const lowerEmail = (e) => String(e || '').trim().toLowerCase();
+  /* Is this crew row mine? Linked by login email (an admin picked it) or by "Add to crew". */
+  const isMine = (c, me) => !!me && ((c.signupUid && c.signupUid === me.uid) || (c.email && me.email && lowerEmail(c.email) === lowerEmail(me.email)));
+  /* The latest answer for a crew row: from the person whose login the row is tied to. */
+  const replyFor = (s, c) => REPLIES.find((r) => r.serviceId === s.id && ((c.signupUid && r.uid === c.signupUid) || (c.email && lowerEmail(r.email) === lowerEmail(c.email))));
+  const REPLY_TEXT = {yes: 'Coming', maybe: 'Maybe', no: "Can't make it"};
+  const shortWhen = (t) => { const d = t && typeof t.toDate === 'function' ? t.toDate() : null; return d ? d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : ''; };
   const signupsFor = (s) => SIGNUPS.filter((x) => x.serviceId === s.id && !crewOf(s).some((c) => c.signupUid === x.uid));
   const timeSelect = (value, label) => {
     const sel = el('select'); sel.setAttribute('aria-label', label); sel.dataset.self = '1';
@@ -339,14 +354,36 @@ export function mountPlanner(root, deps) {
     const mine = list.find((x) => x.uid === me.uid);
     const self = el('div', 'self');
     const redraw = () => { if (document.activeElement && box.contains(document.activeElement)) document.activeElement.blur(); renderCrew(s, box); setReadOnly(true); };
-    if (onCrew) { self.append(el('span', 'sub', "You're on the crew" + (crewRange(onCrew) ? ': ' + crewRange(onCrew) : '') + '.')); box.append(self); return; }
+    const myRow = onCrew || crewOf(s).find((c) => isMine(c, me));
+    if (myRow) {
+      /* On the crew: answer for yourself. Admins see it on your row; each answer is logged. */
+      const mineReply = replyFor(s, myRow);
+      self.append(el('span', 'sub', "You're on the crew" + (crewRange(myRow) ? ': ' + crewRange(myRow) : '') + '.'));
+      if (deps.replies) {
+        const btns = el('div', 'reply-btns'); btns.setAttribute('role', 'group'); btns.setAttribute('aria-label', 'Are you coming?');
+        [['yes', "I'm coming"], ['maybe', 'Maybe'], ['no', "Can't make it"]].forEach(([v, t]) => {
+          const on = mineReply && mineReply.status === v;
+          const b = el('button', 'btn ' + (on ? 'primary' : 'quiet'), t); b.type = 'button'; b.dataset.self = '1';
+          b.setAttribute('aria-pressed', String(!!on));
+          b.addEventListener('click', () => {
+            if (on) return;
+            btns.querySelectorAll('button').forEach((x) => { x.disabled = true; });
+            deps.replies.save({...s, name: svcName(s)}, myRow, v).then(redraw, () => { self.append(el('span', 'sub', "Couldn't save. Try again.")); btns.querySelectorAll('button').forEach((x) => { x.disabled = false; }); });
+          });
+          btns.append(b);
+        });
+        self.append(btns);
+        if (mineReply) self.append(el('span', 'sub', 'You said: ' + REPLY_TEXT[mineReply.status] + (shortWhen(mineReply.at) ? ' (' + shortWhen(mineReply.at) + ')' : '') + '.'));
+      }
+      box.append(self); return;
+    }
     const form = (from, to) => {
       self.replaceChildren();
       const a = timeSelect(from, 'From'), b = timeSelect(to, 'To');
       const save = el('button', 'btn primary', mine ? 'Save' : "I'm coming"); save.type = 'button'; save.dataset.self = '1';
       save.addEventListener('click', () => {
         save.disabled = true;
-        deps.signups.save(s, {from: a.value, to: b.value}).then(redraw, () => { self.append(el('span', 'sub', "Couldn't save. Try again.")); save.disabled = false; });
+        deps.signups.save({...s, name: svcName(s)}, {from: a.value, to: b.value}).then(redraw, () => { self.append(el('span', 'sub', "Couldn't save. Try again.")); save.disabled = false; });
       });
       const cancel = el('button', 'btn quiet', 'Cancel'); cancel.type = 'button'; cancel.dataset.self = '1';
       cancel.addEventListener('click', redraw);
@@ -401,7 +438,23 @@ export function mountPlanner(root, deps) {
       status.addEventListener('change', () => { c.status = status.value; row.classList.toggle('maybe', c.status === 'maybe'); head.lastChild.textContent = crewSummary(s); savePlan(); });
       const rm = el('button', 'btn quiet rm', '✕'); rm.type = 'button'; rm.setAttribute('aria-label', 'Remove ' + (c.name || 'this person'));
       rm.addEventListener('click', () => { s.crew = crewOf(s).filter((x) => x !== c); savePlan(); renderCrew(s, box); if (!canWrite) setReadOnly(true); });
-      row.append(name, time('from', 'From'), el('span', 'to', 'to'), time('to', 'To'), status, rm);
+      row.append(name, time('from', 'From'), el('span', 'to', 'to'), time('to', 'To'), status);
+      /* Admins: tie the row to someone's login so they can answer for it (rows from Add to crew already are). */
+      const team = typeof deps.team === 'function' ? deps.team() : [];
+      if (canWrite && !c.signupUid && team.length) {
+        const who = el('select', 'who'); who.setAttribute('aria-label', 'Login for ' + (c.name || 'this person'));
+        const none = el('option', null, 'No login'); none.value = ''; who.append(none);
+        const emails = [...new Set([...team, ...(c.email ? [lowerEmail(c.email)] : [])])];
+        emails.forEach((e) => { const o = el('option', null, e); o.value = e; if (lowerEmail(c.email) === e) o.selected = true; who.append(o); });
+        who.addEventListener('change', () => { if (who.value) c.email = who.value; else delete c.email; savePlan(); });
+        row.append(who);
+      }
+      row.append(rm);
+      const r = replyFor(s, c);
+      if (r) {
+        row.append(el('span', 'reply ' + r.status, (r.status === 'yes' ? '✓ ' : r.status === 'no' ? '✕ ' : '? ') + REPLY_TEXT[r.status] + (shortWhen(r.at) ? ' · ' + shortWhen(r.at) : '')));
+        row.classList.toggle('cant', r.status === 'no');
+      }
       box.append(row);
     });
     renderSignups(s, box);
@@ -1574,6 +1627,7 @@ export function mountPlanner(root, deps) {
     if (!busy()) renderShop();
   }));
   if (deps.signups) unsubs.push(deps.signups.listen((list) => { SIGNUPS = list || []; renderAllCrew(); }));
+  if (deps.replies) unsubs.push(deps.replies.listen((list) => { REPLIES = list || []; renderAllCrew(); }));
   if (deps.wrapUps) {
     $('#tab-wrapup').hidden = false;
     loadWrapCountSoon();

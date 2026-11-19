@@ -2,7 +2,7 @@ import React, { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocation } from 'react-router-dom'
 import { onTabHome } from '../../utils/tabHome'
-import { collection, deleteDoc, doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { onValue, ref as rtdbRef } from 'firebase/database'
 import { signInWithGoogle } from '../../utils/firebase'
@@ -64,6 +64,22 @@ const Message = ({ children }) => (
   </div>
 )
 
+// Every crew answer and sign-up, for admins' Crew history (/admin/crew).
+// Append-only: crewHistory/{auto}. Failing to log never blocks the answer itself.
+const logCrew = (me, svc, action, extra = {}) =>
+  addDoc(collection(db, 'crewHistory'), {
+    uid: me.uid,
+    name: me.name,
+    email: me.email || '',
+    serviceId: svc.id,
+    date: svc.date || '',
+    service: String(svc.name || '').slice(0, 80),
+    action,
+    from: extra.from || '',
+    to: extra.to || '',
+    at: serverTimestamp(),
+  }).catch(() => {})
+
 // Crew sign-ups ("I'm planning to come"): crewSignups/{serviceId}__{uid}, kept
 // apart from the plan so they never collide with an admin's edits.
 const crewSignups = (getMe) => ({
@@ -76,9 +92,41 @@ const crewSignups = (getMe) => ({
   save: (svc, { from, to }) => {
     const me = getMe()
     if (!me) return Promise.reject(new Error('Still signing in'))
-    return setDoc(doc(db, 'crewSignups', `${svc.id}__${me.uid}`), { serviceId: svc.id, date: svc.date || '', uid: me.uid, name: me.name, from, to, at: serverTimestamp() })
+    return setDoc(doc(db, 'crewSignups', `${svc.id}__${me.uid}`), { serviceId: svc.id, date: svc.date || '', uid: me.uid, name: me.name, from, to, at: serverTimestamp() }).then(() =>
+      logCrew(me, svc, 'signed up', { from, to })
+    )
   },
-  remove: (id) => deleteDoc(doc(db, 'crewSignups', id)),
+  remove: (id) => {
+    // Logged only when someone takes back their own sign-up (not when an admin moves it into the crew).
+    const me = getMe()
+    const own = me && id.endsWith(`__${me.uid}`)
+    return deleteDoc(doc(db, 'crewSignups', id)).then(() => own && logCrew(me, { id: id.slice(0, -(me.uid.length + 2)) }, 'cancelled sign-up'))
+  },
+})
+
+// Crew answering for their own crew row: crewReplies/{serviceId}__{uid}, the latest answer
+// ('yes' | 'maybe' | 'no'), plus a crewHistory entry each time.
+const ACTION = { yes: 'coming', maybe: 'maybe', no: "can't make it" }
+const crewReplies = (getMe) => ({
+  listen: (next) =>
+    onSnapshot(
+      collection(db, 'crewReplies'),
+      (snap) => next(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      () => next([])
+    ),
+  save: (svc, row, status) => {
+    const me = getMe()
+    if (!me) return Promise.reject(new Error('Still signing in'))
+    return setDoc(doc(db, 'crewReplies', `${svc.id}__${me.uid}`), {
+      serviceId: svc.id,
+      date: svc.date || '',
+      uid: me.uid,
+      email: me.email || '',
+      name: me.name,
+      status,
+      at: serverTimestamp(),
+    }).then(() => logCrew(me, svc, ACTION[status], { from: row.from, to: row.to }))
+  },
 })
 // "Ben" from the Google name, or the email before the @.
 const firstNameOf = (user) => String((user && user.displayName) || '').trim().split(/\s+/)[0] || String((user && user.email) || '').split('@')[0]
@@ -102,10 +150,22 @@ const Planner = () => {
   const meRef = useRef(null)
   const meKey = user && !user.pending ? user.uid : null
   useEffect(() => {
-    meRef.current = meKey ? { uid: user.uid, name: firstNameOf(user).slice(0, 60) } : null
+    meRef.current = meKey ? { uid: user.uid, name: firstNameOf(user).slice(0, 60), email: String(user.email || '').toLowerCase() } : null
     if (rootRef.current && rootRef.current.plannerRedrawCrew) rootRef.current.plannerRedrawCrew()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meKey])
+  // The team list's emails, so admins can tie a crew row to someone's login.
+  const teamRef = useRef([])
+  useEffect(() => {
+    if (access !== 'admin') return
+    getDoc(doc(db, 'plannerAccess', 'team'))
+      .then((snap) => {
+        const d = snap.data() || {}
+        teamRef.current = [...new Set([...(d.staff || []), ...(d.admins || [])].map((e) => String(e).trim().toLowerCase()).filter(Boolean))]
+        if (rootRef.current && rootRef.current.plannerRedrawCrew) rootRef.current.plannerRedrawCrew()
+      })
+      .catch(() => {})
+  }, [access])
   const [awakeSlot, setAwakeSlot] = useState(null)
   const [wrapSlot, setWrapSlot] = useState(null)
   // The wrap-up form reads the money tracker sheet, so it loads only once the Wrap up tab is opened.
@@ -117,7 +177,7 @@ const Planner = () => {
     const onTab = (e) => e.detail === 'wrapup' && setWrapOpened(true)
     root.addEventListener('planner-tab', onTab)
     const unmount = mountPlanner(rootRef.current, { store, canWrite: access === 'admin', canCheck: true, shopping: access === 'admin', isAdmin: access === 'admin', refresh, calendar, pizzas,
-      me: () => meRef.current, signups: crewSignups(() => meRef.current),
+      me: () => meRef.current, signups: crewSignups(() => meRef.current), replies: crewReplies(() => meRef.current), team: () => teamRef.current,
       wrapUps: access === 'admin' ? wrapUps : null,
     })
     setAwakeSlot(rootRef.current.querySelector('#keep-awake-slot'))

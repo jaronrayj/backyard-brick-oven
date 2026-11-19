@@ -239,4 +239,4 @@ export { pizzaFridaysCalendar } from "./pizzaFridayFeed.js";
 export { sendSignup } from "./signup.js";
 export { syncEventCalendar } from "./calendarSync.js";
 export { sendQuoteEmail, tastingInfo, pickTasting } from "./tasting.js";
-export { notifyCrewSignup } from "./crewSignups.js";
+export { notifyCrewSignup, notifyCrewReply } from "./crewSignups.js";

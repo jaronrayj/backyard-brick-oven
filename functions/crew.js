@@ -14,14 +14,25 @@ const range = (c) => {
 };
 const TYPE_NAMES = { pf: "Pizza Friday", wedding: "Wedding", sides: "Party", meal: "Event", bread: "Bread" };
 
+const lowerEmail = (e) => String(e || "").trim().toLowerCase();
+// The crew member's own answer for a row (crewReplies), if the row is tied to their login.
+const replyOf = (replies, s, c) =>
+  (replies || []).find((r) => r.serviceId === s.id && ((c.signupUid && r.uid === c.signupUid) || (c.email && lowerEmail(r.email) === lowerEmail(c.email))));
+const NOTE = { maybe: " (maybe)", no: " (can't make it)" };
+
 // ["Crew for Pizza Friday: Libby 4–8 pm, Ben 5–8 pm (maybe)", ...] for today's services.
-export const crewToday = (plan, today) =>
+// replies: crewReplies docs; a crew member's own answer wins over the row's status.
+export const crewToday = (plan, today, replies = []) =>
   ((plan && plan.services) || [])
     .filter((s) => s.date === today && Array.isArray(s.crew))
     .map((s) => {
       const people = s.crew
         .filter((c) => String(c.name || "").trim())
-        .map((c) => `${String(c.name).trim()}${range(c) ? ` ${range(c)}` : ""}${c.status === "maybe" ? " (maybe)" : ""}`);
+        .map((c) => {
+          const r = replyOf(replies, s, c);
+          const note = r ? NOTE[r.status] || "" : c.status === "maybe" ? " (maybe)" : "";
+          return `${String(c.name).trim()}${range(c) ? ` ${range(c)}` : ""}${note}`;
+        });
       return people.length ? `Crew for ${String(s.name || "").trim() || TYPE_NAMES[s.type] || "today"}: ${people.join(", ")}` : null;
     })
     .filter(Boolean);

@@ -54,3 +54,20 @@ Only team members are offered "Install app" / "Add to Home Screen" as an app:
 once the team bar sees a signed-in team member. The installed app opens on
 `/planner` (`start_url` in `public/manifest.json`). Visitors never get the
 offer, though any browser can still make a plain home-screen bookmark.
+
+## Crew answering for their own shift
+
+On a Planner service, an admin ties each crew row to a login by picking the
+person's email (rows added with **Add to crew** from a sign-up are tied
+already). That person then sees **I'm coming / Maybe / Can't make it** on their
+row and answers for themselves; admins see the answer as a badge on the row,
+the crew count follows it, the morning summary marks "(can't make it)", and
+admins get a phone notification when an answer changes.
+
+- `crewReplies/{serviceId}__{uid}`: the latest answer (`yes`, `maybe`, `no`),
+  written only by that person (`firestore.rules`).
+- `crewHistory/{auto}`: every answer, sign-up and taken-back sign-up, written
+  by the person themselves and never changed. Admins read it at
+  **/admin/crew** (Crew history on the team home, not a tab), filterable by
+  person.
+

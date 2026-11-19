@@ -1,7 +1,7 @@
 // A crew member signed up for a Planner service ("I'm planning to come"):
 // let the admins know. crewSignups/{serviceId}__{uid} is written by the
 // Planner (src/pages/Planner/index.js); firestore.rules keeps it to their own.
-import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import { onDocumentCreated, onDocumentWritten } from "firebase-functions/v2/firestore";
 import logger from "firebase-functions/logger";
 import { sendPush } from "./push.js";
 
@@ -27,5 +27,25 @@ export const notifyCrewSignup = onDocumentCreated({ document: "crewSignups/{id}"
     await sendPush({ ...signupMessage(s), link: "/planner", tag: `signup-${event.params.id}` });
   } catch (e) {
     logger.error("Crew sign-up notification failed", e);
+  }
+});
+
+// A crew member answered for their crew row (crewReplies/{serviceId}__{uid}):
+// tell the admins, but only when the answer changes, so tapping the same button
+// twice doesn't send twice.
+const ANSWER = { yes: "is coming", maybe: "might come", no: "can't make it" };
+export const replyMessage = (r) => ({
+  title: `${String(r.name || "Someone").trim()} ${ANSWER[r.status] || "answered"}`,
+  body: `${day(r.date) || "A service"}. See the crew in the Planner.`,
+});
+
+export const notifyCrewReply = onDocumentWritten({ document: "crewReplies/{id}", region: "us-central1" }, async (event) => {
+  const before = event.data && event.data.before.exists ? event.data.before.data() : null;
+  const after = event.data && event.data.after.exists ? event.data.after.data() : null;
+  if (!after || (before && before.status === after.status)) return;
+  try {
+    await sendPush({ ...replyMessage(after), link: "/planner", tag: `reply-${event.params.id}` });
+  } catch (e) {
+    logger.error("Crew answer notification failed", e);
   }
 });

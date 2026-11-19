@@ -26,3 +26,28 @@ test("crew today, for the morning summary", () => {
   assert.deepEqual(crewToday(plan, "2026-11-22"), []);
   assert.deepEqual(crewToday(undefined, "2026-11-20"), []);
 });
+
+test("a crew member's own answer wins in the morning summary", () => {
+  const plan = {
+    services: [
+      {
+        id: "s1",
+        type: "pf",
+        date: "2026-11-20",
+        crew: [
+          { name: "Libby", from: "16:00", to: "20:00", status: "yes", email: "libby@example.com" },
+          { name: "Ben", from: "17:00", to: "20:00", status: "maybe", signupUid: "u-ben" },
+          { name: "Hazel", from: "16:00", to: "20:00", status: "maybe" },
+        ],
+      },
+    ],
+  };
+  const replies = [
+    { serviceId: "s1", uid: "u-lib", email: "Libby@Example.com", status: "no" },
+    { serviceId: "s1", uid: "u-ben", email: "ben@example.com", status: "yes" },
+    { serviceId: "other", uid: "u-haz", email: "hazel@example.com", status: "no" },
+  ];
+  assert.deepEqual(crewToday(plan, "2026-11-20", replies), [
+    "Crew for Pizza Friday: Libby 4–8 pm (can't make it), Ben 5–8 pm, Hazel 4–8 pm (maybe)",
+  ]);
+});
