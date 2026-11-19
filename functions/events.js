@@ -195,6 +195,9 @@ export const timesFrom = (settings = {}) => ({
   morningTime: HM.test(settings.morningTime || "") ? settings.morningTime : DEFAULT_TIMES.morningTime,
   wrapUpTime: HM.test(settings.wrapUpTime || "") ? settings.wrapUpTime : DEFAULT_TIMES.wrapUpTime,
 });
+// Is this dough step's time reached today? Mix: the morning time. Poolish: the dough time.
+export const stepReady = (times, now = new Date()) => (step) =>
+  minutesPast(step === "mix" ? times.morningTime : times.doughTime, now) >= 0;
 // Utah time right now as "HH:MM".
 export const nowHM = (now = new Date()) =>
   now.toLocaleTimeString("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false });
@@ -210,8 +213,11 @@ export const runDoughReminders = async () => {
   {
     const db = getFirestore();
     const settings = (await db.doc("eventSettings/reminders").get()).data() || {};
-    // Not yet today's reminder time. Each event remembers which steps were sent, so later runs don't repeat.
-    if (minutesPast(timesFrom(settings).doughTime) < 0) return;
+    // Poolish goes out at the dough reminder time (an evening, the night before mix day);
+    // mix day goes out at the morning time, since it's that day's work. Each step is
+    // remembered once sent, so later runs don't repeat.
+    const ready = stepReady(timesFrom(settings));
+    if (!ready("poolish") && !ready("mix")) return;
     const mixLead = mixLeadFrom((await db.doc("planner/ref").get()).data());
     const today = todayLocal();
 
@@ -220,14 +226,14 @@ export const runDoughReminders = async () => {
     const plan = (await db.doc("planner/plan").get()).data() || {};
     const plannerSentRef = db.doc("eventSettings/plannerReminders");
     const plannerSent = ((await plannerSentRef.get()).data() || {}).sent || {};
-    const planDue = plannerDue(plan, mixLead, today, plannerSent);
+    const planDue = plannerDue(plan, mixLead, today, plannerSent).filter((d) => ready(d.step));
     const planDates = new Set(((plan.services) || []).map((s) => s.date));
 
     const booked = await db.collection("events").where("status", "==", "booked").get();
     const due = booked.docs
       .map((doc) => ({ doc, event: doc.data() }))
       .filter((x) => !planDates.has(x.event.date))
-      .map((x) => ({ ...x, steps: dueSteps(x.event, today, mixLead) }))
+      .map((x) => ({ ...x, steps: dueSteps(x.event, today, mixLead).filter(ready) }))
       .filter((x) => x.steps.length);
     if (!due.length && !planDue.length) return;
 
