@@ -29,7 +29,7 @@ const Times = ({ onClose }) => {
         .split(/[\s,]+/)
         .map((e) => e.trim().toLowerCase())
         .filter(Boolean)
-      await setDoc(doc(db, 'eventSettings', 'reminders'), { emails, doughTime: r.doughTime, morningTime: r.morningTime, wrapUpTime: r.wrapUpTime }, { merge: true })
+      await setDoc(doc(db, 'eventSettings', 'reminders'), { emails, doughEmail: !!r.doughEmail, doughTime: r.doughTime, morningTime: r.morningTime, wrapUpTime: r.wrapUpTime }, { merge: true })
       onClose('Notification times saved.')
     } catch (e) {
       console.error(e)
@@ -63,22 +63,28 @@ const Times = ({ onClose }) => {
           <label className="block text-gray-700">
             Poolish reminders
             {select('doughTime')}
-            <span className="block text-xs text-gray-500">The evening before mix day, with an email too. Mix day comes with the morning summary time. Both follow the Planner's Dough &amp; prep day.</span>
+            <span className="block text-xs text-gray-500">The evening before mix day. Mix day comes with the morning summary time. Both follow the Planner's Dough &amp; prep day.</span>
           </label>
           <label className="block text-gray-700">
             Wrap-up reminder for all-day entries
             {select('wrapUpTime')}
             <span className="block text-xs text-gray-500">Timed events remind you when they end on the calendar.</span>
           </label>
-          <label className="block text-gray-700">
-            Email dough reminders to
-            <input
-              className={ui.input}
-              value={r.emailsText}
-              placeholder="blank = the business inbox"
-              onChange={(e) => setR({ ...r, emailsText: e.target.value })}
-            />
+          <label className="flex items-center gap-2 text-gray-700">
+            <input type="checkbox" checked={!!r.doughEmail} onChange={(e) => setR({ ...r, doughEmail: e.target.checked })} />
+            Also email dough reminders
           </label>
+          {r.doughEmail && (
+            <label className="block text-gray-700">
+              Email dough reminders to
+              <input
+                className={ui.input}
+                value={r.emailsText}
+                placeholder="blank = the business inbox"
+                onChange={(e) => setR({ ...r, emailsText: e.target.value })}
+              />
+            </label>
+          )}
           <p className="text-xs text-gray-500">Utah time; can be up to 15 minutes late.</p>
           {error && <p className="text-red-700">{error}</p>}
           <div className="flex gap-2 justify-end">
