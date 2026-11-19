@@ -1,4 +1,4 @@
-import { buildLines, DEFAULT_PRICING, newQuote, pickPackage, quoteText, totals, travelText, travelZones } from './quote'
+import { addOnWords, buildLines, DEFAULT_INCLUDES, DEFAULT_PRICING, newQuote, otherAddOns, packageIncludes, pickPackage, quoteText, totals, travelText, travelZones } from './quote'
 import { addDays, doughDates, mixLeadFrom, placeCandidates, weatherFlags } from './schedule'
 
 describe('quote', () => {
@@ -109,4 +109,15 @@ describe('wrap-up choices', () => {
     expect(out[0].name).toBe('Pizza Friday')
     expect(out[1].notes).toEqual(['Gate code 1234'])
   })
+})
+
+test("new quotes carry the package's included list and the add-ons", () => {
+  const { quote } = newQuote({ eventType: 'Wedding', guests: 80 }, DEFAULT_PRICING)
+  expect(quote.includes).toEqual(DEFAULT_INCLUDES.wedding)
+  expect(quote.addOnsOffered).toEqual(['Salad', 'Pasta salad', 'Dessert', 'Charcuterie board'])
+  // Saved packages from before the list existed fall back to the default; an emptied list stays empty.
+  expect(packageIncludes({ key: 'party' })).toEqual(DEFAULT_INCLUDES.party)
+  expect(packageIncludes({ key: 'party', includes: [] })).toEqual([])
+  expect(otherAddOns({ lines: [{ label: 'Salad (per person)' }, { label: 'Pasta salad' }], addOnsOffered: ['Salad', 'Pasta salad', 'Dessert'] })).toEqual(['Dessert'])
+  expect(addOnWords(['Pasta salad', 'Dessert', 'Charcuterie board'])).toBe('pasta salad, dessert and charcuterie board')
 })

@@ -17,6 +17,7 @@ import {
   signatureFrom,
 } from './replyText'
 import { renderQuoteEmail } from './quoteEmailText'
+import { DEFAULT_INCLUDES } from './quote'
 
 // Events > Emails: the wording of every email the app sends for you, each with
 // a live preview. Saved in eventSettings/emails (admins only):
@@ -47,6 +48,8 @@ const SAMPLES = {
       taxRate: 7.25,
       depositPct: 25,
       footer: '',
+      includes: DEFAULT_INCLUDES.wedding,
+      addOnsOffered: ['Salad', 'Pasta salad', 'Dessert', 'Charcuterie board'],
     },
   },
   Party: {
@@ -58,7 +61,7 @@ const SAMPLES = {
     guestsAsked: '40',
     addOns: [],
     comments: '',
-    quote: { lines: [{ label: 'Party package (25 guests)', qty: 1, price: 375 }, { label: 'Extra guests', qty: 15, price: 15 }], discount: 0, taxRate: 7.25, depositPct: 25, footer: '' },
+    quote: { lines: [{ label: 'Party package (25 guests)', qty: 1, price: 375 }, { label: 'Extra guests', qty: 15, price: 15 }], discount: 0, taxRate: 7.25, depositPct: 25, footer: '', includes: DEFAULT_INCLUDES.party, addOnsOffered: ['Salad', 'Pasta salad', 'Dessert'] },
   },
 }
 

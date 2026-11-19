@@ -1,4 +1,4 @@
-import { money, totals } from './quote'
+import { addOnWords, money, otherAddOns, quoteIncludes, totals } from './quote'
 import { DEFAULT_QUOTE_EMAIL, dropOldSignOff, replyEventWords, tastingWhen } from './replyText'
 import { reviewGreetingName } from './reviewAskText'
 
@@ -55,7 +55,15 @@ const quoteHtml = (quote) => {
     )
     .join('')
   const footer = String((quote && quote.footer) || '').trim()
-  return `<table cellpadding="0" cellspacing="0" style="width:100%;max-width:520px;border-collapse:collapse;margin:0 0 16px">${body}</table>${
+  const inc = quoteIncludes(quote)
+  const more = otherAddOns(quote)
+  const includesHtml = inc.length
+    ? `<p style="margin:0 0 4px;font-weight:bold">What's included</p><ul style="margin:0 0 16px;padding-left:22px">${inc
+        .map((x) => `<li style="margin:0 0 4px">${esc(x)}</li>`)
+        .join('')}</ul>`
+    : ''
+  const moreHtml = more.length ? `<p>Want more on the table? We can also bring ${esc(addOnWords(more))}.</p>` : ''
+  return `<table cellpadding="0" cellspacing="0" style="width:100%;max-width:520px;border-collapse:collapse;margin:0 0 16px">${body}</table>${includesHtml}${moreHtml}${
     footer ? `<p style="color:#4b5563;font-size:14px">${esc(footer).replace(/\n/g, '<br>')}</p>` : ''
   }`
 }
@@ -63,7 +71,14 @@ const quoteHtml = (quote) => {
 const quoteTextBlock = (quote) => {
   const lines = quoteRows(quote).map((r) => `${r.strong ? '' : '- '}${r.label}: ${r.amount}`)
   const footer = String((quote && quote.footer) || '').trim()
-  return [...lines, ...(footer ? ['', footer] : [])].join('\n')
+  const inc = quoteIncludes(quote)
+  const more = otherAddOns(quote)
+  return [
+    ...lines,
+    ...(inc.length ? ['', "What's included:", ...inc.map((x) => `- ${x}`)] : []),
+    ...(more.length ? ['', `Want more on the table? We can also bring ${addOnWords(more)}.`] : []),
+    ...(footer ? ['', footer] : []),
+  ].join('\n')
 }
 
 const button = (href, label) =>

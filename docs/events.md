@@ -42,6 +42,13 @@ warns you to add travel by hand). Every line stays
 editable. "Copy as text" is for email or text messages; "Print / PDF" opens a
 clean page to print or save as PDF.
 
+Each package has a **What's included** list (one item per line under
+Pricing). A new quote copies it, so you can change it for one event in the
+quote editor, and the email, the copied text and the print page all show it
+under the prices. Below that, a line names the add-ons not already on the
+quote ("Want more on the table? We can also bring pasta salad and dessert.").
+Quotes made before this have neither.
+
 The starting prices are only placeholders: Wedding $1,500 for up to 100
 guests, Party $15 a guest with a 25-guest minimum (a $375 package for 25,
 then $15 each), $15 per extra guest, salad $3 and pasta salad $5 per person,

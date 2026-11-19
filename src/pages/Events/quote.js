@@ -13,14 +13,39 @@ export const STATUSES = [
   { key: 'lost', label: 'Lost' },
 ]
 
+// What each package covers, shown under the price in every quote. Edited per
+// package under Pricing; packages saved before this existed use these.
+export const DEFAULT_INCLUDES = {
+  wedding: [
+    'Our pizza ovens and crew on site (we just need an outdoor spot for the ovens)',
+    'Four pizzas of your choice, picked at a free tasting or from our menu',
+    'Fresh 10" pizzas coming out the whole time, served buffet-style so guests can try them all',
+    'Setup, service and cleanup, all handled',
+  ],
+  party: [
+    'Our pizza ovens and crew on site (we just need an outdoor spot for the ovens)',
+    'Four pizzas of your choice from our menu',
+    'Fresh 10" pizzas coming out the whole time, served buffet-style',
+    'Setup, service and cleanup, all handled',
+  ],
+}
+
+// The package's list: its own if it has one (even empty), else the default for its key.
+export const packageIncludes = (pkg) => {
+  if (!pkg) return []
+  if (Array.isArray(pkg.includes)) return pkg.includes
+  return DEFAULT_INCLUDES[pkg.key] || []
+}
+
 // Starting numbers only; change them on the page under "Pricing".
 // Wedding: $1,500 covers about 100 guests. Extra guests default to the same
 // per-head rate ($15). Add-ons with no price are skipped and flagged.
 export const DEFAULT_PRICING = {
+  // includes: the "What's included" list each quote shows for its package.
   packages: [
-    { key: 'wedding', name: 'Wedding', match: 'wedding', basePrice: 1500, includedGuests: 100, extraGuestPrice: 15 },
+    { key: 'wedding', name: 'Wedding', match: 'wedding', basePrice: 1500, includedGuests: 100, extraGuestPrice: 15, includes: DEFAULT_INCLUDES.wedding },
     // Party: the minimum is charged as the package (25 guests × $15), then $15 a guest.
-    { key: 'party', name: 'Party / event', match: '', basePrice: 375, includedGuests: 25, extraGuestPrice: 15 },
+    { key: 'party', name: 'Party / event', match: '', basePrice: 375, includedGuests: 25, extraGuestPrice: 15, includes: DEFAULT_INCLUDES.party },
   ],
   addOns: [
     { name: 'Salad', perPerson: 3 },
@@ -38,7 +63,7 @@ export const DEFAULT_PRICING = {
   },
   taxRate: 0, // percent, e.g. 7.25
   depositPct: 0, // percent of total due to book
-  footer: 'Includes setup, continuous service and cleanup. Date is held once the deposit is paid.',
+  footer: 'Date is held once the deposit is paid.',
   // Event day, for the calendar entries (functions/calendarSync.js has the same
   // defaults): minutes there before service, packing up, cleaning up at home,
   // service length when only a start time is given, and average driving speed.
@@ -67,13 +92,16 @@ export const addOnName = (name) => (/^\s*pasta\s*$/i.test(String(name || '')) ? 
 
 // Build quote lines from the event and pricing. Returns { lines, warnings }.
 // A line is { label, qty, price }; its amount is qty * price.
+// The event's package: the one chosen on the event, else by its event type.
+export const eventPackage = (event, pricing) =>
+  ((pricing.packages || []).find((p) => p.key === event.packageKey)) ||
+  pickPackage(pricing, [event.eventType, event.weddingPart].filter(Boolean).join(' '))
+
 export const buildLines = (event, pricing) => {
   const lines = []
   const warnings = []
   const guests = Math.max(0, Math.round(n(event.guests)))
-  const pkg =
-    ((pricing.packages || []).find((p) => p.key === event.packageKey)) ||
-    pickPackage(pricing, [event.eventType, event.weddingPart].filter(Boolean).join(' '))
+  const pkg = eventPackage(event, pricing)
 
   if (!pkg) {
     warnings.push('No packages set up under Pricing.')
@@ -166,6 +194,23 @@ export const totals = (quote) => {
   return { subtotal, discount, tax, total, deposit, balance: round2(total - deposit) }
 }
 
+const cleanList = (list) => (list || []).map((x) => String(x || '').trim()).filter(Boolean)
+
+// The quote's "What's included" lines, without blanks.
+export const quoteIncludes = (quote) => cleanList(quote && quote.includes)
+
+// Add-ons on offer that aren't already a line on the quote, e.g. ['Pasta salad', 'Dessert'].
+export const otherAddOns = (quote) => {
+  const labels = ((quote && quote.lines) || []).map((l) => String(l.label || '').toLowerCase())
+  return cleanList(quote && quote.addOnsOffered).filter((a) => !labels.some((l) => l === a.toLowerCase() || l.startsWith(`${a.toLowerCase()} (`)))
+}
+
+// "pasta salad, dessert and charcuterie board", for the middle of a sentence.
+export const addOnWords = (list) => {
+  const words = list.map((a) => a.toLowerCase())
+  return words.length > 1 ? `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}` : words[0] || ''
+}
+
 // A fresh quote for an event, using the current pricing.
 export const newQuote = (event, pricing) => {
   const { lines, warnings } = buildLines(event, pricing)
@@ -176,6 +221,9 @@ export const newQuote = (event, pricing) => {
       taxRate: n(pricing.taxRate),
       depositPct: n(pricing.depositPct),
       footer: pricing.footer || '',
+      includes: cleanList(packageIncludes(eventPackage(event, pricing))),
+      // Every add-on on offer; the email lists the ones not already on the quote.
+      addOnsOffered: cleanList((pricing.addOns || []).map((a) => addOnName(a.name))),
     },
     warnings,
   }
@@ -209,6 +257,10 @@ export const quoteText = (event, quote) => {
   if (t.tax) out.push(`Tax (${n(quote.taxRate)}%): ${money(t.tax)}`)
   out.push(`Total: ${money(t.total)}`)
   if (t.deposit) out.push(`Deposit to book (${n(quote.depositPct)}% before tax): ${money(t.deposit)}`, `Balance due (with tax): ${money(t.balance)}`)
+  const inc = quoteIncludes(quote)
+  if (inc.length) out.push('', "What's included:", ...inc.map((x) => `- ${x}`))
+  const more = otherAddOns(quote)
+  if (more.length) out.push('', `Want more on the table? We can also bring ${addOnWords(more)}.`)
   if (quote.footer) out.push('', quote.footer)
   return out.join('\n')
 }

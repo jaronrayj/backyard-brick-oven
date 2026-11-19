@@ -25,7 +25,7 @@ import FollowUp from './FollowUp'
 import ReviewAsk from './ReviewAsk'
 import CalendarLine from './CalendarLine'
 import { changeEntries, daysSince, entry, followUpDue, OPEN_ORDER, openGroup, receivedAt, toMillis } from './history'
-import { DEFAULT_PRICING, STATUSES, addOnName, money, newQuote, prettyDate, publicPricing, quoteText, totals, travelZones } from './quote'
+import { DEFAULT_PRICING, STATUSES, addOnName, addOnWords, money, newQuote, otherAddOns, packageIncludes, prettyDate, publicPricing, quoteIncludes, quoteText, totals, travelZones } from './quote'
 import {
   FORECAST_DAYS,
   daysUntil,
@@ -200,7 +200,9 @@ ${t.discount ? sum('Subtotal', money(t.subtotal)) + sum('Discount', `−${money(
 ${t.tax ? sum(`Tax (${quote.taxRate}%)`, money(t.tax)) : ''}
 <tr class="sum total"><td colspan="3">Total</td><td class="r">${money(t.total)}</td></tr>
 ${t.deposit ? sum(`Deposit to book (${quote.depositPct}% before tax)`, money(t.deposit)) + sum(t.tax ? 'Balance due (with tax)' : 'Balance due', money(t.balance)) : ''}
-</table>${quote.footer ? `<p class="muted">${esc(quote.footer)}</p>` : ''}
+</table>${quoteIncludes(quote).length ? `<h3>What's included</h3><ul>${quoteIncludes(quote).map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+${otherAddOns(quote).length ? `<p>Want more on the table? We can also bring ${esc(addOnWords(otherAddOns(quote)))}.</p>` : ''}
+${quote.footer ? `<p class="muted">${esc(quote.footer)}</p>` : ''}
 <p class="muted">Quoted ${prettyDate(todayISO())}</p></body></html>`
   const w = window.open('', '_blank')
   if (!w) {
@@ -292,6 +294,14 @@ const QuoteEditor = ({ event, pricing, onChange }) => {
           <input className={input} type="number" value={quote.depositPct} onChange={(e) => onChange({ ...quote, depositPct: e.target.value })} />
         </Field>
       </div>
+      <Field label="What's included (one per line)">
+        <textarea
+          className={input}
+          rows={4}
+          value={(quote.includes || []).join('\n')}
+          onChange={(e) => onChange({ ...quote, includes: e.target.value.split('\n') })}
+        />
+      </Field>
       <Field label="Note at the bottom of the quote">
         <textarea className={input} rows={2} value={quote.footer || ''} onChange={(e) => onChange({ ...quote, footer: e.target.value })} />
       </Field>
@@ -750,6 +760,7 @@ const Settings = ({ pricing, events = [], onClose }) => {
           basePrice: num(x.basePrice),
           includedGuests: num(x.includedGuests),
           extraGuestPrice: num(x.extraGuestPrice),
+          includes: packageIncludes(x).map((t) => String(t).trim()).filter(Boolean),
         })),
         addOns: p.addOns.map((x) => ({ ...x, perPerson: num(x.perPerson) })),
         travel: { zones: travelZones({ travel: { zones: p.travel.zones.map((z) => ({ upTo: num(z.upTo), fee: num(z.fee) })) } }) },
@@ -812,6 +823,16 @@ const Settings = ({ pricing, events = [], onClose }) => {
             ) : (
               <span />
             )}
+            <div className="col-span-2 sm:col-span-6">
+              <Field label="What's included (one per line, shown in every quote for this package)">
+                <textarea
+                  className={input}
+                  rows={4}
+                  value={packageIncludes(x).join('\n')}
+                  onChange={(e) => setPkg(i, { includes: e.target.value.split('\n') })}
+                />
+              </Field>
+            </div>
           </div>
         ))}
         <button
