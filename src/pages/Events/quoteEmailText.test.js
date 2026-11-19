@@ -55,3 +55,14 @@ test('{quote} in the middle of a sentence still becomes the table', () => {
   expect(mail.html).toMatch(/here it is: <\/p><table/)
   expect(mail.html).toMatch(/<\/table>.*<p> Thanks!<\/p>/s)
 })
+
+test("what's included and the other add-ons", () => {
+  const q = { ...quote, includes: ['Our ovens and crew', '', 'Four pizzas'], addOnsOffered: ['Salad', 'Pasta salad', 'Dessert'] }
+  const mail = renderQuoteEmail({ template: DEFAULT_QUOTE_EMAIL, event, quote: q, times: [] })
+  expect(mail.text).toMatch(/What's included:\n- Our ovens and crew\n- Four pizzas\n\nWant more on the table\? We can also bring pasta salad and dessert\./)
+  expect(mail.html).toMatch(/<ul[^>]*><li[^>]*>Our ovens and crew<\/li><li[^>]*>Four pizzas<\/li><\/ul>/)
+  expect(mail.html).not.toMatch(/<li[^>]*><\/li>/)
+  // Old quotes without the list: nothing extra.
+  const old = renderQuoteEmail({ template: DEFAULT_QUOTE_EMAIL, event, quote, times: [] })
+  expect(old.text + old.html).not.toMatch(/included|Want more/)
+})
