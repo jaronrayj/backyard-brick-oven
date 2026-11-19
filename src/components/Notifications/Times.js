@@ -58,12 +58,12 @@ const Times = ({ onClose }) => {
           <label className="block text-gray-700">
             Morning summary
             {select('morningTime')}
-            <span className="block text-xs text-gray-500">Today's calendar, dough steps and events. Skipped on empty days.</span>
+            <span className="block text-xs text-gray-500">Today's calendar and events, plus mix-day reminders. Skipped on empty days.</span>
           </label>
           <label className="block text-gray-700">
-            Dough reminders
+            Poolish reminders
             {select('doughTime')}
-            <span className="block text-xs text-gray-500">Poolish and mix days for booked events, with an email too.</span>
+            <span className="block text-xs text-gray-500">The evening before mix day, with an email too. Mix day comes with the morning summary time. Both follow the Planner's Dough &amp; prep day.</span>
           </label>
           <label className="block text-gray-700">
             Wrap-up reminder for all-day entries

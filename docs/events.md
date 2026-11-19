@@ -113,8 +113,9 @@ and open it from there). Code: `functions/push.js`, the bell in the team bar
 | Notification | When |
 | --- | --- |
 | New inquiry | As soon as the website form is sent |
-| Dough step (poolish tonight / mix today) | The dough reminder time (default 2 pm), with the email, for Planner services and booked events |
-| Morning summary | The morning time (default 7 am): today's Google Calendar entries, dough steps and booked events, plus yesterday's events still to wrap up; skipped when there's nothing |
+| Poolish tonight | The dough (poolish) reminder time (default 2 pm), with the email, for Planner services and booked events |
+| Mix dough today | The morning time (default 7 am), with the email; it's that day's work, so it doesn't wait for the evening |
+| Morning summary | The morning time (default 7 am): today's Google Calendar entries, tonight's poolish (by the Planner's days, like the reminders; mix day has its own reminder) and booked events, plus yesterday's events still to wrap up; skipped when there's nothing |
 | Wrap-up reminder | At each event's Google Calendar end time (within 15 minutes) (all-day entries and events without a time: the wrap-up time, default 9 pm), once per event and only if it has no wrap-up yet; tapping it opens the Planner's **Wrap up** tab (admins; `/planner#wrapup`), the only place wrap-ups are done (`/events/wrapup` redirects there; the page code is `src/pages/Events/WrapUp.js`). The tab shows how many of the last week's ended events still need one (`wrapUpsDue`). Sent ones are kept in `wrapUpReminders/{date}`. The next morning's summary lists anything from yesterday still not wrapped up |
 
 Tapping a notification opens the spot it's about (paths in

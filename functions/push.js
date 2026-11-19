@@ -23,6 +23,7 @@ import { GMAIL_USER } from "./mail.js";
 import { dueSteps, mixLeadFrom, todayLocal, STEP_TEXT, timesFrom, minutesPast } from "./events.js";
 import { calendarBetween, notWrappedUp } from "./wrapup.js";
 import { crewToday } from "./crew.js";
+import { plannerDue } from "./plannerReminders.js";
 import { LINKS, wrapUpLink } from "./links.js";
 
 if (!getApps().length) initializeApp();
@@ -192,13 +193,22 @@ export const runMorningSummary = async () => {
       logger.error("Morning summary: crew read failed", e);
     }
 
+    // Tonight's poolish, worked out like the dough reminders: the Planner's days
+    // (its Dough & prep day when set) for its services, the event date for booked
+    // events with no Planner service that day. Mix day isn't listed: its own
+    // reminder goes out at this same time.
     const mixLead = mixLeadFrom((await db.doc("planner/ref").get()).data());
+    const plan = (await db.doc("planner/plan").get()).data() || {};
+    const planDates = new Set((plan.services || []).map((s) => s.date));
+    for (const d of plannerDue(plan, mixLead, today, {}).filter((x) => x.step === "poolish")) {
+      lines.push(`${STEP_TEXT.poolish} for ${d.services.map((x) => `${x.name} (${shortDate(x.date)})`).join(" + ")}`);
+    }
     const booked = await db.collection("events").where("status", "==", "booked").get();
     for (const d of booked.docs) {
       const event = d.data();
       // Ignore remindersSent here: the summary is a heads-up, not the reminder.
-      const steps = dueSteps({ ...event, remindersSent: {} }, today, mixLead);
-      if (steps.length) lines.push(`${steps.map((s) => STEP_TEXT[s]).join(" and ")} for ${event.name} (${shortDate(event.date)})`);
+      const steps = planDates.has(event.date) ? [] : dueSteps({ ...event, remindersSent: {} }, today, mixLead).filter((s) => s === "poolish");
+      if (steps.length) lines.push(`${STEP_TEXT.poolish} for ${event.name} (${shortDate(event.date)})`);
       if (event.date === today) lines.push(`Event today: ${event.name}${event.time ? `, ${event.time}` : ""}`);
     }
 
