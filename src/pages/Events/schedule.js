@@ -13,7 +13,8 @@ export const mixLeadFrom = (ref) => {
 
 export const DEFAULT_REMINDERS = {
   emails: [], // empty = the business inbox
-  doughTime: '14:00', // dough reminder email and phone notification, Utah time
+  doughTime: '14:00', // poolish reminder phone notification, Utah time
+  doughEmail: false, // also email the dough reminders
   morningTime: '07:00', // phone morning summary
   wrapUpTime: '21:00', // phone nudge to wrap up today's events
 }

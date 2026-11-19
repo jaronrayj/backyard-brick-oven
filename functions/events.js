@@ -272,7 +272,10 @@ export const runDoughReminders = async () => {
           : `Dough: ${due[0].steps.map((s) => STEP_TEXT[s].toLowerCase()).join(" and ")} for ${due[0].event.name}`;
 
     // Push first, then email: a Gmail hiccup shouldn't cost the phone notification.
-    const mailed = sendMail({ to, subject, text }).catch((err) => logger.error("dough reminder email failed", err));
+    // The email is off unless "Also email dough reminders" is ticked under the bell.
+    const mailed = settings.doughEmail === true
+      ? sendMail({ to, subject, text }).catch((err) => logger.error("dough reminder email failed", err))
+      : Promise.resolve();
     for (const p of pushes) await sendPush(p);
     for (const { event, steps } of due) {
       await sendPush({
@@ -296,6 +299,6 @@ export const runDoughReminders = async () => {
         doc.ref.update(Object.fromEntries(steps.map((s) => [`remindersSent.${s}`, event.date])))
       )
     );
-    logger.info(`Sent ${due.length + planDue.length} dough reminder(s) to ${to}`);
+    logger.info(`Sent ${due.length + planDue.length} dough reminder(s)${settings.doughEmail === true ? `, emailed to ${to}` : " (push only)"}`);
   }
 };

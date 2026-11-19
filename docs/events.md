@@ -16,7 +16,7 @@ reminders for booked events. Admins only ([team.md](team.md)).
 | Website visitor counts (Events → Report) | Firestore `siteStats/{YYYY-MM}`, one number per step, added by `functions/stats.js` `countStep`; the page side is `src/utils/track.js` |
 | Dough reminder recipients | Firestore `eventSettings/reminders`, edited from the bell → Notification times |
 | Website inquiries → events | `functions/events.js` `saveInquiryEvent`, called by `sendInquiry` (status "inquiry") |
-| Dough reminder emails | `functions/events.js` `runDoughReminders`, run every 15 minutes by `notificationTimer` (which also runs the morning summary), and sends at the time set from the bell → Notification times (default 2 pm Utah time) |
+| Dough reminder emails (off unless "Also email dough reminders" is ticked under the bell, `eventSettings/reminders.doughEmail`) | `functions/events.js` `runDoughReminders`, run every 15 minutes by `notificationTimer` (which also runs the morning summary), and sends at the time set from the bell → Notification times (default 2 pm Utah time) |
 | Weather | [Open-Meteo](https://open-meteo.com/) (free, no key). The location is turned into a point when an event is saved; street addresses fall back to the town. |
 
 Stages: Inquiry → Quoted → Booked → Done, or Lost. The list has two tabs:
@@ -113,8 +113,8 @@ and open it from there). Code: `functions/push.js`, the bell in the team bar
 | Notification | When |
 | --- | --- |
 | New inquiry | As soon as the website form is sent |
-| Poolish tonight | The dough (poolish) reminder time (default 2 pm), with the email, for Planner services and booked events |
-| Mix dough today | The morning time (default 7 am), with the email; it's that day's work, so it doesn't wait for the evening |
+| Poolish tonight | The dough (poolish) reminder time (default 2 pm), for Planner services and booked events |
+| Mix dough today | The morning time (default 7 am); it's that day's work, so it doesn't wait for the evening |
 | Morning summary | The morning time (default 7 am): today's Google Calendar entries, tonight's poolish (by the Planner's days, like the reminders; mix day has its own reminder) and booked events, plus yesterday's events still to wrap up; skipped when there's nothing |
 | Wrap-up reminder | At each event's Google Calendar end time (within 15 minutes) (all-day entries and events without a time: the wrap-up time, default 9 pm), once per event and only if it has no wrap-up yet; tapping it opens the Planner's **Wrap up** tab (admins; `/planner#wrapup`), the only place wrap-ups are done (`/events/wrapup` redirects there; the page code is `src/pages/Events/WrapUp.js`). The tab shows how many of the last week's ended events still need one (`wrapUpsDue`). Sent ones are kept in `wrapUpReminders/{date}`. The next morning's summary lists anything from yesterday still not wrapped up |
 
