@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
-import logo from '../../assets/brickovenLogoText.png'
+import logo from '../../assets/brickovenLogoClear.png'
 import instagramLogo from '../../assets/instagram.png'
 import facebookLogo from '../../assets/facebook.png'
 import { track } from '../../utils/track'
@@ -8,7 +8,7 @@ import { rtdbGet } from '../../utils/publicData'
 import { EMAIL_MAX, NAME_MAX, checkSignup } from './signupText'
 
 // /hello: landing page for the QR code on event posters. One job: trade free
-// Roasted Garlic Breadsticks or a F'Zookie for an email address, then ask for
+// dessert (the F'Zookie) or Roasted Garlic Breadsticks for an email address, then ask for
 // a follow while they're happy.
 //   1. The offer and an email box (first name optional).
 //   2. After signing up (functions/signup.js, which also sends a welcome
@@ -75,16 +75,49 @@ const prettyDay = (d) => new Date(d).toLocaleDateString('en-US', { weekday: 'sho
 const bigButton =
   'flex items-center justify-center gap-3 w-full py-4 px-5 rounded-xl text-lg font-bold shadow-md transition-colors duration-200'
 
+// Colors from the posters and table cards (navy bars and headline, cream
+// background, gold accents), so the page looks like what they just scanned.
+const NAVY = '#1f2d56'
+const GOLD = '#b07a3a'
+const CREAM = '#fbf5eb'
+// The posters lead with dessert: "F'Zookie" alone doesn't say what it is.
+const DESSERT_NOTE = 'A half-baked chocolate chip cookie with homemade whipped cream'
+const REDEEM = 'any future Backyard Brick Oven service'
+const SERVICES = 'Pizza Fridays • Weddings • Parties • Pizza Classes'
+
+// The dessert big, the breadsticks as the smaller "or".
 const Treats = ({ photos }) => (
-  <div className="grid grid-cols-2 gap-3">
-    {TREATS.map(({ label }) => (
-      <figure key={label} className="bg-white rounded-xl overflow-hidden border border-amber-200">
-        <div className="h-28 bg-amber-50">
-          {photos[label] && <img src={photos[label]} alt={label} loading="lazy" className="w-full h-full object-cover" />}
-        </div>
-        <figcaption className="px-2 py-2 font-bold text-gray-900 leading-tight">{label}</figcaption>
-      </figure>
-    ))}
+  <div className="space-y-2 text-left">
+    <figure className="bg-white rounded-xl overflow-hidden border border-amber-200">
+      <div className="h-44 bg-amber-50">
+        {photos["F'Zookie"] && <img src={photos["F'Zookie"]} alt="F'Zookie" loading="lazy" className="w-full h-full object-cover" />}
+      </div>
+      <figcaption className="px-3 py-2">
+        <span className="block font-bold text-gray-900">F'Zookie</span>
+        <span className="block text-sm text-gray-700">{DESSERT_NOTE}</span>
+      </figcaption>
+    </figure>
+    <figure className="flex items-center gap-3 bg-white rounded-xl overflow-hidden border border-amber-200">
+      <div className="h-16 w-20 shrink-0 bg-amber-50">
+        {photos['Roasted Garlic Breadsticks'] && (
+          <img src={photos['Roasted Garlic Breadsticks']} alt="Roasted Garlic Breadsticks" loading="lazy" className="w-full h-full object-cover" />
+        )}
+      </div>
+      <figcaption className="pr-3 text-sm text-gray-700">
+        or <span className="font-semibold text-gray-900">Roasted Garlic Breadsticks</span>
+      </figcaption>
+    </figure>
+  </div>
+)
+
+const Headline = () => (
+  <div className="text-center space-y-1">
+    <p className="text-4xl font-extrabold tracking-tight" style={{ color: NAVY }}>
+      FREE Dessert
+    </p>
+    <p className="text-lg font-semibold" style={{ color: GOLD }}>
+      or Breadsticks
+    </p>
   </div>
 )
 
@@ -125,12 +158,12 @@ const Offer = ({ photos, onDone }) => {
 
   return (
     <form onSubmit={submit} noValidate className="bg-white rounded-xl shadow-md p-5 space-y-4">
-      <div className="text-center space-y-1">
-        <p className="text-4xl font-extrabold text-gray-900 tracking-tight">FREE</p>
-        <p className="text-lg font-semibold text-gray-800">Roasted Garlic Breadsticks or a F'Zookie</p>
-      </div>
+      <Headline />
       <Treats photos={photos} />
-      <p className="text-gray-700">Join our email list and it's yours at any Pizza Friday. We only email when there's something worth sharing.</p>
+      <p className="text-gray-700">
+        <span className="font-semibold" style={{ color: GOLD }}>Just join our email list</span> and it's yours at {REDEEM}. We only email when
+        there's something worth sharing.
+      </p>
       {/* Honeypot: hidden from people, bots tend to fill it */}
       <input type="text" name="_gotcha" tabIndex="-1" autoComplete="off" className="hidden" aria-hidden="true" />
       <label className="block">
@@ -160,8 +193,8 @@ const Offer = ({ photos, onDone }) => {
         />
       </label>
       {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
-      <button type="submit" disabled={busy} className={`${bigButton} bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-60`}>
-        {busy ? 'One sec…' : 'Get my freebie'}
+      <button type="submit" disabled={busy} className={`${bigButton} text-white hover:opacity-90 disabled:opacity-60`} style={{ background: NAVY }}>
+        {busy ? 'One sec…' : 'Get my free dessert'}
       </button>
     </form>
   )
@@ -173,15 +206,17 @@ const Ticket = ({ ticket, photos }) => {
   return (
     <div className="bg-white rounded-xl shadow-md p-5 text-center space-y-3" role="status">
       <p className="text-gray-800 font-semibold">{first ? `You're on the list, ${first}!` : "You're on the list!"}</p>
-      <div className="border-4 border-dashed border-amber-500 rounded-xl p-4 bg-amber-50 space-y-3">
-        <p className="text-4xl font-extrabold text-gray-900 tracking-tight">FREE</p>
-        <p className="text-gray-800 font-semibold">Roasted Garlic Breadsticks or a F'Zookie</p>
+      <div className="border-4 border-dashed rounded-xl p-4 space-y-3" style={{ borderColor: GOLD, background: CREAM }}>
+        <Headline />
         <Treats photos={photos} />
         <p className="text-sm text-gray-600">
           {first ? `For ${first} · ` : ''}Signed up {prettyDay(ticket.date)}
         </p>
       </div>
-      <p className="font-semibold text-gray-900">Show this screen at any Pizza Friday. We emailed you a copy too.</p>
+      <p className="font-semibold text-gray-900">Show this screen at {REDEEM}. We emailed you a copy too.</p>
+      <p className="text-sm font-semibold" style={{ color: GOLD }}>
+        {SERVICES}
+      </p>
     </div>
   )
 }
@@ -235,16 +270,17 @@ const Hello = () => {
         <title>Hello! | Backyard Brick Oven</title>
         <meta
           name="description"
-          content="Free Roasted Garlic Breadsticks or a F'Zookie at Pizza Friday when you join our email list. Neapolitan-style pizza in Bountiful, Utah."
+          content="A free dessert (our F'Zookie, a half-baked chocolate chip cookie with homemade whipped cream) or breadsticks when you join our email list. Neapolitan-style pizza in Bountiful, Utah."
         />
         <link rel="canonical" href="https://backyardbrickovenpizza.com/hello" />
       </Helmet>
-      <div className="bg-slate-200 min-h-screen">
-        <div className="max-w-md mx-auto px-4 py-6 space-y-5">
-          <div className="bg-white rounded-2xl shadow-md p-4 w-56 mx-auto">
-            <img src={logo} alt="Backyard Brick Oven" className="w-full" />
-          </div>
-          <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">Thanks for eating with us!</h1>
+      <div className="min-h-screen flex flex-col" style={{ background: CREAM }}>
+        <div className="h-3 shrink-0" style={{ background: NAVY }} />
+        <div className="max-w-md w-full mx-auto px-4 py-6 space-y-5 flex-1">
+          <img src={logo} alt="Backyard Brick Oven" className="w-56 mx-auto" />
+          <h1 className="text-3xl font-extrabold leading-tight" style={{ color: '#1f1507' }}>
+            Thanks for eating with us!
+          </h1>
           {ticket ? (
             <>
               <Ticket ticket={ticket} photos={photos} />
@@ -255,14 +291,18 @@ const Hello = () => {
           )}
           <p className="text-center text-gray-700">
             Pizza Friday · 5–7:30 pm · Bountiful ·{' '}
-            <a href={DIRECTIONS} target="_blank" rel="noopener noreferrer" className="text-amber-700 font-semibold underline">
+            <a href={DIRECTIONS} target="_blank" rel="noopener noreferrer" className="font-semibold underline" style={{ color: GOLD }}>
               Directions
             </a>
-            <br />
-            <a href="/inquiries" className="text-amber-700 font-semibold underline">
+          </p>
+          <div className="text-center space-y-1">
+            <p className="text-lg font-bold" style={{ color: GOLD }}>
+              Weddings • Parties • Pizza Classes
+            </p>
+            <a href="/inquiries" className="font-semibold underline" style={{ color: NAVY }}>
               Book us for your event
             </a>
-          </p>
+          </div>
           <div className="flex justify-center gap-5 text-sm text-gray-700">
             <a href={INSTAGRAM} target="_blank" rel="noopener noreferrer" onClick={() => track('hello_follow', { site: 'instagram' })} className="flex items-center gap-1.5 underline">
               <img src={instagramLogo} alt="" className="h-5 w-5" />
@@ -274,6 +314,7 @@ const Hello = () => {
             </a>
           </div>
         </div>
+        <div className="h-3 shrink-0" style={{ background: NAVY }} />
       </div>
     </>
   )

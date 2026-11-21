@@ -17,11 +17,30 @@ test("greets by a capitalized first name, or generically", () => {
   assert.doesNotMatch(welcomeEmail("<b>x</b>").html, /<b>x<\/b>/);
 });
 
-test("has the freebie, follow links, booking and a way out", () => {
+test("leads with dessert, says what a F'Zookie is, and where to redeem", () => {
   const { subject, text, html } = welcomeEmail("Sam", extras);
-  assert.match(subject, /free/i);
+  assert.match(subject, /free dessert/i);
   for (const s of [text, html]) {
-    assert.match(s, /Roasted Garlic Breadsticks or a F'Zookie/);
+    assert.match(s, /FREE Dessert/);
+    assert.match(s, /or Breadsticks/);
+    assert.match(s, /half-baked chocolate chip cookie with homemade whipped cream/);
+    assert.match(s, /any future Backyard Brick Oven service/);
+    assert.match(s, /Weddings • Parties • Pizza Classes/);
+    assert.doesNotMatch(s, /any Pizza Friday/);
+  }
+  assert.ok(html.indexOf("F'Zookie") < html.indexOf("Roasted Garlic Breadsticks"), "dessert comes first");
+});
+
+test("uses the poster colors", () => {
+  const { html } = welcomeEmail("Sam", extras);
+  assert.match(html, /#1f2d56/i); // navy
+  assert.match(html, /#fbf5eb/i); // cream
+  assert.match(html, /#b07a3a/i); // gold
+});
+
+test("has follow links, booking and a way out", () => {
+  const { text, html } = welcomeEmail("Sam", extras);
+  for (const s of [text, html]) {
     assert.match(s, /instagram\.com\/backyard_brick_oven/);
     assert.match(s, /facebook\.com/);
     assert.match(s, /\/inquiries/);

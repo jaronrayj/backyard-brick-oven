@@ -205,12 +205,20 @@ Events from before this change show one "Added" line from `createdAt`.
 ## Poster page (/hello)
 
 `/hello` is the landing page for the QR code on event posters
-(`src/pages/Hello`). One job: trade free Roasted Garlic Breadsticks or a
-F'Zookie for an email address, then ask for a follow.
+(`src/pages/Hello`). One job: trade a free dessert (the F'Zookie) or Roasted
+Garlic Breadsticks for an email address, then ask for a follow.
 
-1. **The offer:** FREE breadsticks or F'Zookie with menu photos (Realtime
-   Database `pizzas`), an email box (required) and first name (optional),
-   "Get my freebie".
+It matches the posters and table cards (navy `#1f2d56` bars and headline,
+cream `#fbf5eb` background, gold `#b07a3a` accents, the logo on cream:
+`src/assets/brickovenLogoClear.png`) and leads with dessert the same way:
+"FREE Dessert, or Breadsticks". "F'Zookie" alone doesn't say what it is, so it
+always comes with "a half-baked chocolate chip cookie with homemade whipped
+cream". It's redeemable at any future Backyard Brick Oven service (Pizza
+Fridays, weddings, parties, pizza classes), as the posters say.
+
+1. **The offer:** FREE Dessert with a big F'Zookie photo, "or Breadsticks"
+   smaller (photos from the menu, Realtime Database `pizzas`), an email box
+   (required) and first name (optional), "Get my free dessert".
 2. **After signing up:** the freebie ticket to show at the counter (first name
    and sign-up date, remembered on that phone in `localStorage`), then
    **One more thing: follow us!** with brand-colored Instagram and Facebook buttons.
