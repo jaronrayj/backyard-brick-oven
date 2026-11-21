@@ -761,6 +761,40 @@ export function mountPlanner(root, deps) {
     try { localStorage.setItem(RECIPE_KEY, JSON.stringify([...recipeOpen].slice(-20))); } catch (e) { /* private window: stays open until reload */ }
   };
 
+  /* One mix day's recipes, per poolish container and per mixer batch (n batches of size balls). */
+  const recipeRows = (per, t, size, n) => {
+    const p = per.poolish * size;
+    return {
+      poolish: [['Water', p / 2], ['Flour', p / 2], ['Yeast', p * POOLISH_YEAST_PER_G]],
+      mix: [
+        ['Cold water', (per['cold water'] * size * (Number(t.water) || 100)) / 100],
+        ['Warm water', per['warm water'] * size],
+        ['Yeast', (per.yeast * size * (Number(t.yeast) || 100)) / 100],
+        ['Salt', per.salt * size],
+        ['Poolish', p, n === 1 ? 'All of it' : 'One container'],
+        ['Flour', per.flour * size, ((per.flour * size) / 1000).toFixed(2) + ' kg']
+      ]
+    };
+  };
+  /* A recipe card that opens and closes (remembered on this device): on the Prep tab, under its step. */
+  const recipeCard = (key, title, when, rows) => {
+    const c = el('details', 'stepcard');
+    c.open = recipeOpen.has(key);
+    c.addEventListener('toggle', () => setRecipeOpen(key, c.open));
+    const sum = el('summary');
+    const head = el('span', 'step-title');
+    head.append(el('h4', null, title));
+    if (when) head.append(el('div', 'when', when));
+    sum.append(head);
+    c.append(sum);
+    const tb = el('table', 'g');
+    rows.forEach(([name, v, sub]) => { const tr = el('tr'); const a = el('td', null, name); if (sub) { a.append(el('div', 'when', sub)); } tr.append(a, el('td', 'n', g(v))); tb.append(tr); });
+    c.append(tb);
+    return c;
+  };
+
+  /* Plan tab: what each mix day makes and when. The recipes themselves are on the Prep tab,
+     under "Start poolish" and "Mix dough", where the dough actually gets made. */
   const renderPlan = () => {
     const box = $('#plan');
     box.replaceChildren();
@@ -777,39 +811,14 @@ export function mountPlanner(root, deps) {
       const balls = list.reduce((a, s) => a + s.use, 0);
       const n = Math.max(1, Math.ceil(balls / mixerCap()));
       const size = Math.ceil(balls / n);
-      const p = per.poolish * size;
       const hasBread = list.some(isBread);
       const sec = el('section', 'batch');
       const bh = el('div', 'batch-head');
       bh.append(el('h3', null, list.map((s) => svcName(s) + ' · ' + svcWhen(s.date)).join(' + ')), el('span', 'pill', doughText(list)));
       sec.append(bh);
       if (hasBread) sec.append(el('p', 'note', 'Bread: weigh out ' + list.filter(isBread).map((s) => loavesFor(s) + ' × ' + loafG(s) + ' g').join(' and ') + (list.some((s) => !isBread(s)) ? ', and the rest into ' + Math.round(per.ball) + ' g balls.' : '.')));
-      const steps = el('div', 'steps');
-      const card = (key, title, when, rows) => {
-        const c = el('details', 'stepcard');
-        c.open = recipeOpen.has(key);
-        c.addEventListener('toggle', () => setRecipeOpen(key, c.open));
-        const sum = el('summary');
-        const head = el('span', 'step-title');
-        head.append(el('h4', null, title), el('div', 'when', when));
-        sum.append(head);
-        c.append(sum);
-        const tb = el('table', 'g');
-        rows.forEach(([name, v, sub]) => { const tr = el('tr'); const a = el('td', null, name); if (sub) { a.append(el('div', 'when', sub)); } tr.append(a, el('td', 'n', g(v))); tb.append(tr); });
-        c.append(tb); steps.append(c);
-      };
-      card('poolish|' + mix, n === 1 ? 'Start poolish' : 'Start poolish: ' + n + ' containers', rel(addDays(mix, -1)) + ', evening' + (n === 1 ? '' : ' · per container'), [
-        ['Water', p / 2], ['Flour', p / 2], ['Yeast', p * POOLISH_YEAST_PER_G]
-      ]);
-      card('mix|' + mix, n === 1 ? 'Mix dough' : 'Mix dough: ' + n + ' batches' + (hasBread ? '' : ' of ' + size), rel(mix) + (n === 1 ? '' : ' · per batch'), [
-        ['Cold water', (per['cold water'] * size * (Number(t.water) || 100)) / 100],
-        ['Warm water', per['warm water'] * size],
-        ['Yeast', (per.yeast * size * (Number(t.yeast) || 100)) / 100],
-        ['Salt', per.salt * size],
-        ['Poolish', p, n === 1 ? 'All of it' : 'One container'],
-        ['Flour', per.flour * size, ((per.flour * size) / 1000).toFixed(2) + ' kg']
-      ]);
-      sec.append(steps);
+      sec.append(el('p', 'note', 'Poolish ' + rel(addDays(mix, -1)) + ' evening' + (n === 1 ? '' : ' (' + n + ' containers)') +
+        ' · Mix ' + rel(mix) + (n === 1 ? '' : ' (' + n + ' batches' + (hasBread ? '' : ' of ' + size) + ')') + '. Recipes are on the Prep tab.'));
       box.append(sec);
     });
   };
@@ -859,6 +868,7 @@ export function mountPlanner(root, deps) {
     b.addEventListener('click', () => togglePick(p.name));
     return b;
   };
+  let olderOpen = false; /* the "Older pizzas" fold, kept through redraws */
   const renderChips = () => {
     const box = $('#chips');
     box.replaceChildren();
@@ -866,18 +876,26 @@ export function mountPlanner(root, deps) {
     const all = allPizzas();
     if (!all.length) { box.append(el('p', 'empty', 'Waiting for the menu.')); return; }
     if (!cur()) { box.append(el('p', 'empty', 'Add a service to pick its pizzas.')); return; }
-    const group = (title, list, wrap) => {
+    const group = (title, list, wrap, cls) => {
       if (!list.length) return;
-      const g = el(wrap ? 'details' : 'div', 'pick-group');
+      const g = el(wrap ? 'details' : 'div', 'pick-group' + (cls ? ' ' + cls : ''));
       g.append(el(wrap ? 'summary' : 'p', 'group-title', title + (wrap ? ' (' + list.length + ')' : '')));
       const chips = el('div', 'chips');
       list.forEach((p) => chips.append(chip(p)));
       g.append(chips);
-      if (wrap && list.some((p) => pickedOf(cur()).includes(p.name))) g.open = true;
+      if (wrap) {
+        g.open = olderOpen;
+        g.addEventListener('toggle', () => { olderOpen = g.open; });
+      }
       box.append(g);
     };
+    /* Older pizzas stay folded. The ones this service already uses show in the open, so
+       they're easy to see and adjust; the fold remembers if you opened it while picking. */
+    const picked = pickedOf(cur());
+    const older = all.filter((p) => !p.active);
     group('On the website', all.filter((p) => p.active));
-    group('Older pizzas, not on the website now', all.filter((p) => !p.active), true);
+    group('Older pizzas you picked', older.filter((p) => picked.includes(p.name)), false, 'older-picked');
+    group('Older pizzas, not on the website now', older.filter((p) => !picked.includes(p.name)), true);
     if (!canWrite) setReadOnly(true);
   };
   const renderCountLine = () => {
@@ -1335,12 +1353,12 @@ export function mountPlanner(root, deps) {
     const label = (s) => svcName(s) + ' · ' + day(s.date);
     const days = new Map();
     /* Same task on the same day is one line: amounts add up and the services are listed together. */
-    const task = (date, rank, key, title, amt, note, unitName, fmt) => {
+    const task = (date, rank, key, title, amt, note, unitName, fmt, recipe) => {
       if (!days.has(date)) days.set(date, []);
       const list = days.get(date);
       const same = typeof amt === 'number' && list.find((x) => x.title === title && typeof x.grams === 'number');
       if (same) { same.grams += amt; if (note && !same.notes.includes(note)) same.notes.push(note); return; }
-      list.push({rank, key, title, unitName, fmt, id: null, grams: typeof amt === 'number' ? amt : null, amt: typeof amt === 'number' ? null : amt, notes: note ? [note] : []});
+      list.push({rank, key, title, unitName, fmt, recipe, id: null, grams: typeof amt === 'number' ? amt : null, amt: typeof amt === 'number' ? null : amt, notes: note ? [note] : []});
     };
 
     const mixes = new Map();
@@ -1350,8 +1368,12 @@ export function mountPlanner(root, deps) {
       const n = Math.max(1, Math.ceil(balls / mixerCap()));
       const size = Math.ceil(balls / n);
       const bread = list.some(isBread);
-      task(addDays(mix, -1), 0, 'poolish|' + mix, n === 1 ? 'Start poolish (evening)' : 'Start poolish (evening): ' + n + ' containers', doughText(list), list.map(label).join(' + '));
-      task(mix, 1, 'mix|' + mix, n === 1 ? 'Mix dough' : 'Mix dough: ' + n + ' batches' + (bread ? '' : ' of ' + size), bread ? doughText(list) : (n * size).toLocaleString('en-US') + ' balls', list.map(label).join(' + '));
+      /* The recipe goes with its step, opened under it: you make the dough from here. */
+      const r = per ? recipeRows(per, t, size, n) : null;
+      task(addDays(mix, -1), 0, 'poolish|' + mix, n === 1 ? 'Start poolish (evening)' : 'Start poolish (evening): ' + n + ' containers', doughText(list), list.map(label).join(' + '), null, null,
+        r && {key: 'poolish|' + mix, title: 'Poolish recipe', when: n === 1 ? '' : 'Per container', rows: r.poolish});
+      task(mix, 1, 'mix|' + mix, n === 1 ? 'Mix dough' : 'Mix dough: ' + n + ' batches' + (bread ? '' : ' of ' + size), bread ? doughText(list) : (n * size).toLocaleString('en-US') + ' balls', list.map(label).join(' + '), null, null,
+        r && {key: 'mix|' + mix, title: 'Dough recipe', when: n === 1 ? '' : 'Per batch', rows: r.mix});
     });
 
     /* Toppings follow pizzas only; bread takes no share. */
@@ -1456,6 +1478,8 @@ export function mountPlanner(root, deps) {
           lab.append(rm);
         }
         box.append(lab);
+        /* Next to the label, not inside it, so opening the recipe doesn't tick the box. */
+        if (x.recipe) box.append(recipeCard(x.recipe.key, x.recipe.title, x.recipe.when, x.recipe.rows));
       });
     });
     if (!anyPicked()) box.append(el('p', 'empty', "Pick pizzas or F'Zookies on the Plan tab to add sauce, topping and dessert prep."));

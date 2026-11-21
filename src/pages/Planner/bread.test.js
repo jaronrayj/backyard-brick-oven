@@ -59,12 +59,18 @@ test('bread on its own needs no pizzas and uses its own loaf weight', () => {
   expect(root.querySelector('.sugg').textContent).toContain('1.20 kg')
 })
 
-test('dough recipes start closed and stay open through a redraw', () => {
+test('dough recipes live on the Prep tab, start closed and stay open through a redraw', () => {
   const root = mount([{ id: 'a', date: '2030-06-07', type: 'pf', balls: 100 }])
-  const cards = () => [...root.querySelectorAll('#plan details.stepcard')]
+  const cards = () => [...root.querySelectorAll('#preplist details.stepcard')]
   expect(cards().map((c) => c.open)).toEqual([false, false])
-  // What to do and when still shows while closed.
-  expect(cards()[0].querySelector('summary').textContent).toContain('Start poolish')
+  // Each recipe sits right under its own prep step.
+  expect(cards()[0].previousElementSibling.textContent).toContain('Start poolish')
+  expect(cards()[1].previousElementSibling.textContent).toContain('Mix dough')
+  expect(cards()[1].textContent).toMatch(/Cold water.*Warm water.*Yeast.*Salt.*Poolish.*Flour/)
+  // The Plan tab keeps the batch summary and points to Prep, without the recipe tables.
+  expect(root.querySelector('#plan details.stepcard')).toBeNull()
+  expect(root.querySelector('#plan').textContent).toContain('100 balls')
+  expect(root.querySelector('#plan').textContent).toContain('Prep tab')
 
   cards()[1].open = true
   cards()[1].dispatchEvent(new Event('toggle'))
