@@ -26,8 +26,16 @@ The menu itself comes from the website's own list (Realtime Database
 `pizzas/`, edited at `/admin/menu`).
 
 **Pizzas.** The Pizzas card lists the pizzas on the website, then older
-pizzas that are off the website (collapsed), so an event can use any pizza
-you've made before. Edit or add pizzas at `/admin/menu`.
+pizzas that are off the website, so an event can use any pizza you've made
+before. The older ones stay folded, except the ones the service already uses,
+which show in the open under "Older pizzas you picked". The fold stays open
+while you pick from it. Edit or add pizzas at `/admin/menu`.
+
+**Dough recipes are on the Prep tab.** "Start poolish" and "Mix dough" each
+have their recipe right under them (Poolish recipe, Dough recipe; per container
+or per batch when the day needs more than one), closed until you tap it and
+remembered on that device. The Plan tab's Dough plan shows what each mix day
+makes and when, and points to Prep.
 
 ## One-time setup
 

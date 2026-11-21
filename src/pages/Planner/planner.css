@@ -164,6 +164,8 @@
   .bybo-planner .list h3 { margin: 18px 0 4px; padding-top: 12px; border-top: 2px solid var(--line); font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
   .bybo-planner .list h3:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
   .bybo-planner .item { display: flex; align-items: center; gap: 10px; padding: 11px 2px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  /* A dough step's recipe, tucked under its prep item (lined up with the item's name). */
+  .bybo-planner #preplist .stepcard { margin: 6px 0 8px 30px; }
   .bybo-planner .item input { width: 1.25rem; height: 1.25rem; margin: 0; flex: none; accent-color: var(--accent); }
   .bybo-planner .item .nm { flex: 1 1 auto; min-width: 0; }
   .bybo-planner .item .sub { display: block; font-size: 12px; color: var(--muted); }
