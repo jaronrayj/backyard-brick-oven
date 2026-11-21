@@ -241,8 +241,10 @@ export const plannerCalendar = onCall({ invoker: "public" }, async (request) => 
 // only dates and times of entries titled "Pizza Friday", nothing else from the
 // calendar. Cached for a minute per instance, so calendar edits show up quickly.
 let fridaysCache = { at: 0, dates: null };
-export const upcomingPizzaFridays = onCall({ invoker: "public" }, async () => {
-  if (fridaysCache.dates && Date.now() - fridaysCache.at < 60000) return { dates: fridaysCache.dates };
+// The next 3 Pizza Fridays from the business calendar: [{date, time}]. Cached a
+// minute. Also used by the /hello welcome email (signup.js).
+export const nextPizzaFridays = async () => {
+  if (fridaysCache.dates && Date.now() - fridaysCache.at < 60000) return fridaysCache.dates;
   const now = new Date();
   const from = utahDate(now);
   const to = utahDate(new Date(now.getTime() + 60 * 86400000));
@@ -254,12 +256,14 @@ export const upcomingPizzaFridays = onCall({ invoker: "public" }, async () => {
       .slice(0, 3)
       .map(({ date, time }) => ({ date, time: time || "" }));
     fridaysCache = { at: Date.now(), dates };
-    return { dates };
+    return dates;
   } catch (e) {
     logger.error("Upcoming Pizza Fridays read failed", e);
-    return { dates: [] };
+    return [];
   }
-});
+};
+
+export const upcomingPizzaFridays = onCall({ invoker: "public" }, async () => ({ dates: await nextPizzaFridays() }));
 
 // Keep the copy current without anyone tapping refresh.
 export const refreshPlannerHourly = onSchedule(

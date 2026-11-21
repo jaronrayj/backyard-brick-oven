@@ -15,9 +15,34 @@ import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { checkSignup } from "./signupText.js";
 import { GMAIL_APP_PASSWORD, sendMail } from "./mail.js";
+import { getDatabase } from "firebase-admin/database";
 import { WELCOME_DAILY_CAP, utahDay, welcomeEmail } from "./welcomeText.js";
+import { nextPizzaFridays } from "./planner.js";
 
 if (!getApps().length) initializeApp();
+
+// The freebies' photos from the website menu (Realtime Database `pizzas`, the
+// same ones the /hello page shows), as { breadsticks, fzookie } URLs.
+const TREATS = { breadsticks: /breadstick/i, fzookie: /zookie/i };
+export const treatPhotos = (menu) => {
+  const items = Object.values(menu || {});
+  const out = {};
+  for (const [key, re] of Object.entries(TREATS)) {
+    const hits = items.filter((p) => p && re.test(p.name || "") && (p.thumb || p.img));
+    const item = hits.find((p) => String(p.active) === "true") || hits[0];
+    if (item) out[key] = item.thumb || item.img;
+  }
+  return out;
+};
+
+// Photos and dates for the email; either can be missing and the email still goes.
+const welcomeExtras = async () => {
+  const [menu, fridays] = await Promise.all([
+    getDatabase().ref("pizzas").get().then((s) => s.val()).catch(() => null),
+    nextPizzaFridays().catch(() => []),
+  ]);
+  return { photos: treatPhotos(menu), fridays: fridays.map((f) => f.date), signedUp: new Date() };
+};
 
 export const signupId = (email) => createHash("sha256").update(email).digest("hex").slice(0, 24);
 
@@ -39,7 +64,7 @@ const sendWelcome = async (ref, name, email) => {
       logger.warn("Welcome email skipped: daily cap reached");
       return;
     }
-    await sendMail({ to: email, ...welcomeEmail(name) });
+    await sendMail({ to: email, ...welcomeEmail(name, await welcomeExtras()) });
     await ref.update({ welcomed: true });
   } catch (err) {
     // The sign-up is saved; a missed welcome is fine.
