@@ -76,7 +76,8 @@ const TeamNav = () => {
     <>
       <header className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center gap-3">
-          <Link to={tools[0]?.href || '/team'} className="flex items-center gap-2 shrink-0" aria-label="Team home">
+          {/* The team home lists every tool, including ones without a tab (Email list, Crew history). */}
+          <Link to="/team" className="flex items-center gap-2 shrink-0" aria-label="Team home: all tools">
             <img src={logo} alt="" className="h-8" />
             {/* Room for the tabs on mid-size screens: the name shows on phones and wide screens. */}
             <span className="font-bold text-gray-900 whitespace-nowrap sm:hidden lg:inline">BYBO Team</span>
