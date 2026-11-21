@@ -3,12 +3,13 @@ import { logout, signInWithGoogle } from '../../utils/firebase'
 import useTeamAccess from '../../utils/useTeamAccess'
 import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 import { ToolLink } from '../../components/TeamNav'
+import Members from './Members'
 
 // Team sign-in, and a list of every tool (the team bar's logo comes here). Once
 // signed in, the team bar's tabs get you between the main tools; the ones
 // without a tab (Email list, Crew history) are listed only here.
 const Team = () => {
-  const { user, loading, tools } = useTeamAccess()
+  const { user, loading, role, tools } = useTeamAccess()
 
   return (
     <TeamPage>
@@ -49,6 +50,7 @@ const Team = () => {
               ))}
             </ul>
           )}
+          {role === 'admin' && <Members me={user.email} />}
           <p className="text-sm text-gray-500">
             Signed in as {user.email}.{' '}
             <button type="button" onClick={logout} className="underline hover:text-gray-900">

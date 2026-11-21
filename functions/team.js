@@ -14,6 +14,7 @@ import logger from "firebase-functions/logger";
 import { initializeApp, getApps } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
+import { applyTeamChange, TeamChangeError } from "./teamList.js";
 
 if (!getApps().length) initializeApp();
 
@@ -71,4 +72,26 @@ export const refreshMyAccess = onCall({ invoker: "public" }, async (request) => 
   const user = await getAuth().getUser(request.auth.uid);
   const changed = await setRole(user.uid, user.customClaims || {}, role);
   return { role, changed };
+});
+
+// The team home's "Team members" (admins): add someone, change their role or
+// remove them. The change is checked by applyTeamChange (no removing yourself
+// or the last admin) and written in a transaction; syncTeamClaims then updates
+// everyone's sign-in tag. Returns the new { admins, staff }.
+export const updateTeamList = onCall({ invoker: "public" }, async (request) => {
+  await requireRole(request, ["admin"], "Only admins can change the team list.");
+  const ref = getFirestore().doc("plannerAccess/team");
+  try {
+    const next = await getFirestore().runTransaction(async (tx) => {
+      const out = applyTeamChange((await tx.get(ref)).data(), request.data || {}, request.auth.token.email);
+      tx.set(ref, out, { merge: true });
+      return out;
+    });
+    logger.info(`Team list changed by ${request.auth.token.email}: ${JSON.stringify(request.data)}`);
+    return next;
+  } catch (e) {
+    if (e instanceof TeamChangeError) throw new HttpsError("failed-precondition", e.message);
+    logger.error("Team list change failed", e);
+    throw new HttpsError("internal", "Couldn't save the team list. Try again.");
+  }
 });

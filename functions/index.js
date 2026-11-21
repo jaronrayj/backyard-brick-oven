@@ -215,7 +215,7 @@ export const sendInquiry = onRequest(
 export { refreshPlannerData, refreshPlannerHourly, plannerCalendar, upcomingPizzaFridays } from "./planner.js";
 export { importMenuPhoto, menuThumbOnPhoto, makeMenuThumbs } from "./menuPhotos.js";
 export { wrapUpOptions, submitWrapUp, skipWrapUp, wrapUpsDue, recentWrapUps, updateWrapUp } from "./wrapup.js";
-export { syncTeamClaims, refreshMyAccess } from "./team.js";
+export { syncTeamClaims, refreshMyAccess, updateTeamList } from "./team.js";
 export { registerPush, pushStatus, testPush } from "./push.js";
 export { moneyToMove, markMoneyMoved } from "./money.js";
 
