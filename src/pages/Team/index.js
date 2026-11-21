@@ -4,8 +4,9 @@ import useTeamAccess from '../../utils/useTeamAccess'
 import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 import { ToolLink } from '../../components/TeamNav'
 
-// Team sign-in, and a list of the tools for anyone who lands here. Once signed
-// in, the team bar gets you between tools.
+// Team sign-in, and a list of every tool (the team bar's logo comes here). Once
+// signed in, the team bar's tabs get you between the main tools; the ones
+// without a tab (Email list, Crew history) are listed only here.
 const Team = () => {
   const { user, loading, tools } = useTeamAccess()
 
