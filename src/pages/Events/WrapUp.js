@@ -104,6 +104,25 @@ const moneyIn = (headers, values) =>
     .reduce((t, h) => t + (Number(values[h]) || 0), 0)
 const dollars = (n) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
 
+// An event or calendar note: long links wrap instead of running off the page,
+// and anything past a few lines folds behind "Show all".
+const LongNote = ({ text }) => {
+  const [open, setOpen] = useState(false)
+  const long = text.length > 240 || text.split('\n').length > 4
+  return (
+    <div className="flex-1 min-w-0">
+      <p className={`whitespace-pre-wrap text-gray-800 [overflow-wrap:anywhere] ${long && !open ? 'max-h-24 overflow-hidden' : ''}`}>
+        {text}
+      </p>
+      {long && (
+        <button type="button" className="text-xs underline text-amber-800" onClick={() => setOpen(!open)}>
+          {open ? 'Show less' : 'Show all'}
+        </button>
+      )}
+    </div>
+  )
+}
+
 const Field = ({ label: text, children, className = '' }) => (
   <label className={`block text-left text-xs text-gray-600 ${className}`}>
     <span className="block mb-1">{text}</span>
@@ -195,18 +214,18 @@ const WrapUpForm = ({ headers, choice, edit = null, today, planned = null, onDon
   return (
     <div className={`${ui.card} sm:p-6 space-y-5`}>
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-xl font-bold">{edit ? 'Edit' : 'Wrap up'}: {choice.title}</h2>
-        <button type="button" className="text-sm underline text-gray-600" onClick={onBack}>
+        <h2 className="text-xl font-bold min-w-0 [overflow-wrap:anywhere]">{edit ? 'Edit' : 'Wrap up'}: {choice.title}</h2>
+        <button type="button" className="text-sm underline text-gray-600 shrink-0" onClick={onBack}>
           Pick another
         </button>
       </div>
 
       {(choice.info || choice.notes.length > 0) && (
         <section className="bg-amber-50 border border-amber-200 rounded-md p-3 space-y-2 text-sm">
-          {choice.info && <p className="text-gray-700">{choice.info}</p>}
+          {choice.info && <p className="text-gray-700 [overflow-wrap:anywhere]">{choice.info}</p>}
           {choice.notes.map((n) => (
             <div key={n} className="flex gap-2 items-start">
-              <p className="whitespace-pre-wrap flex-1 text-gray-800">{n}</p>
+              <LongNote text={n} />
               {notesH && (
                 <button type="button" className="text-xs underline text-amber-800 shrink-0" onClick={() => addNote(n)}>
                   Add to notes
@@ -528,8 +547,8 @@ const WrapUp = ({ bare = true, onChange = () => {}, fromPlanner = () => null }) 
                       className="flex-1 min-w-0 text-left bg-white rounded-xl shadow-sm border border-gray-200 hover:border-amber-500 p-4"
                     >
                       <span className="flex justify-between gap-2">
-                        <span className="font-semibold">{c.title}</span>
-                        {c.wrappedUp && <span className="text-xs text-green-700">Wrapped up</span>}
+                        <span className="font-semibold min-w-0 [overflow-wrap:anywhere]">{c.title}</span>
+                        {c.wrappedUp && <span className="text-xs text-green-700 shrink-0">Wrapped up</span>}
                       </span>
                       <span className="block text-sm text-gray-600">
                         {[prettyDate(c.date), c.sub].filter(Boolean).join(' · ')}
