@@ -104,25 +104,6 @@ const moneyIn = (headers, values) =>
     .reduce((t, h) => t + (Number(values[h]) || 0), 0)
 const dollars = (n) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
 
-// An event or calendar note: long links wrap instead of running off the page,
-// and anything past a few lines folds behind "Show all".
-const LongNote = ({ text }) => {
-  const [open, setOpen] = useState(false)
-  const long = text.length > 240 || text.split('\n').length > 4
-  return (
-    <div className="flex-1 min-w-0">
-      <p className={`whitespace-pre-wrap text-gray-800 [overflow-wrap:anywhere] ${long && !open ? 'max-h-24 overflow-hidden' : ''}`}>
-        {text}
-      </p>
-      {long && (
-        <button type="button" className="text-xs underline text-amber-800" onClick={() => setOpen(!open)}>
-          {open ? 'Show less' : 'Show all'}
-        </button>
-      )}
-    </div>
-  )
-}
-
 const Field = ({ label: text, children, className = '' }) => (
   <label className={`block text-left text-xs text-gray-600 ${className}`}>
     <span className="block mb-1">{text}</span>
@@ -130,7 +111,8 @@ const Field = ({ label: text, children, className = '' }) => (
   </label>
 )
 
-// A note, cut to its first few lines with "Show all" when it's long.
+// A note, cut to its first few lines with "Show all" when it's long. Long links
+// wrap instead of running off the page.
 const NOTE_LINES = 3
 const NOTE_CHARS = 240
 const LongNote = ({ text }) => {
@@ -140,8 +122,8 @@ const LongNote = ({ text }) => {
   const short = lines.slice(0, NOTE_LINES).join('\n')
   const shown = !long || open ? text : `${short.length > NOTE_CHARS ? short.slice(0, NOTE_CHARS) : short}…`
   return (
-    <div className="flex-1">
-      <p className="whitespace-pre-wrap text-gray-800">{shown}</p>
+    <div className="flex-1 min-w-0">
+      <p className="whitespace-pre-wrap text-gray-800 [overflow-wrap:anywhere]">{shown}</p>
       {long && (
         <button type="button" className="text-xs underline text-amber-800" onClick={() => setOpen(!open)}>
           {open ? 'Show less' : 'Show all'}
