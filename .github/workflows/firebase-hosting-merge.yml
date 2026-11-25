@@ -6,6 +6,11 @@ name: Deploy to Firebase Hosting on merge
   push:
     branches:
       - main
+# One site deploy at a time, in merge order: a newer merge waits for the one
+# running, so an older build can't finish last and go live over it.
+concurrency:
+  group: deploy-hosting
+  cancel-in-progress: false
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
