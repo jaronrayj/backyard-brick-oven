@@ -111,6 +111,27 @@ const Field = ({ label: text, children, className = '' }) => (
   </label>
 )
 
+// A note, cut to its first few lines with "Show all" when it's long.
+const NOTE_LINES = 3
+const NOTE_CHARS = 240
+const LongNote = ({ text }) => {
+  const [open, setOpen] = useState(false)
+  const lines = text.split('\n')
+  const long = lines.length > NOTE_LINES || text.length > NOTE_CHARS
+  const short = lines.slice(0, NOTE_LINES).join('\n')
+  const shown = !long || open ? text : `${short.length > NOTE_CHARS ? short.slice(0, NOTE_CHARS) : short}…`
+  return (
+    <div className="flex-1">
+      <p className="whitespace-pre-wrap text-gray-800">{shown}</p>
+      {long && (
+        <button type="button" className="text-xs underline text-amber-800" onClick={() => setOpen(!open)}>
+          {open ? 'Show less' : 'Show all'}
+        </button>
+      )}
+    </div>
+  )
+}
+
 // edit: a saved row from recentWrapUps, to change it rather than add a new one.
 // planned: {balls, for} from the Planner (dough made for this date), or null.
 const WrapUpForm = ({ headers, choice, edit = null, today, planned = null, onDone, onBack }) => {
@@ -206,7 +227,7 @@ const WrapUpForm = ({ headers, choice, edit = null, today, planned = null, onDon
           {choice.info && <p className="text-gray-700">{choice.info}</p>}
           {choice.notes.map((n) => (
             <div key={n} className="flex gap-2 items-start">
-              <p className="whitespace-pre-wrap flex-1 text-gray-800">{n}</p>
+              <LongNote text={n} />
               {notesH && (
                 <button type="button" className="text-xs underline text-amber-800 shrink-0" onClick={() => addNote(n)}>
                   Add to notes
