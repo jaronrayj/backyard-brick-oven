@@ -4,7 +4,7 @@ import { db } from '../../utils/db'
 import { EXTRA, FUNNEL, POSTER } from '../../utils/track'
 import { ui } from '../../components/TeamPage'
 
-// Events > Report: visitors on the website (Firestore `siteStats`, counted by
+// Report (team home, /admin/report): visitors on the website (Firestore `siteStats`, counted by
 // utils/track.js) and what happened to the inquiries and events added each month.
 
 const MONTHS = 6
@@ -75,7 +75,7 @@ const Table = ({ months, rows, head }) => (
   </div>
 )
 
-const Report = ({ events, onClose }) => {
+const Report = ({ events, onClose, closeLabel = 'Back' }) => {
   const months = useMemo(lastMonths, [])
   const [stats, setStats] = useState(null)
   const [error, setError] = useState('')
@@ -129,7 +129,7 @@ const Report = ({ events, onClose }) => {
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-xl font-bold">Report</h2>
         <button type="button" className={ui.btnQuiet} onClick={onClose}>
-          Back to events
+          {closeLabel}
         </button>
       </div>
 

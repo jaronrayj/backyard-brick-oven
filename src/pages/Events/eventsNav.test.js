@@ -84,3 +84,28 @@ test('an inquiry marked Contacted sits under Contacted with that tag', async () 
   expect(screen.getAllByText('Contacted').length).toBeGreaterThan(1) // heading + tag
   mockEvents[1].status = 'inquiry'
 })
+
+test('Report moved to the team home: old links forward there; Emails stays', async () => {
+  render(
+    <MemoryRouter initialEntries={['/events?view=report']}>
+      <Routes>
+        <Route path="/events" element={<Events />} />
+        <Route path="/admin/report" element={<p>Report page</p>} />
+      </Routes>
+    </MemoryRouter>
+  )
+  expect(await screen.findByText('Report page')).toBeInTheDocument()
+})
+
+test('the Events header has Emails and Pricing, not Report', () => {
+  render(
+    <MemoryRouter initialEntries={['/events']}>
+      <Routes>
+        <Route path="/events" element={<Events />} />
+      </Routes>
+    </MemoryRouter>
+  )
+  expect(screen.getByRole('button', { name: 'Emails' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Pricing' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Report' })).not.toBeInTheDocument()
+})

@@ -20,6 +20,8 @@ const Events = lazy(() => import('../Events'))
 const Money = lazy(() => import('../Money'))
 const Signups = lazy(() => import('../Signups'))
 const CrewHistory = lazy(() => import('../CrewHistory'))
+const ReportPage = lazy(() => import('../Events/ReportPage'))
+const EmailsPage = lazy(() => import('../Events/EmailsPage'))
 const TeamNav = lazy(() => import('../../components/TeamNav'))
 
 export const isSiteReadyForOrders = true
@@ -75,6 +77,8 @@ const Shell = () => {
           <Route exact path="/admin/menu" element={<MenuAdmin />} />
           <Route exact path="/admin/signups" element={<Signups />} />
           <Route exact path="/admin/crew" element={<CrewHistory />} />
+          <Route exact path="/admin/report" element={<ReportPage />} />
+          <Route exact path="/admin/emails" element={<EmailsPage />} />
           <Route exact path="/planner" element={<Planner />} />
           <Route exact path="/team" element={<Team />} />
           <Route exact path="/events" element={<Events />} />

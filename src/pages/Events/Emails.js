@@ -19,7 +19,7 @@ import {
 import { renderQuoteEmail } from './quoteEmailText'
 import { DEFAULT_INCLUDES } from './quote'
 
-// Events > Emails: the wording of every email the app sends for you, each with
+// Events > Emails (also Email templates on the team home, /admin/emails): the wording of every email the app sends for you, each with
 // a live preview. Saved in eventSettings/emails (admins only):
 //   autoReply   - functions/autoReply.js, when an inquiry comes in
 //   quoteEmail  - the event editor's "Email the quote" (QuoteEmail.js)
