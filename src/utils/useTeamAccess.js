@@ -10,6 +10,8 @@ export const TEAM_TOOLS = [
   // tab: false — on the team home list only, not in the tab bar.
   { key: 'signups', roles: ['admin'], name: 'Email list', href: '/admin/signups', blurb: 'Sign-ups from the /hello poster page, with a CSV download.', tab: false },
   { key: 'crew', roles: ['admin'], name: 'Crew history', href: '/admin/crew', blurb: "Who said they're coming, maybe or can't make it, and when.", tab: false },
+  { key: 'report', roles: ['admin'], name: 'Report', href: '/admin/report', blurb: 'Website visitors and poster scans, and how inquiries turned out each month.', tab: false },
+  { key: 'emails', roles: ['admin'], name: 'Email templates', href: '/admin/emails', blurb: 'Wording for the auto-reply, quote and tasting emails, and your signature. Also under Events.', tab: false },
   {
     key: 'admin',
     roles: ['admin'],

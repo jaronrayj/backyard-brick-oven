@@ -8,7 +8,7 @@ import { auth, firebaseConfig } from './firebase'
 //
 // Two places get each step:
 //   - our own monthly counts (Firestore `siteStats/{YYYY-MM}`, through the
-//     countStep function), shown under Events > Report. Each step counts once
+//     countStep function), shown on the Report (team home). Each step counts once
 //     per visitor session, so a refresh doesn't inflate it.
 //   - Google Analytics (measurement id in utils/firebase.js), for where people
 //     come from and on what device.

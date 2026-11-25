@@ -7,7 +7,7 @@ import Members from './Members'
 
 // Team sign-in, and a list of every tool (the team bar's logo comes here). Once
 // signed in, the team bar's tabs get you between the main tools; the ones
-// without a tab (Email list, Crew history) are listed only here.
+// without a tab (Email list, Crew history, Report, Email templates) are listed only here.
 const Team = () => {
   const { user, loading, role, tools } = useTeamAccess()
 

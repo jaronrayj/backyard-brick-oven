@@ -13,7 +13,7 @@ reminders for booked events. Admins only ([team.md](team.md)).
 | Pricing (packages, add-ons, travel, tax, deposit, quote note) | Firestore `eventSettings/pricing`, edited under "Pricing" |
 | Prices on the public website (packages, add-on range, travel zones) | Firestore `publicSettings/site`, copied from Pricing on every save (anyone can read it) |
 | Next Pizza Fridays on the home page | `functions/planner.js` `upcomingPizzaFridays` (public; dates of "Pizza Friday" calendar entries only) |
-| Website visitor counts (Events → Report) | Firestore `siteStats/{YYYY-MM}`, one number per step, added by `functions/stats.js` `countStep`; the page side is `src/utils/track.js` |
+| Website visitor counts (Report on the team home, `/admin/report`) | Firestore `siteStats/{YYYY-MM}`, one number per step, added by `functions/stats.js` `countStep`; the page side is `src/utils/track.js` |
 | Dough reminder recipients | Firestore `eventSettings/reminders`, edited from the bell → Notification times |
 | Website inquiries → events | `functions/events.js` `saveInquiryEvent`, called by `sendInquiry` (status "inquiry") |
 | Dough reminder emails (off unless "Also email dough reminders" is ticked under the bell, `eventSettings/reminders.doughEmail`) | `functions/events.js` `runDoughReminders`, run every 15 minutes by `notificationTimer` (which also runs the morning summary), and sends at the time set from the bell → Notification times (default 2 pm Utah time) |
@@ -171,7 +171,7 @@ Hosting deploys on merge to `main` as before.
 
 ## Report
 
-Events → Report has two tables for the last six months.
+The Report (team home, `/admin/report`) has two tables for the last six months.
 
 - **Website visitors:** visited the site → opened the inquiries page → scrolled
   to pricing → opened the quote form → started filling it in → sent it, plus
@@ -277,7 +277,7 @@ leaving out anything blank) and says the quote is coming within a day or two.
 The event's history gets "Automatic reply sent to …". If the reply fails, the
 inquiry still goes through. Inquiries with only a phone number get nothing.
 
-The wording is edited under **Events → Emails**: on/off, subject and message,
+The wording is edited under **Events → Emails** (also **Email templates** on the team home): on/off, subject and message,
 with a live preview for a wedding and a party. `{name}` (same greeting as the
 review email), `{event}` ("your wedding" / "your party" / "your pizza class" /
 "your event") and `{details}` (the list) fill in for each inquiry. It's saved

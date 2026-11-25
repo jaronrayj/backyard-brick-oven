@@ -18,7 +18,6 @@ import { db } from '../../utils/db'
 import useEventAdmin from './useEventAdmin'
 import { PageHeader, TeamPage, ui } from '../../components/TeamPage'
 import ComboBox from '../../components/ComboBox'
-import Report from './Report'
 import Emails from './Emails'
 import QuoteEmail from './QuoteEmail'
 import FollowUp from './FollowUp'
@@ -1019,15 +1018,15 @@ const Events = () => {
   const [mixLead, setMixLead] = useState(2)
   const [plannerRef, setPlannerRef] = useState(null)
   const [filter, setFilter] = useState('open')
-  const [editing, setEditing] = useState(null) // { id, event } | 'report' | 'settings' | 'emails' | null
+  const [editing, setEditing] = useState(null) // { id, event } | 'settings' | 'emails' | null
   const location = useLocation()
   const navigate = useNavigate()
   const params = new URLSearchParams(location.search)
   const wantedEvent = params.get('event')
-  const wantedView = params.get('view') // new | report | pricing | emails
+  const wantedView = params.get('view') // new | pricing | emails (report: forwards to /admin/report)
 
   // Every view has its own address, so the phone's or browser's Back button
-  // goes back to the list: /events?event=<id>, /events?view=new|report|pricing|emails.
+  // goes back to the list: /events?event=<id>, /events?view=new|pricing|emails.
   // Opening one adds a step to the history; closing goes back a step (or to the
   // list, when the view was opened straight from a link or notification).
   const open = (query) => navigate(`/events?${query}`, { state: { fromList: true } })
@@ -1044,14 +1043,17 @@ const Events = () => {
       setEditing((cur) => (cur && cur.id === e.id ? cur : { id: e.id, event: { ...blankEvent(), ...e } }))
     } else if (wantedView === 'new') {
       setEditing((cur) => (cur && typeof cur === 'object' && !cur.id ? cur : { id: null, event: blankEvent() }))
-    } else if (wantedView === 'report' || wantedView === 'emails') {
+    } else if (wantedView === 'report') {
+      // Report moved to the team home; old links still get there.
+      navigate('/admin/report', { replace: true })
+    } else if (wantedView === 'emails') {
       setEditing(wantedView)
     } else if (wantedView === 'pricing') {
       setEditing('settings')
     } else {
       setEditing(null)
     }
-  }, [wantedEvent, wantedView, events])
+  }, [wantedEvent, wantedView, events, navigate])
 
   // Tapping the Events tab again: back to the list (asks first if an event
   // has unsaved changes).
@@ -1113,13 +1115,6 @@ const Events = () => {
     )
   }
 
-  if (editing === 'report') {
-    return (
-      <Shell>
-        <Report events={events} onClose={backToList} />
-      </Shell>
-    )
-  }
   if (editing === 'emails') {
     return (
       <Shell>
@@ -1146,9 +1141,6 @@ const Events = () => {
   return (
     <Shell>
       <PageHeader title="Events" sub="Inquiries, quotes and bookings">
-        <button type="button" className={btnQuiet} onClick={() => open('view=report')}>
-          Report
-        </button>
         <button type="button" className={btnQuiet} onClick={() => open('view=pricing')}>
           Pricing
         </button>
